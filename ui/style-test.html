@@ -1,0 +1,321 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Path of AI — Style Test (PoE-Exact Colors)</title>
+  <link href="https://fonts.googleapis.com/css2?family=JetBrains+Mono:wght@400;700;800&family=Cinzel:wght@400;600;700;800;900&family=Crimson+Text:ital,wght@0,400;0,600;0,700;1,400&family=Fontin+Sans:wght@400;700&display=swap" rel="stylesheet">
+  <style>
+    /* ═══════════════════════════════════════════════════
+       PATH OF EXILE — EXACT GAME COLORS
+       Source: horadric-helper + PoE loot filter defaults
+       ═══════════════════════════════════════════════════ */
+    :root {
+      /* ── RARITY (from horadric-helper, PoE exact) ── */
+      --unique: #af6025;
+      --rare: #ff7;          /* #ffff77 */
+      --magic: #88f;         /* #8888ff */
+      --normal: #c8c8c8;
+      --gem: #1ba29b;
+      --currency: #aa9e82;
+      --quest: #4ae63a;
+      --corrupted: #d20000;
+      --crafted: #b8daf2;
+      --fractured: #a29162;
+      --augmented: #88f;     /* blue — modified stat color */
+      --scourge: #ff6e25;
+
+      /* ── DAMAGE TYPES (from horadric-helper) ── */
+      --fire: #960000;       /* PoE fire is DARK red, not bright */
+      --cold: #366492;       /* PoE cold is STEEL blue, not bright */
+      --lightning: gold;     /* PoE lightning is pure gold */
+      --chaos: #d02090;      /* PoE chaos is MAGENTA-pink, not purple */
+
+      /* ── UI BACKGROUNDS (extracted from PoE game screenshots) ── */
+      --bg-dark: #0c0b0a;        /* almost black with warm undertone */
+      --bg-panel: #171411;       /* dark brown panel */
+      --bg-card: #1e1b16;        /* item tooltip background */
+      --bg-hover: #282420;       /* hover state */
+      --bg-tooltip: #111;        /* PoE tooltip bg is near-black */
+
+      /* ── BORDERS ── */
+      --border: #3c3630;         /* warm grey-brown */
+      --border-gold: #8c7a30;    /* gold trim */
+      --border-blood: #5a1a1a;   /* blood accent */
+
+      /* ── TEXT (high contrast for readability) ── */
+      --text: #d4cfc4;           /* warm off-white (PoE default text) */
+      --text-bright: #f0ece4;    /* headings */
+      --text-muted: #7f7f7f;     /* PoE default grey = #7f7f7f exact */
+      --text-dim: #4a4540;       /* very dim */
+      --text-value: #fff;        /* PoE value text = pure white */
+
+      /* ── PASSIVE TREE ── */
+      --passive-title: #eee492;  /* passive node title color */
+
+      /* ── LIFE/MANA (from PoE orb colors) ── */
+      --life: #c41e1e;           /* life orb red */
+      --es: #366492;             /* ES = same as cold */
+      --mana: #2060a0;           /* mana orb blue */
+
+      /* ── CRAFTING COLORS (from horadric-helper) ── */
+      --craft-fire: #ff9a77;
+      --craft-cold: #93d8ff;
+      --craft-lightning: #f8cb76;
+      --craft-chaos: #d8a7d3;
+      --craft-life: #c96e6e;
+      --craft-physical: #c79d93;
+
+      /* ── APP ACCENTS ── */
+      --blood: #8b1a1a;
+      --blood-bright: #c42b2b;
+      --gold: #c4a830;
+      --gold-glow: #c4a83040;
+      --success: #4ae63a;    /* quest green = PoE success */
+      --warning: gold;       /* lightning = warning */
+      --danger: #d20000;     /* corrupted = danger */
+      --info: #88f;          /* magic = info */
+
+      /* ── TIER COLORS ── */
+      --tier1: #e8d44d;      /* gold */
+      --tier2: #4ae63a;      /* green (quest green) */
+      --tier3: #366492;      /* cold blue */
+      --tier4: #7f7f7f;      /* default grey */
+      --tier5: #d20000;      /* corrupted red */
+    }
+
+    * { margin:0; padding:0; box-sizing:border-box; }
+    body {
+      background: var(--bg-dark);
+      color: var(--text);
+      font-family: 'Crimson Text', serif;
+      font-size: 16px;
+      line-height: 1.6;
+      padding: 24px;
+      max-width: 800px;
+      margin: 0 auto;
+    }
+    h1 { font-family: 'Cinzel', serif; color: var(--blood-bright); font-size: 28px; margin-bottom: 8px; text-shadow: 0 0 16px #c42b2b50; }
+    h2 { font-family: 'Cinzel', serif; color: var(--text-bright); font-size: 18px; margin: 24px 0 12px; border-bottom: 1px solid var(--border); padding-bottom: 6px; }
+    h3 { font-family: 'Cinzel', serif; color: var(--text-muted); font-size: 12px; text-transform: uppercase; letter-spacing: 2px; margin: 16px 0 8px; }
+    .note { font-size: 13px; color: var(--text-muted); margin-bottom: 24px; }
+
+    .swatch-grid { display: grid; grid-template-columns: repeat(auto-fill, minmax(120px, 1fr)); gap: 8px; margin-bottom: 16px; }
+    .swatch {
+      border-radius: 4px; padding: 10px; text-align: center; font-size: 11px;
+      font-family: 'JetBrains Mono', monospace; border: 1px solid var(--border);
+    }
+    .swatch .hex { font-weight: 700; margin-top: 4px; }
+    .swatch .label { font-size: 10px; opacity: 0.8; }
+
+    /* PoE Tooltip Mock */
+    .poe-tooltip-mock {
+      background: var(--bg-tooltip);
+      border: 1px solid #3c3630;
+      max-width: 350px;
+      margin: 8px 0;
+    }
+    .poe-tooltip-mock .tt-header {
+      text-align: center; padding: 8px 16px;
+      background: linear-gradient(180deg, #282018, #111);
+      border-bottom: 1px solid #3c3630;
+    }
+    .poe-tooltip-mock .tt-separator {
+      border: none; border-top: 1px solid #3c3630;
+      margin: 4px 16px;
+    }
+    .poe-tooltip-mock .tt-body { padding: 8px 16px; }
+    .poe-tooltip-mock .mod { padding: 1px 0; }
+    .poe-tooltip-mock .implicit { color: var(--augmented); }
+    .poe-tooltip-mock .explicit { color: var(--augmented); }
+    .poe-tooltip-mock .crafted { color: var(--crafted); }
+    .poe-tooltip-mock .corrupted-text { color: var(--corrupted); }
+    .poe-tooltip-mock .flavour { color: var(--unique); font-style: italic; }
+
+    /* Stat card mock */
+    .stat-row { display: flex; gap: 12px; margin-bottom: 8px; flex-wrap: wrap; }
+    .stat-card-mock {
+      background: var(--bg-card); border: 1px solid var(--border);
+      border-radius: 2px; padding: 10px 14px; text-align: center; min-width: 100px;
+    }
+    .stat-card-mock .val { font-size: 24px; font-weight: 800; font-family: 'JetBrains Mono', monospace; }
+    .stat-card-mock .lbl { font-size: 10px; color: var(--text-muted); text-transform: uppercase; letter-spacing: 1px; }
+
+    /* Issue card mocks */
+    .issue-mock { padding: 10px 14px; border-radius: 2px; margin-bottom: 6px; font-size: 14px; }
+    .issue-mock.critical { background: #d2000012; border: 1px solid #d2000030; border-left: 3px solid var(--corrupted); color: var(--corrupted); }
+    .issue-mock.warning { background: #ffd70012; border: 1px solid #ffd70030; border-left: 3px solid gold; color: gold; }
+    .issue-mock.info { background: #8888ff12; border: 1px solid #8888ff30; border-left: 3px solid var(--magic); color: var(--magic); }
+
+    .font-sample { margin-bottom: 12px; }
+    .font-sample .name { font-size: 12px; color: var(--text-muted); font-family: 'JetBrains Mono', monospace; }
+  </style>
+</head>
+<body>
+
+  <h1>PATH<span style="color:var(--text-muted);font-size:16px;margin:0 6px;">of</span>AI</h1>
+  <div class="note">Style reference page — all colors from PoE's actual game data (horadric-helper + loot filter defaults)</div>
+
+  <h2>Rarity Colors</h2>
+  <div class="swatch-grid">
+    <div class="swatch" style="background:var(--unique);color:#000;"><div class="label">Unique</div><div class="hex">#af6025</div></div>
+    <div class="swatch" style="background:var(--rare);color:#000;"><div class="label">Rare</div><div class="hex">#ffff77</div></div>
+    <div class="swatch" style="background:var(--magic);color:#000;"><div class="label">Magic</div><div class="hex">#8888ff</div></div>
+    <div class="swatch" style="background:var(--normal);color:#000;"><div class="label">Normal</div><div class="hex">#c8c8c8</div></div>
+    <div class="swatch" style="background:var(--gem);color:#000;"><div class="label">Gem</div><div class="hex">#1ba29b</div></div>
+    <div class="swatch" style="background:var(--currency);color:#000;"><div class="label">Currency</div><div class="hex">#aa9e82</div></div>
+    <div class="swatch" style="background:var(--corrupted);color:#fff;"><div class="label">Corrupted</div><div class="hex">#d20000</div></div>
+    <div class="swatch" style="background:var(--crafted);color:#000;"><div class="label">Crafted</div><div class="hex">#b8daf2</div></div>
+    <div class="swatch" style="background:var(--fractured);color:#000;"><div class="label">Fractured</div><div class="hex">#a29162</div></div>
+  </div>
+
+  <h2>Damage Types</h2>
+  <div class="swatch-grid">
+    <div class="swatch" style="background:var(--fire);color:#fff;"><div class="label">Fire</div><div class="hex">#960000</div></div>
+    <div class="swatch" style="background:var(--cold);color:#fff;"><div class="label">Cold</div><div class="hex">#366492</div></div>
+    <div class="swatch" style="background:var(--lightning);color:#000;"><div class="label">Lightning</div><div class="hex">gold</div></div>
+    <div class="swatch" style="background:var(--chaos);color:#fff;"><div class="label">Chaos</div><div class="hex">#d02090</div></div>
+  </div>
+  <div class="note">NOTE: PoE's chaos color is magenta-pink (#d02090), NOT purple (#9955dd). Fire is dark red (#960000), not bright. Cold is steel blue (#366492).</div>
+
+  <h2>Crafting Tag Colors</h2>
+  <div class="swatch-grid">
+    <div class="swatch" style="background:var(--craft-fire);color:#000;"><div class="label">Fire craft</div><div class="hex">#ff9a77</div></div>
+    <div class="swatch" style="background:var(--craft-cold);color:#000;"><div class="label">Cold craft</div><div class="hex">#93d8ff</div></div>
+    <div class="swatch" style="background:var(--craft-lightning);color:#000;"><div class="label">Light craft</div><div class="hex">#f8cb76</div></div>
+    <div class="swatch" style="background:var(--craft-chaos);color:#000;"><div class="label">Chaos craft</div><div class="hex">#d8a7d3</div></div>
+    <div class="swatch" style="background:var(--craft-life);color:#000;"><div class="label">Life craft</div><div class="hex">#c96e6e</div></div>
+    <div class="swatch" style="background:var(--craft-physical);color:#000;"><div class="label">Phys craft</div><div class="hex">#c79d93</div></div>
+  </div>
+
+  <h2>UI Backgrounds</h2>
+  <div class="swatch-grid">
+    <div class="swatch" style="background:var(--bg-dark);color:var(--text);border-color:#3c3630;"><div class="label">bg-dark</div><div class="hex">#0c0b0a</div></div>
+    <div class="swatch" style="background:var(--bg-panel);color:var(--text);border-color:#3c3630;"><div class="label">bg-panel</div><div class="hex">#171411</div></div>
+    <div class="swatch" style="background:var(--bg-card);color:var(--text);border-color:#3c3630;"><div class="label">bg-card</div><div class="hex">#1e1b16</div></div>
+    <div class="swatch" style="background:var(--bg-hover);color:var(--text);border-color:#3c3630;"><div class="label">bg-hover</div><div class="hex">#282420</div></div>
+    <div class="swatch" style="background:var(--border);color:var(--text);"><div class="label">border</div><div class="hex">#3c3630</div></div>
+    <div class="swatch" style="background:var(--border-gold);color:#000;"><div class="label">border-gold</div><div class="hex">#8c7a30</div></div>
+  </div>
+
+  <h2>Text Colors</h2>
+  <div style="background:var(--bg-card);border:1px solid var(--border);padding:16px;border-radius:2px;margin-bottom:16px;">
+    <div style="color:var(--text-bright);font-size:18px;margin-bottom:4px;">Text Bright (#f0ece4) — Headings</div>
+    <div style="color:var(--text);font-size:16px;margin-bottom:4px;">Text Default (#d4cfc4) — Body text, descriptions</div>
+    <div style="color:var(--text-value);font-size:16px;margin-bottom:4px;">Text Value (#ffffff) — Numbers, stat values (PoE uses pure white)</div>
+    <div style="color:var(--text-muted);font-size:14px;margin-bottom:4px;">Text Muted (#7f7f7f) — Labels, secondary info (PoE default grey)</div>
+    <div style="color:var(--text-dim);font-size:12px;">Text Dim (#4a4540) — Very subtle hints</div>
+  </div>
+
+  <h2>Tier Colors</h2>
+  <div style="background:var(--bg-card);border:1px solid var(--border);padding:12px;border-radius:2px;margin-bottom:16px;">
+    <div style="display:flex;gap:12px;flex-wrap:wrap;">
+      <span style="color:var(--tier1);font-family:'JetBrains Mono',monospace;font-weight:700;">T1 #e8d44d</span>
+      <span style="color:var(--tier2);font-family:'JetBrains Mono',monospace;font-weight:700;">T2 #4ae63a</span>
+      <span style="color:var(--tier3);font-family:'JetBrains Mono',monospace;font-weight:700;">T3 #366492</span>
+      <span style="color:var(--tier4);font-family:'JetBrains Mono',monospace;font-weight:700;">T4 #7f7f7f</span>
+      <span style="color:var(--tier5);font-family:'JetBrains Mono',monospace;font-weight:700;">T5 #d20000</span>
+    </div>
+  </div>
+
+  <h2>Font Samples</h2>
+  <div class="font-sample">
+    <div class="name">Cinzel — Headers, tab names, section titles</div>
+    <div style="font-family:'Cinzel',serif;font-size:24px;font-weight:800;color:var(--text-bright);">PATH of AI — Inquisitor Lv.95</div>
+    <div style="font-family:'Cinzel',serif;font-size:14px;font-weight:600;color:var(--text-muted);text-transform:uppercase;letter-spacing:2px;">Harbinger Warnings &mdash; Prophecy</div>
+  </div>
+  <div class="font-sample">
+    <div class="name">Crimson Text — Body text (16px, line-height 1.6)</div>
+    <div style="font-family:'Crimson Text',serif;font-size:16px;color:var(--text);line-height:1.6;">Your Ring 2 is the weakest link in your arsenal, Exile. A +45 life roll is Tier 5 — barely worthy of a white mob drop. For an RF Inquisitor at your level, you need an Opal Ring with T1-T2 life, fire DoT multiplier, and resistance to fill gaps.</div>
+  </div>
+  <div class="font-sample">
+    <div class="name">JetBrains Mono — Numbers, stats, DPS (use for ALL numerical values)</div>
+    <div style="font-family:'JetBrains Mono',monospace;font-size:20px;font-weight:800;color:var(--text-value);">6,453 Life &bull; 2.84M DPS &bull; 28.5K Armour</div>
+    <div style="font-family:'JetBrains Mono',monospace;font-size:14px;color:var(--text-muted);">Score: 74/100 &bull; Value: 47.3 divine &bull; Fire Res: 80%</div>
+  </div>
+
+  <h2>Stat Cards</h2>
+  <div class="stat-row">
+    <div class="stat-card-mock"><div class="val" style="color:var(--life);">6,453</div><div class="lbl">Life</div></div>
+    <div class="stat-card-mock"><div class="val" style="color:var(--text-value);">2.84M</div><div class="lbl">DPS</div></div>
+    <div class="stat-card-mock"><div class="val" style="color:var(--currency);">28.5K</div><div class="lbl">Armour</div></div>
+    <div class="stat-card-mock"><div class="val" style="color:var(--cold);">1,820</div><div class="lbl">ES</div></div>
+    <div class="stat-card-mock"><div class="val" style="color:var(--text-value);">45%</div><div class="lbl">Block</div></div>
+    <div class="stat-card-mock"><div class="val" style="color:var(--success);">2,450/s</div><div class="lbl">Regen</div></div>
+  </div>
+
+  <h2>Issue Cards</h2>
+  <div class="issue-mock critical">&#x26A0; Chaos Resistance very low: 15%</div>
+  <div class="issue-mock warning">&#x26A0; Low resist overcap — vulnerable to Ele Weakness maps</div>
+  <div class="issue-mock info">&#x2139; Body Armour has 1 open suffix — benchcraft available</div>
+
+  <h2>PoE Item Tooltip (Exact Style)</h2>
+
+  <h3>Unique Item</h3>
+  <div class="poe-tooltip-mock">
+    <div class="tt-header">
+      <div style="font-size:16px;font-weight:700;color:var(--unique);">Rise of the Phoenix</div>
+      <div style="font-size:12px;color:var(--text-muted);">Mosaic Kite Shield</div>
+    </div>
+    <div class="tt-body">
+      <div class="mod" style="color:var(--text-muted);">+8% to all Elemental Resistances</div>
+      <hr class="tt-separator">
+      <div class="mod explicit">+60 to maximum Life</div>
+      <div class="mod explicit">+25% to Fire Resistance</div>
+      <div class="mod explicit" style="color:var(--text-value);">+8% to maximum Fire Resistance</div>
+      <div class="mod explicit">+15% to all Elemental Resistances</div>
+      <div class="mod explicit">100% increased Armour</div>
+      <hr class="tt-separator">
+      <div class="mod flavour">"From the ashes, we are reborn."</div>
+    </div>
+  </div>
+
+  <h3>Rare Item with Crafted Mod</h3>
+  <div class="poe-tooltip-mock">
+    <div class="tt-header">
+      <div style="font-size:16px;font-weight:700;color:var(--rare);">Glyph Crest</div>
+      <div style="font-size:12px;color:var(--text-muted);">Royal Burgonet</div>
+    </div>
+    <div class="tt-body">
+      <div class="mod explicit">+78 to maximum Life</div>
+      <div class="mod explicit">+38% to Fire Resistance</div>
+      <div class="mod explicit">+32% to Lightning Resistance</div>
+      <div class="mod explicit">Nearby Enemies have -9% to Fire Resistance</div>
+      <div class="mod explicit">+220 to Armour</div>
+      <div class="mod crafted">+70 to maximum Life (crafted)</div>
+    </div>
+  </div>
+
+  <h3>Corrupted Item</h3>
+  <div class="poe-tooltip-mock">
+    <div class="tt-header">
+      <div style="font-size:16px;font-weight:700;color:var(--unique);">Aegis Aurora</div>
+      <div style="font-size:12px;color:var(--text-muted);">Champion Kite Shield</div>
+    </div>
+    <div class="tt-body">
+      <div class="mod implicit" style="color:var(--corrupted);">+2% to all maximum Resistances</div>
+      <hr class="tt-separator">
+      <div class="mod explicit">+300 to Armour</div>
+      <div class="mod explicit">+20 to maximum Energy Shield</div>
+      <div class="mod explicit" style="color:var(--text-value);">Replenishes Energy Shield by 2% of Armour when you Block</div>
+      <div class="mod explicit">+5% to all maximum Resistances</div>
+      <hr class="tt-separator">
+      <div class="mod corrupted-text">Corrupted</div>
+    </div>
+  </div>
+
+  <h2>Key Findings</h2>
+  <div style="background:var(--bg-card);border:1px solid var(--border);padding:16px;border-radius:2px;font-size:14px;line-height:1.8;">
+    <div><strong style="color:var(--text-bright);">Chaos is MAGENTA (#d02090)</strong> — NOT purple (#9955dd). We had this wrong.</div>
+    <div><strong style="color:var(--text-bright);">Fire is DARK RED (#960000)</strong> — NOT bright red (#cf3c18). Used as background tint.</div>
+    <div><strong style="color:var(--text-bright);">Cold is STEEL BLUE (#366492)</strong> — We had #3674c2 which was close.</div>
+    <div><strong style="color:var(--text-bright);">Default text is #7f7f7f</strong> — PoE uses this exact grey for muted text.</div>
+    <div><strong style="color:var(--text-bright);">Stat values are pure WHITE</strong> — PoE shows numbers in #ffffff.</div>
+    <div><strong style="color:var(--text-bright);">Explicit mods are BLUE (#8888ff)</strong> — The augmented/modifier color.</div>
+    <div><strong style="color:var(--text-bright);">Crafted mods are LIGHT BLUE (#b8daf2)</strong> — Distinct from regular mods.</div>
+    <div><strong style="color:var(--text-bright);">Success/Quest green is #4ae63a</strong> — Brighter than we had.</div>
+    <div><strong style="color:var(--text-bright);">Tooltip bg is near-black (#111)</strong> — NOT brown/warm. PoE tooltips are very dark.</div>
+  </div>
+
+</body>
+</html>

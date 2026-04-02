@@ -1,0 +1,2172 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>PATH of AI — Game HUD</title>
+  <link href="https://fonts.googleapis.com/css2?family=JetBrains+Mono:wght@400;700;800&family=Cinzel:wght@400;600;700;800;900&family=Crimson+Text:ital,wght@0,400;0,600;0,700;1,400&display=swap" rel="stylesheet">
+  <style>
+    :root {
+      /* ═══════════════════════════════════════════════
+         PoE-EXACT COLORS (from horadric-helper + game data)
+         Source: github.com/meta-is-beta/horadric-helper
+         ═══════════════════════════════════════════════ */
+
+      /* UI Backgrounds (dark, near-black, slightly warm) */
+      --bg-dark: #0c0b0a;
+      --bg-panel: #171411;
+      --bg-card: #1e1b16;
+      --bg-hover: #282420;
+      --bg-tooltip: #111;
+
+      /* Borders */
+      --border: #3c3630;
+      --border-blood: #5a1a1a;
+      --border-gold: #8c7a30;
+      --border-highlight: #c4a830;
+
+      /* Text (high contrast) */
+      --text: #d4cfc4;
+      --text-bright: #f0ece4;
+      --text-value: #fff;        /* PoE shows stat numbers in pure white */
+      --text-muted: #7f7f7f;     /* PoE exact default grey */
+      --text-dim: #4a4540;
+
+      /* Blood accents */
+      --blood: #8b1a1a;
+      --blood-bright: #c42b2b;
+
+      /* Gold accents */
+      --gold: #c4a830;
+      --gold-glow: #c4a83040;
+
+      /* Damage types (PoE exact from horadric-helper) */
+      --fire: #960000;           /* dark blood red */
+      --fire-bright: #960000;    /* brighter for text on dark bg */
+      --cold: #366492;           /* steel blue */
+      --lightning: gold;         /* CSS gold = #ffd700 */
+      --chaos: #d02090;          /* magenta-pink, NOT purple */
+      --physical: #c4a882;
+
+      /* Status */
+      --life: #d20000;
+      --es: #366492;
+      --mana: #2060a0;
+      --success: #4ae63a;        /* PoE quest green */
+      --warning: gold;
+      --danger: #d20000;         /* PoE corrupted red */
+      --info: #88f;              /* PoE magic blue */
+
+      /* Rarity (PoE exact) */
+      --normal: #c8c8c8;
+      --magic: #88f;
+      --rare: #ff7;
+      --unique: #af6025;
+      --unique-bright: #e8a444;
+      --gem-color: #1ba29b;
+      --currency-color: var(--currency-color);
+      --corrupted: #d20000;
+      --crafted: #b8daf2;        /* light blue for crafted mods */
+      --fractured: #a29162;
+      --augmented: #88f;         /* blue for modified stats */
+
+      /* Tier colors */
+      --tier1: #e8d44d;
+      --tier2: #4ae63a;          /* quest green */
+      --tier3: #366492;          /* cold blue */
+      --tier4: #7f7f7f;          /* PoE default grey */
+      --tier5: #d20000;          /* corrupted red */
+
+      /* Passive tree */
+      --passive-title: #eee492;
+
+      /* Crafting tag colors */
+      --craft-fire: #ff9a77;
+      --craft-cold: #93d8ff;
+      --craft-lightning: #f8cb76;
+      --craft-chaos: #d8a7d3;
+      --craft-life: #c96e6e;
+    }
+
+    @keyframes fadeUp { from { opacity:0; transform:translateY(8px); } to { opacity:1; transform:translateY(0); } }
+    @keyframes glowText { 0%,100% { text-shadow: 0 0 4px #c42b2b40; } 50% { text-shadow: 0 0 12px #c42b2b80; } }
+    @keyframes syncPulse { 0%,100% { opacity:1; } 50% { opacity:0.4; } }
+    @keyframes flameTitleGlow {
+      0%,100% { text-shadow: 0 0 8px #c42b2b50, 0 0 20px #c42b2b30, 0 -2px 4px #ff660020; }
+      25% { text-shadow: 0 0 12px #c42b2b70, 0 0 30px #c42b2b40, 0 -3px 8px #ff660040; }
+      50% { text-shadow: 0 0 16px #c42b2b90, 0 0 40px #c42b2b50, 0 -4px 12px #ff660060; }
+      75% { text-shadow: 0 0 10px #c42b2b60, 0 0 25px #c42b2b35, 0 -2px 6px #ff660030; }
+    }
+    @keyframes gemPulse {
+      0%,100% { box-shadow: 0 0 6px currentColor, inset 0 0 4px rgba(255,255,255,0.1); }
+      50% { box-shadow: 0 0 14px currentColor, inset 0 0 8px rgba(255,255,255,0.2); }
+    }
+    @keyframes slotPulse {
+      0%,100% { box-shadow: inset 0 0 6px rgba(139,105,20,0.1), 0 0 4px rgba(139,105,20,0.05); }
+      50% { box-shadow: inset 0 0 10px rgba(139,105,20,0.2), 0 0 8px rgba(139,105,20,0.1); }
+    }
+    @keyframes buffFloat {
+      0%,100% { transform: translateY(0); }
+      50% { transform: translateY(-2px); }
+    }
+    @keyframes combatSlash {
+      0% { transform: rotate(-30deg) scale(0); opacity:0; }
+      30% { transform: rotate(10deg) scale(1.2); opacity:1; }
+      100% { transform: rotate(30deg) scale(0.8); opacity:0; }
+    }
+    @keyframes dmgNumber {
+      0% { transform: translateY(0) scale(0.5); opacity:0; }
+      15% { transform: translateY(-10px) scale(1.2); opacity:1; }
+      100% { transform: translateY(-50px) scale(0.8); opacity:0; }
+    }
+    @keyframes cardFadeIn { from { opacity:0; transform:translateY(6px); } to { opacity:1; transform:translateY(0); } }
+    @keyframes subtlePulse { 0%,100% { opacity:1; } 50% { opacity:0.85; } }
+    @keyframes countUp { from { opacity:0; transform:scale(0.8); } to { opacity:1; transform:scale(1); } }
+    @keyframes vignetteBreath { 0%,100% { opacity:0.85; } 50% { opacity:0.95; } }
+    @keyframes slideUp { from { transform:translateY(100%); } to { transform:translateY(0); } }
+    @keyframes orbPulse {
+      0%,100% { box-shadow: 0 0 10px rgba(196,30,30,0.4), inset 0 0 15px rgba(196,30,30,0.2); }
+      50% { box-shadow: 0 0 18px rgba(196,30,30,0.6), inset 0 0 20px rgba(196,30,30,0.3); }
+    }
+    @keyframes orbPulseMana {
+      0%,100% { box-shadow: 0 0 8px rgba(48,96,192,0.4), inset 0 0 12px rgba(48,96,192,0.2); }
+      50% { box-shadow: 0 0 14px rgba(48,96,192,0.6), inset 0 0 16px rgba(48,96,192,0.3); }
+    }
+    @keyframes gemBtnGlow {
+      0%,100% { filter: brightness(1); }
+      50% { filter: brightness(1.15); }
+    }
+
+    * { margin:0; padding:0; box-sizing:border-box; scrollbar-width:thin; scrollbar-color:#3a3028 #0c0a08; }
+    ::-webkit-scrollbar { width:5px; } ::-webkit-scrollbar-track { background:#0c0a08; } ::-webkit-scrollbar-thumb { background:#3a3028; border-radius:3px; }
+
+    html, body { height:100%; overflow:hidden; }
+    body {
+      color: var(--text);
+      font-family: 'Crimson Text', serif;
+      font-size: 15px;
+      line-height: 1.5;
+      letter-spacing: 0.2px;
+      background:
+        radial-gradient(ellipse at 50% 50%, transparent 30%, rgba(0,0,0,0.5) 100%),
+        repeating-linear-gradient(0deg, transparent, transparent 2px, rgba(20,16,10,0.1) 2px, rgba(20,16,10,0.1) 4px),
+        repeating-linear-gradient(90deg, transparent, transparent 3px, rgba(18,14,10,0.08) 3px, rgba(18,14,10,0.08) 5px),
+        radial-gradient(ellipse at 20% 0%, #14100a 0%, transparent 50%),
+        radial-gradient(ellipse at 80% 100%, #0e0c08 0%, transparent 50%),
+        var(--bg-dark);
+      background-attachment: fixed;
+      display: flex;
+      flex-direction: column;
+    }
+    body::before {
+      content:''; position:fixed; top:0;left:0;right:0;bottom:0; pointer-events:none; z-index:9999;
+      background:radial-gradient(ellipse at 50% 50%, transparent 40%, rgba(2,1,3,0.5) 100%);
+      animation:vignetteBreath 8s ease-in-out infinite;
+    }
+
+    .mono { font-family:'JetBrains Mono',monospace; }
+
+    /* ========== HEADER BAR ========== */
+    .hud-header {
+      height:48px; min-height:48px;
+      background: linear-gradient(180deg, #1a150e 0%, #14120e 40%, var(--bg-dark) 100%);
+      border-bottom: 2px solid var(--border-blood);
+      display:flex; align-items:center; justify-content:space-between;
+      padding:0 16px; position:relative; z-index:10;
+    }
+    .hud-header::before {
+      content:''; position:absolute; top:0;left:0;right:0; height:1px;
+      background:linear-gradient(90deg, transparent 10%, var(--border-gold) 30%, var(--gold) 50%, var(--border-gold) 70%, transparent 90%);
+    }
+    .hud-header::after {
+      content:''; position:absolute; bottom:0;left:0;right:0; height:2px;
+      background:linear-gradient(90deg, transparent 5%, var(--blood-bright) 30%, var(--blood) 50%, var(--blood-bright) 70%, transparent 95%);
+      box-shadow:0 0 12px rgba(196,43,43,0.4);
+    }
+    .hdr-title {
+      font-family:'Cinzel',serif; font-size:20px; font-weight:900;
+      color:var(--blood-bright); letter-spacing:3px;
+      animation:flameTitleGlow 4s ease-in-out infinite;
+    }
+    .hdr-title span { color:var(--text-muted); font-size:12px; margin:0 4px; }
+    .hdr-class {
+      font-family:'Cinzel',serif; font-size:13px; font-weight:700;
+      color:var(--text); text-shadow:0 1px 2px rgba(0,0,0,0.5);
+    }
+    .hdr-class .lvl { color:var(--text-dim); font-weight:400; font-size:11px; margin-left:6px; }
+    .hdr-sync { display:flex; align-items:center; gap:6px; }
+    .sync-dot {
+      width:7px;height:7px;border-radius:50%;background:var(--success);
+      box-shadow:0 0 8px #4ae63a80; animation:syncPulse 2s ease infinite;
+    }
+    .hdr-val { font-size:11px; color:var(--gold); font-family:'JetBrains Mono',monospace; text-shadow:0 0 6px rgba(212,164,56,0.3); }
+
+    /* ========== MAIN 3-COLUMN LAYOUT ========== */
+    .hud-body {
+      flex:1; display:flex; overflow:hidden; min-height:0;
+    }
+
+    /* LEFT SIDEBAR */
+    .sidebar-left {
+      width:130px; min-width:130px;
+      background: linear-gradient(180deg, #141210, #0c0a08);
+      border-right:1px solid var(--border);
+      padding:10px 8px;
+      overflow-y:auto;
+      display:flex; flex-direction:column; gap:6px;
+    }
+    .stat-row {
+      text-align:center; padding:6px 4px; border-radius:2px;
+      background: linear-gradient(180deg,#1a1712,#161410);
+      border:1px solid var(--border);
+      position:relative; overflow:hidden;
+    }
+    .stat-row::before {
+      content:''; position:absolute; top:0;left:0;right:0; height:2px;
+    }
+    .stat-row.life-row::before { background:linear-gradient(90deg,transparent,var(--life),transparent); }
+    .stat-row.es-row::before { background:linear-gradient(90deg,transparent,var(--es),transparent); }
+    .stat-row.armour-row::before { background:linear-gradient(90deg,transparent,var(--physical),transparent); }
+    .stat-row.dps-row::before { background:linear-gradient(90deg,transparent,var(--fire),transparent); }
+    .stat-row .s-icon { font-size:14px; }
+    .stat-row .s-val {
+      font-size:18px; font-weight:700; font-family:'JetBrains Mono',monospace;
+      line-height:1.1; text-shadow:0 0 8px currentColor;
+      animation:subtlePulse 4s ease-in-out infinite, countUp 0.5s ease-out;
+    }
+    .stat-row .s-label { font-size:8px; color:var(--text-muted); text-transform:uppercase; letter-spacing:1px; }
+
+    .resist-mini { padding:4px; border-radius:2px; display:flex; align-items:center; gap:5px; }
+    .resist-mini .r-orb {
+      width:24px;height:24px;border-radius:50%; display:flex;align-items:center;justify-content:center;
+      font-size:11px; border:2px solid var(--border); position:relative; flex-shrink:0;
+    }
+    .resist-mini .r-orb::after {
+      content:''; position:absolute; top:2px;left:4px; width:6px;height:4px;
+      background:radial-gradient(ellipse,rgba(255,255,255,0.2) 0%,transparent 100%); border-radius:50%;
+    }
+    .resist-mini .r-orb.fire { background:radial-gradient(circle at 35% 30%,#6a2a0a,#3a1508,#1a0a04); border-color:var(--fire); box-shadow:0 0 6px rgba(207,58,31,0.3); }
+    .resist-mini .r-orb.cold { background:radial-gradient(circle at 35% 30%,#1a3a6a,#0a1a3a,#040a1a); border-color:var(--cold); box-shadow:0 0 6px rgba(54,116,194,0.3); }
+    .resist-mini .r-orb.lightning { background:radial-gradient(circle at 35% 30%,#5a4820,#3a3010,#1a1408); border-color:var(--lightning); box-shadow:0 0 6px rgba(232,198,37,0.3); }
+    .resist-mini .r-orb.chaos { background:radial-gradient(circle at 35% 30%,#3a2050,#2a1a3a,#0a0410); border-color:var(--chaos); box-shadow:0 0 6px rgba(168,85,247,0.3); }
+    .resist-mini .r-info { flex:1; text-align:left; }
+    .resist-mini .r-val { font-size:12px; font-weight:700; font-family:'JetBrains Mono',monospace; }
+    .resist-mini .r-val.capped { color:var(--success); }
+    .resist-mini .r-val.uncapped { color:var(--danger); }
+    .resist-mini .r-oc { font-size:8px; color:var(--text-dim); }
+
+    /* CENTER PANEL */
+    .center-panel {
+      flex:1; overflow-y:auto; padding:12px;
+      background: var(--bg-dark);
+      display:flex; flex-direction:column; gap:12px;
+    }
+
+    /* Equipment grid */
+    .equip-grid {
+      display:grid; grid-template-columns:1fr 1fr 1fr;
+      gap:5px; max-width:360px; margin:0 auto; width:100%;
+    }
+    .equip-slot {
+      background:linear-gradient(180deg,#1c1810,#0c0a06);
+      border:1px solid var(--border); border-radius:2px;
+      padding:6px 4px; text-align:center; cursor:pointer;
+      transition:all 0.15s; position:relative;
+      box-shadow:inset 0 1px 0 rgba(255,255,255,0.03);
+      min-height:62px; display:flex; flex-direction:column; align-items:center; justify-content:center;
+    }
+    .equip-slot:hover { border-color:var(--border-gold); box-shadow:inset 0 1px 0 rgba(255,255,255,0.03),0 0 8px var(--gold-glow); }
+    .equip-slot.active { border-color:var(--gold); box-shadow:0 0 12px var(--gold-glow); }
+    .equip-slot .slot-icon { font-size:20px; }
+    .equip-slot .slot-name { font-size:8px; font-weight:600; white-space:nowrap; overflow:hidden; text-overflow:ellipsis; max-width:100%; }
+    .equip-slot .slot-score {
+      position:absolute; top:1px; right:3px; font-size:9px; font-weight:800;
+      font-family:'JetBrains Mono',monospace; text-shadow:0 0 4px currentColor;
+    }
+
+    /* CHARACTER EQUIPMENT SLOTS (positioned on body) */
+    .char-slot {
+      border:1px solid #8c7a3040;
+      border-radius:3px;
+      background:rgba(19,15,24,0.6);
+      cursor:pointer;
+      transition:all 0.2s;
+      animation: slotPulse 3s ease-in-out infinite;
+      display:flex;
+      align-items:center;
+      justify-content:center;
+      font-size:16px;
+      backdrop-filter:blur(2px);
+    }
+    .char-slot:hover {
+      border-color:var(--gold);
+      background:rgba(139,105,20,0.15);
+      box-shadow:0 0 12px var(--gold-glow), inset 0 0 8px rgba(139,105,20,0.1);
+      transform:scale(1.08);
+      z-index:5;
+    }
+    .char-slot.active {
+      border-color:var(--gold);
+      box-shadow:0 0 16px var(--gold-glow);
+    }
+    .char-slot-sm { border-radius:50%; }
+    .char-slot .slot-label {
+      position:absolute;
+      bottom:-14px;
+      left:50%;
+      transform:translateX(-50%);
+      font-size:7px;
+      color:var(--text-dim);
+      white-space:nowrap;
+      font-family:'JetBrains Mono',monospace;
+      text-transform:uppercase;
+      letter-spacing:0.5px;
+      pointer-events:none;
+      opacity:0;
+      transition:opacity 0.2s;
+    }
+    .char-slot:hover .slot-label { opacity:1; }
+
+    /* BUFF ICONS */
+    .buff-icon {
+      width:26px;
+      height:26px;
+      border-radius:3px;
+      border:1px solid color-mix(in srgb, var(--buff-color) 50%, transparent);
+      background:radial-gradient(circle at 40% 40%, color-mix(in srgb, var(--buff-color) 15%, #1c1914), #0c0a08);
+      display:flex;
+      align-items:center;
+      justify-content:center;
+      animation:buffFloat 3s ease-in-out infinite;
+      box-shadow:0 0 6px color-mix(in srgb, var(--buff-color) 20%, transparent);
+      cursor:default;
+      position:relative;
+    }
+    .buff-icon:nth-child(2) { animation-delay:0.3s; }
+    .buff-icon:nth-child(3) { animation-delay:0.6s; }
+    .buff-icon:nth-child(4) { animation-delay:0.9s; }
+    .buff-icon:nth-child(5) { animation-delay:1.2s; }
+    .buff-icon:nth-child(6) { animation-delay:1.5s; }
+    .buff-inner { font-size:13px; filter:brightness(1.2); }
+    .buff-icon:hover {
+      box-shadow:0 0 12px color-mix(in srgb, var(--buff-color) 40%, transparent);
+      border-color:var(--buff-color);
+    }
+    .buff-icon:hover::after {
+      content:attr(title);
+      position:absolute;
+      top:30px;
+      left:50%;
+      transform:translateX(-50%);
+      font-size:9px;
+      color:var(--text);
+      background:var(--bg-card);
+      border:1px solid var(--border);
+      padding:2px 8px;
+      border-radius:2px;
+      white-space:nowrap;
+      font-family:'JetBrains Mono',monospace;
+      z-index:20;
+      box-shadow:0 2px 8px rgba(0,0,0,0.5);
+    }
+
+    /* COMBAT DAMAGE NUMBERS */
+    .dmg-num {
+      position:absolute;
+      font-family:'JetBrains Mono',monospace;
+      font-weight:800;
+      font-size:14px;
+      pointer-events:none;
+      animation:dmgNumber 1.2s ease-out forwards;
+      text-shadow:0 1px 3px #000;
+    }
+
+    /* POWER-UP EFFECT — shown when upgrading item/skill */
+    @keyframes powerUp {
+      0% { transform:scale(1); filter:brightness(1); }
+      15% { transform:scale(1.15); filter:brightness(1.8) saturate(1.5); }
+      30% { transform:scale(1.05); filter:brightness(1.3); }
+      100% { transform:scale(1); filter:brightness(1); }
+    }
+    @keyframes powerUpRing {
+      0% { transform:translate(-50%,-50%) scale(0); opacity:0.8; }
+      60% { opacity:0.3; }
+      100% { transform:translate(-50%,-50%) scale(3); opacity:0; }
+    }
+    @keyframes powerUpText {
+      0% { transform:translateY(0) scale(0.5); opacity:0; }
+      20% { transform:translateY(-20px) scale(1.2); opacity:1; }
+      60% { transform:translateY(-40px) scale(1); opacity:1; }
+      100% { transform:translateY(-60px) scale(0.8); opacity:0; }
+    }
+    .char-powerup { animation: powerUp 0.8s ease-out; }
+    .powerup-ring {
+      position:absolute; top:50%; left:50%;
+      width:60px; height:60px; border-radius:50%;
+      border:2px solid var(--gold);
+      pointer-events:none; z-index:20;
+      animation: powerUpRing 0.8s ease-out forwards;
+    }
+    .powerup-text {
+      position:absolute; top:40%; left:50%; transform:translateX(-50%);
+      font-family:'Cinzel',serif; font-size:14px; font-weight:800;
+      color:var(--gold); text-shadow:0 0 12px #c4a83080;
+      pointer-events:none; z-index:20; white-space:nowrap;
+      animation: powerUpText 1.5s ease-out forwards;
+    }
+
+    /* PASSIVE TREE MINI-VIEW */
+    .passive-mini {
+      position:relative;
+      width:100%; height:120px;
+      background:radial-gradient(circle at 50% 50%, #141210, #0c0a08);
+      border:1px solid var(--border);
+      border-radius:2px;
+      overflow:hidden;
+      cursor:pointer;
+    }
+    .passive-mini:hover { border-color:var(--border-gold); }
+    .passive-mini-label {
+      position:absolute; bottom:4px; right:6px;
+      font-size:8px; color:var(--text-dim);
+      font-family:'JetBrains Mono',monospace;
+      text-transform:uppercase; letter-spacing:1px;
+    }
+    .passive-node {
+      position:absolute;
+      border-radius:50%;
+      transition:all 0.15s;
+    }
+    .passive-node.allocated {
+      background:var(--gold);
+      box-shadow:0 0 4px var(--gold-glow);
+    }
+    .passive-node.unallocated {
+      background:#3a3028;
+      border:1px solid #3e333080;
+    }
+    .passive-node.keystone {
+      border-radius:2px;
+      border:1px solid var(--gold);
+      background:#8c7a3040;
+      box-shadow:0 0 6px var(--gold-glow);
+    }
+    .passive-link {
+      position:absolute;
+      background:var(--gold);
+      opacity:0.3;
+      transform-origin:left center;
+    }
+
+    .equip-slot .slot-label { font-size:7px; color:var(--text-dim); }
+    .equip-slot-empty {
+      background:linear-gradient(180deg,#141210,#0c0a08);
+      border:1px dashed var(--border); border-radius:2px;
+      min-height:62px; display:flex; flex-direction:column; align-items:center; justify-content:center;
+    }
+
+    /* Score rings row */
+    .score-row { display:flex; justify-content:center; gap:20px; }
+    .score-ring-sm { text-align:center; position:relative; }
+    .score-ring-sm svg { transform:rotate(-90deg); filter:drop-shadow(0 0 6px var(--gold-glow)); }
+    .score-ring-sm .sr-inner {
+      position:absolute; top:50%;left:50%; transform:translate(-50%,-50%); text-align:center;
+    }
+    .score-ring-sm .sr-val {
+      font-size:16px; font-weight:800; font-family:'JetBrains Mono',monospace; line-height:1;
+      text-shadow:0 0 8px currentColor; animation:countUp 0.6s ease-out;
+    }
+    .score-ring-sm .sr-label { font-size:7px; color:var(--text-muted); text-transform:uppercase; letter-spacing:1px; }
+
+    /* Harbinger warnings */
+    .harbinger-compact {
+      padding:6px 8px; margin-bottom:3px; border-radius:2px;
+      display:flex; align-items:center; gap:6px;
+      font-size:11px; animation:cardFadeIn 0.3s ease-out both;
+    }
+    .harbinger-compact.warning { background:linear-gradient(135deg,gold10,gold06); border:1px solid gold25; border-left:3px solid var(--warning); }
+    .harbinger-compact .h-icon { font-size:12px; flex-shrink:0; }
+    .harbinger-compact .h-text { color:var(--warning); font-weight:600; flex:1; }
+
+    /* RIGHT PANEL */
+    .sidebar-right {
+      width:280px; min-width:280px;
+      background: linear-gradient(180deg, #141210, #0c0a08);
+      border-left:1px solid var(--border);
+      display:flex; flex-direction:column;
+      overflow:hidden;
+    }
+    .rp-header {
+      padding:8px 12px; border-bottom:1px solid var(--border);
+      display:flex; align-items:center; justify-content:space-between;
+      background:linear-gradient(180deg,#181614,#141210);
+      min-height:36px;
+    }
+    .rp-title {
+      font-family:'Cinzel',serif; font-size:11px; font-weight:700;
+      color:var(--blood-bright); text-transform:uppercase; letter-spacing:1px;
+      text-shadow:0 0 6px rgba(196,43,43,0.3);
+    }
+    .rp-close {
+      width:22px;height:22px; border-radius:2px; border:1px solid var(--border);
+      background:var(--bg-panel); color:var(--text-dim); cursor:pointer;
+      display:flex;align-items:center;justify-content:center; font-size:12px;
+      transition:all 0.15s;
+    }
+    .rp-close:hover { border-color:var(--blood-bright); color:var(--blood-bright); }
+    .rp-content {
+      flex:1; overflow-y:auto; padding:10px 12px;
+    }
+
+    /* ========== BOTTOM HUD BAR ========== */
+    .hud-bar {
+      height:56px; min-height:56px;
+      background: linear-gradient(180deg, #120e16 0%, #0a080c 100%);
+      border-top:2px solid var(--border-blood);
+      display:flex; align-items:center;
+      padding:0 12px; gap:12px;
+      position:relative; z-index:10;
+    }
+    .hud-bar::before {
+      content:''; position:absolute; top:0;left:0;right:0; height:1px;
+      background:linear-gradient(90deg, transparent 5%, var(--blood-bright) 30%, var(--blood) 50%, var(--blood-bright) 70%, transparent 95%);
+      box-shadow:0 -2px 8px rgba(196,43,43,0.2);
+    }
+
+    /* Life/Mana orbs */
+    .orb-life {
+      width:44px; height:44px; border-radius:50%;
+      background: radial-gradient(circle at 40% 35%, #d20000, #8b1a1a 50%, #4a0e0e 85%, #2a0808);
+      border:2px solid #5a1a1a;
+      display:flex;align-items:center;justify-content:center;
+      flex-shrink:0; position:relative;
+      animation:orbPulse 3s ease-in-out infinite;
+    }
+    .orb-life .orb-val {
+      font-size:11px; font-weight:800; color:#fff;
+      font-family:'JetBrains Mono',monospace; text-shadow:0 1px 3px #000;
+    }
+    .orb-life::after {
+      content:''; position:absolute; top:4px;left:8px; width:14px;height:8px;
+      background:radial-gradient(ellipse,rgba(255,255,255,0.2) 0%,transparent 100%);
+      border-radius:50%;
+    }
+    .orb-mana {
+      width:36px; height:36px; border-radius:50%;
+      background: radial-gradient(circle at 40% 35%, #366492, #1e4a8a 50%, #0e2a5a 85%, #081830);
+      border:2px solid #1e3a6a;
+      display:flex;align-items:center;justify-content:center;
+      flex-shrink:0; position:relative;
+      animation:orbPulseMana 3.5s ease-in-out infinite;
+    }
+    .orb-mana .orb-val {
+      font-size:9px; font-weight:800; color:#fff;
+      font-family:'JetBrains Mono',monospace; text-shadow:0 1px 3px #000;
+    }
+    .orb-mana::after {
+      content:''; position:absolute; top:3px;left:6px; width:10px;height:6px;
+      background:radial-gradient(ellipse,rgba(255,255,255,0.2) 0%,transparent 100%);
+      border-radius:50%;
+    }
+
+    .hud-divider {
+      width:1px; height:36px;
+      background:linear-gradient(180deg,transparent,var(--border-blood),transparent);
+      margin:0 4px;
+    }
+
+    /* Gem buttons */
+    .gem-btns { display:flex; gap:5px; flex-wrap:nowrap; overflow-x:auto; flex:1; align-items:center; }
+    .gem-btn {
+      width:36px; height:36px; border-radius:50%;
+      border:2px solid var(--border);
+      display:flex;align-items:center;justify-content:center;
+      font-size:14px; cursor:pointer;
+      flex-shrink:0; transition:all 0.15s;
+      background:radial-gradient(circle at 35% 35%, rgba(255,255,255,0.08), transparent);
+      position:relative;
+    }
+    .gem-btn:hover {
+      border-color:var(--gold);
+      box-shadow:0 0 10px var(--gold-glow);
+      transform:scale(1.1);
+    }
+    .gem-btn.active {
+      border-color:var(--blood-bright);
+      box-shadow:0 0 14px rgba(196,43,43,0.5);
+      animation:gemBtnGlow 2s ease-in-out infinite;
+    }
+    .gem-btn .gem-tip {
+      display:none; position:absolute; bottom:42px; left:50%; transform:translateX(-50%);
+      background:#1a1410; border:1px solid var(--border-gold); border-radius:2px;
+      padding:2px 8px; font-size:9px; color:var(--gold);
+      font-family:'Cinzel',serif; white-space:nowrap; pointer-events:none; z-index:100;
+    }
+    .gem-btn:hover .gem-tip { display:block; }
+
+    /* ========== PANEL CONTENT STYLES ========== */
+    .section-label {
+      font-size:10px; color:var(--text-dim); text-transform:uppercase;
+      letter-spacing:2px; margin-bottom:8px; font-family:'Cinzel',serif;
+      display:flex; align-items:center; gap:6px;
+      text-shadow:0 0 6px rgba(62,51,48,0.5);
+    }
+    .section-label::after { content:''; flex:1; height:1px; background:linear-gradient(90deg,var(--border),transparent); }
+
+    .suggestion-card {
+      background:linear-gradient(180deg,#1a1712,#161410);
+      border:1px solid var(--border); border-radius:2px; padding:10px; margin-bottom:6px;
+      box-shadow:inset 0 1px 0 rgba(255,255,255,0.02);
+      animation:cardFadeIn 0.3s ease-out both;
+    }
+    .suggestion-prio {
+      font-size:8px; font-weight:800; text-transform:uppercase;
+      letter-spacing:1px; padding:1px 6px; border-radius:2px;
+      font-family:'JetBrains Mono',monospace;
+    }
+    .suggestion-prio.high { color:var(--danger); background:#d2000018; border:1px solid #d2000030; }
+    .suggestion-prio.medium { color:var(--warning); background:gold18; border:1px solid gold30; }
+    .suggestion-prio.low { color:var(--info); background:#36649218; border:1px solid #36649230; }
+
+    .issue-card {
+      border-radius:2px; padding:8px 10px; margin-bottom:4px;
+      display:flex; gap:8px; align-items:flex-start;
+      animation:cardFadeIn 0.3s ease-out both;
+    }
+    .issue-card.critical { background:linear-gradient(135deg,#d2000012,#d2000008); border:1px solid #d2000030; border-left:3px solid var(--danger); }
+    .issue-card.warning { background:linear-gradient(135deg,gold12,gold08); border:1px solid gold30; border-left:3px solid var(--warning); }
+    .issue-card.info { background:linear-gradient(135deg,#36649212,#36649208); border:1px solid #36649230; border-left:3px solid var(--info); }
+    .issue-icon { width:20px;height:20px;border-radius:50%;flex-shrink:0;display:flex;align-items:center;justify-content:center;font-size:10px; }
+    .issue-card.critical .issue-icon { background:#d2000025; }
+    .issue-card.warning .issue-icon { background:gold25; }
+    .issue-card.info .issue-icon { background:#36649225; }
+
+    .market-btn {
+      font-size:10px;
+      background:linear-gradient(180deg,#3a2f20,#2a1f15,#1a1510);
+      color:var(--text-bright); border:1px solid var(--border-gold);
+      border-radius:2px; padding:4px 10px; cursor:pointer; font-family:'Crimson Text',serif;
+      box-shadow:inset 0 1px 0 rgba(255,255,255,0.1),inset 0 -1px 0 rgba(0,0,0,0.3),0 1px 3px rgba(0,0,0,0.3);
+      transition:all 0.15s;
+    }
+    .market-btn:hover { background:linear-gradient(180deg,#4a3f28,#3a2f20,#2a1f15); box-shadow:0 0 10px var(--gold-glow); }
+
+    /* Item tooltip in right panel */
+    .poe-tooltip {
+      background:linear-gradient(180deg,#1c1810,#0c0a06);
+      border:1px solid var(--border); border-top:1px solid #3d2e1f; border-bottom:1px solid #3d2e1f;
+      border-radius:0;
+    }
+    .poe-tooltip .tt-header {
+      text-align:center; padding:6px 12px; border-bottom:1px solid var(--border);
+      background:linear-gradient(180deg,#2a2418,#201c14);
+    }
+    .poe-tooltip .tt-body { padding:8px 12px; }
+    .mod-item { font-size:11px; color:#8888ff; padding:2px 0; display:flex; align-items:center; gap:6px; }
+    .mod-tier { font-size:7px; padding:1px 5px; border-radius:2px; font-weight:700; font-family:'JetBrains Mono',monospace; }
+
+    /* Gem group styles */
+    .gem-group-card {
+      background:linear-gradient(180deg,#1a1712,#161410);
+      border:1px solid var(--border); border-radius:2px; padding:10px; margin-bottom:6px;
+      position:relative;
+    }
+    .gem-group-card::before { content:''; position:absolute;top:-1px;left:-1px;width:8px;height:8px;border-top:2px solid var(--border-gold);border-left:2px solid var(--border-gold);pointer-events:none; }
+    .gem-group-card::after { content:''; position:absolute;bottom:-1px;right:-1px;width:8px;height:8px;border-bottom:2px solid var(--border-gold);border-right:2px solid var(--border-gold);pointer-events:none; }
+
+    /* Checklist */
+    .check-item { display:flex; align-items:center; gap:8px; padding:6px 8px; border-bottom:1px solid #201c14; font-size:11px; }
+    .check-box {
+      width:16px;height:16px;border-radius:2px; border:2px solid var(--border);
+      display:flex;align-items:center;justify-content:center; font-size:10px; flex-shrink:0;
+    }
+    .check-box.done { border-color:var(--success); background:#4ae63a15; color:var(--success); box-shadow:0 0 4px rgba(62,196,30,0.2); }
+
+    /* Action buttons */
+    .action-btn {
+      display:flex; align-items:center; gap:8px;
+      padding:8px 10px; background:linear-gradient(180deg,#1a1520,#1c1914,#141210);
+      border:1px solid var(--border); border-radius:2px; cursor:pointer;
+      text-align:left; width:100%; margin-bottom:4px; transition:all 0.15s;
+      box-shadow:inset 0 1px 0 rgba(255,255,255,0.04);
+    }
+    .action-btn:hover { border-color:var(--border-gold); box-shadow:0 0 8px rgba(139,105,20,0.1); }
+
+    /* Boss readiness */
+    .boss-row { display:flex; align-items:center; gap:8px; padding:6px 0; border-bottom:1px solid #201c14; font-size:11px; }
+    .boss-row:last-child { border-bottom:none; }
+    .boss-status { font-size:9px; padding:2px 6px; border-radius:2px; font-weight:700; font-family:'JetBrains Mono',monospace; }
+    .boss-status.ready { color:var(--success); background:#4ae63a15; }
+    .boss-status.risky { color:var(--warning); background:gold15; }
+    .boss-status.not-ready { color:var(--danger); background:#d2000015; }
+
+    /* Combat card */
+    .combat-card {
+      background:linear-gradient(180deg,#1a1712,#161410);
+      border:1px solid var(--border); border-radius:2px; padding:10px; margin-bottom:6px;
+      position:relative; overflow:hidden;
+    }
+    .combat-card::before { content:'';position:absolute;top:0;left:0;right:0;height:2px;background:linear-gradient(90deg,transparent,var(--fire),transparent); }
+    .hp-bar { height:14px; background:linear-gradient(180deg,#1a0a04,#0e0604); border-radius:2px; overflow:hidden; border:1px solid #3a1a0a; position:relative; }
+    .hp-bar-fill { height:100%; border-radius:1px; position:relative; }
+    .hp-bar-fill.monster { background:linear-gradient(180deg,#dd3333,#cc3333,#882222); box-shadow:0 0 6px rgba(204,51,51,0.3); }
+    .hp-bar-fill.dps { background:linear-gradient(180deg,#f09030,var(--unique-bright),#a04010); box-shadow:0 0 6px rgba(232,112,32,0.3); }
+    .hp-bar-text { position:absolute;top:50%;left:50%;transform:translate(-50%,-50%);font-size:8px;font-weight:700;color:#fff;text-shadow:0 1px 2px #000;font-family:'JetBrains Mono',monospace;white-space:nowrap; }
+    .combat-stat { display:flex;justify-content:space-between;padding:4px 6px;background:linear-gradient(180deg,#0e0a08,#0a0806);border-radius:2px;font-size:10px;border:1px solid rgba(42,30,48,0.3); }
+
+    /* Defense badge */
+    .defense-badge {
+      font-size:9px; padding:2px 8px; border-radius:2px; font-family:'JetBrains Mono',monospace;
+      border:1px solid; display:inline-flex; align-items:center; gap:3px;
+    }
+    .defense-badge.active { color:var(--success); border-color:#4ae63a40; background:#4ae63a10; }
+    .defense-badge.missing { color:var(--danger); border-color:#d2000040; background:#d2000010; }
+
+    /* Grimoire input */
+    .grimoire-input {
+      flex:1; padding:8px 10px; background:linear-gradient(180deg,#141210,#0c0a08);
+      border:1px solid var(--border); border-radius:2px; color:var(--text);
+      font-family:'Crimson Text',serif; font-size:12px; outline:none;
+    }
+    .grimoire-input:focus { border-color:var(--blood-bright); box-shadow:0 0 8px rgba(196,43,43,0.15); }
+    .invoke-btn {
+      padding:8px 14px; background:linear-gradient(180deg,#6a2020,#5a1a1a,#4a1515);
+      border:1px solid var(--blood-bright); border-radius:2px; color:var(--blood-bright);
+      font-family:'Cinzel',serif; font-size:11px; font-weight:700; cursor:pointer;
+      letter-spacing:1px; transition:all 0.15s;
+      box-shadow:inset 0 1px 0 rgba(255,255,255,0.1),0 1px 3px rgba(0,0,0,0.3);
+    }
+    .invoke-btn:hover { background:linear-gradient(180deg,#7a2828,#6a2020,#5a1a1a); box-shadow:0 0 12px rgba(196,43,43,0.3); }
+
+    .grimoire-q-btn {
+      font-size:9px; padding:4px 8px; background:linear-gradient(180deg,#1a1218,#1c1914);
+      border:1px solid var(--border); border-radius:2px; color:var(--blood-bright);
+      cursor:pointer; font-family:'Crimson Text',serif; transition:all 0.15s;
+    }
+    .grimoire-q-btn:hover { border-color:var(--blood-bright); box-shadow:0 0 6px rgba(196,43,43,0.15); }
+
+    /* Provider label in settings */
+    .provider-option {
+      display:flex;align-items:center;gap:8px;padding:6px 8px;
+      background:linear-gradient(180deg,#141210,#0c0a08);border:1px solid var(--border);
+      border-radius:2px;cursor:pointer;margin-bottom:4px;transition:all 0.15s;
+    }
+    .provider-option:hover { border-color:var(--border-gold); }
+    .provider-option.selected { border-color:#4ae63a40; }
+
+    /* ========== RESPONSIVE < 900px ========== */
+    @media (max-width:900px) {
+      .sidebar-left {
+        width:100%; min-width:unset; flex-direction:row; flex-wrap:wrap;
+        border-right:none; border-bottom:1px solid var(--border);
+        padding:6px; gap:4px; overflow-y:visible; overflow-x:auto;
+        max-height:none; min-height:auto;
+      }
+      .sidebar-left .stat-row { flex:1; min-width:55px; padding:4px 2px; }
+      .sidebar-left .stat-row .s-val { font-size:14px; }
+      .sidebar-left .resist-mini { min-width:70px; flex:1; }
+      .hud-body { flex-direction:column; }
+      .sidebar-right {
+        position:fixed; bottom:56px; left:0; right:0;
+        width:100%; min-width:unset;
+        max-height:60vh; border-left:none; border-top:2px solid var(--border-blood);
+        transform:translateY(100%); transition:transform 0.3s ease;
+        z-index:50;
+      }
+      .sidebar-right.open { transform:translateY(0); animation:slideUp 0.3s ease; }
+      .center-panel { padding:8px; }
+    }
+  </style>
+</head>
+<body>
+
+  <!-- ========== HEADER ========== -->
+  <div class="hud-header">
+    <div style="display:flex;align-items:center;gap:16px;">
+      <div class="hdr-title">PATH<span>of</span>AI</div>
+      <div class="hdr-class">Inquisitor <span class="lvl">Lv.95</span></div>
+    </div>
+    <div class="hdr-sync">
+      <div class="sync-dot"></div>
+      <span style="font-size:9px;color:var(--text-dim);font-family:'JetBrains Mono',monospace;">SYNCED</span>
+      <span class="hdr-val">47.3d</span>
+    </div>
+  </div>
+
+  <!-- ========== MAIN BODY ========== -->
+  <div class="hud-body">
+
+    <!-- LEFT SIDEBAR -->
+    <div class="sidebar-left">
+      <div class="stat-row life-row">
+        <div class="s-icon">&#x2764;</div>
+        <div class="s-val" style="color:var(--life);">6,453</div>
+        <div class="s-label">Life</div>
+      </div>
+      <div class="stat-row es-row">
+        <div class="s-icon">&#x1F535;</div>
+        <div class="s-val" style="color:var(--es);">1,820</div>
+        <div class="s-label">ES</div>
+      </div>
+      <div class="stat-row armour-row">
+        <div class="s-icon">&#x1F6E1;</div>
+        <div class="s-val" style="color:var(--physical);">28.5K</div>
+        <div class="s-label">Armour</div>
+      </div>
+      <div class="stat-row dps-row">
+        <div class="s-icon">&#x2694;</div>
+        <div class="s-val" style="color:var(--unique-bright);">2.84M</div>
+        <div class="s-label">DPS</div>
+      </div>
+
+      <div style="margin-top:2px;font-size:8px;color:var(--text-dim);text-transform:uppercase;letter-spacing:1px;font-family:'Cinzel',serif;padding:0 2px;">Resists</div>
+
+      <div class="resist-mini">
+        <div class="r-orb fire">&#x1F525;</div>
+        <div class="r-info">
+          <div class="r-val capped">80%</div>
+          <div class="r-oc">+5 oc</div>
+        </div>
+      </div>
+      <div class="resist-mini">
+        <div class="r-orb cold">&#x2744;</div>
+        <div class="r-info">
+          <div class="r-val capped">76%</div>
+          <div class="r-oc">+1 oc</div>
+        </div>
+      </div>
+      <div class="resist-mini">
+        <div class="r-orb lightning">&#x26A1;</div>
+        <div class="r-info">
+          <div class="r-val capped">79%</div>
+          <div class="r-oc">+4 oc</div>
+        </div>
+      </div>
+      <div class="resist-mini">
+        <div class="r-orb chaos">&#x2620;</div>
+        <div class="r-info">
+          <div class="r-val uncapped">15%</div>
+          <div class="r-oc" style="color:var(--danger);">LOW</div>
+        </div>
+      </div>
+    </div>
+
+    <!-- CENTER PANEL -->
+    <div class="center-panel">
+
+      <!-- CHARACTER VISUALIZATION -->
+      <div id="character-viz" style="position:relative;width:360px;max-width:100%;margin:0 auto;height:380px;overflow:hidden;border-radius:4px;">
+
+        <!-- Dynamic animated background (dark arena / hideout) -->
+        <svg class="char-bg" viewBox="0 0 360 380" preserveAspectRatio="xMidYMid slice" style="position:absolute;top:0;left:0;width:100%;height:100%;z-index:0;">
+          <defs>
+            <radialGradient id="arenaBg" cx="50%" cy="55%" r="55%">
+              <stop offset="0%" stop-color="#1a1018"/>
+              <stop offset="40%" stop-color="#0e080c"/>
+              <stop offset="100%" stop-color="#06040a"/>
+            </radialGradient>
+            <radialGradient id="floorGlow" cx="50%" cy="90%" r="45%">
+              <stop offset="0%" stop-color="#960000" stop-opacity="0.06"/>
+              <stop offset="100%" stop-color="#960000" stop-opacity="0"/>
+            </radialGradient>
+            <!-- Particle pattern -->
+            <filter id="noise"><feTurbulence type="fractalNoise" baseFrequency="0.9" numOctaves="4" stitchTiles="stitch"/><feColorMatrix type="saturate" values="0"/></filter>
+          </defs>
+          <!-- Dark arena floor -->
+          <rect width="360" height="380" fill="url(#arenaBg)"/>
+          <!-- Floor glow from RF -->
+          <rect width="360" height="380" fill="url(#floorGlow)">
+            <animate attributeName="opacity" values="0.6;1;0.6" dur="3s" repeatCount="indefinite"/>
+          </rect>
+          <!-- Stone floor circle -->
+          <ellipse cx="180" cy="320" rx="140" ry="30" fill="none" stroke="#3a3028" stroke-width="0.5" opacity="0.4"/>
+          <ellipse cx="180" cy="320" rx="100" ry="20" fill="none" stroke="#3a3028" stroke-width="0.3" opacity="0.3"/>
+          <!-- Floating embers -->
+          <circle cx="60" cy="300" r="1" fill="#960000" opacity="0.4"><animate attributeName="cy" values="300;240;180" dur="6s" repeatCount="indefinite"/><animate attributeName="opacity" values="0;0.6;0" dur="6s" repeatCount="indefinite"/></circle>
+          <circle cx="290" cy="320" r="0.8" fill="#960000" opacity="0.3"><animate attributeName="cy" values="320;250;190" dur="8s" repeatCount="indefinite"/><animate attributeName="opacity" values="0;0.4;0" dur="8s" repeatCount="indefinite"/></circle>
+          <circle cx="150" cy="310" r="1.2" fill="#e8a444" opacity="0.2"><animate attributeName="cy" values="310;230;160" dur="7s" repeatCount="indefinite"/><animate attributeName="opacity" values="0;0.5;0" dur="7s" repeatCount="indefinite"/></circle>
+          <circle cx="220" cy="330" r="0.7" fill="#960000" opacity="0.3"><animate attributeName="cy" values="330;260;200" dur="9s" repeatCount="indefinite"/><animate attributeName="opacity" values="0;0.3;0" dur="9s" repeatCount="indefinite"/></circle>
+          <circle cx="100" cy="340" r="0.9" fill="#e8a444" opacity="0.2"><animate attributeName="cy" values="340;270;210" dur="5s" repeatCount="indefinite"/><animate attributeName="opacity" values="0;0.4;0" dur="5s" repeatCount="indefinite"/></circle>
+          <!-- Subtle fog/mist at bottom -->
+          <rect x="0" y="340" width="360" height="40" fill="url(#arenaBg)" opacity="0.5"/>
+        </svg>
+
+        <!-- Aura rings (rotating around character) -->
+        <svg class="aura-layer" viewBox="0 0 360 380" style="position:absolute;top:0;left:0;width:100%;height:100%;pointer-events:none;z-index:1;">
+          <!-- Determination aura (grey/blue outer ring) -->
+          <circle cx="180" cy="200" r="155" fill="none" stroke="#7a8090" stroke-width="1.5" stroke-dasharray="12,8" opacity="0.3">
+            <animateTransform attributeName="transform" type="rotate" from="0 180 200" to="360 180 200" dur="20s" repeatCount="indefinite"/>
+          </circle>
+          <!-- Purity of Fire aura (red inner ring) -->
+          <circle cx="180" cy="200" r="135" fill="none" stroke="#960000" stroke-width="1" stroke-dasharray="8,12" opacity="0.35">
+            <animateTransform attributeName="transform" type="rotate" from="360 180 200" to="0 180 200" dur="15s" repeatCount="indefinite"/>
+          </circle>
+          <!-- Vitality aura (green pulsing ring) -->
+          <circle cx="180" cy="200" r="120" fill="none" stroke="#4ae63a" stroke-width="0.8" stroke-dasharray="4,16" opacity="0.25">
+            <animateTransform attributeName="transform" type="rotate" from="0 180 200" to="360 180 200" dur="25s" repeatCount="indefinite"/>
+            <animate attributeName="opacity" values="0.15;0.35;0.15" dur="3s" repeatCount="indefinite"/>
+          </circle>
+          <!-- Aura glow (ambient) -->
+          <circle cx="180" cy="200" r="140" fill="url(#auraGlow)" opacity="0.15">
+            <animate attributeName="opacity" values="0.1;0.2;0.1" dur="4s" repeatCount="indefinite"/>
+          </circle>
+          <defs>
+            <radialGradient id="auraGlow" cx="50%" cy="50%" r="50%">
+              <stop offset="60%" stop-color="#960000" stop-opacity="0"/>
+              <stop offset="100%" stop-color="#960000" stop-opacity="0.3"/>
+            </radialGradient>
+          </defs>
+        </svg>
+
+        <!-- Character body (SVG silhouette) -->
+        <svg class="char-body" viewBox="0 0 360 380" style="position:absolute;top:0;left:0;width:100%;height:100%;z-index:2;">
+          <defs>
+            <!-- RF burning glow around character -->
+            <radialGradient id="rfGlow" cx="50%" cy="52%" r="35%">
+              <stop offset="0%" stop-color="#960000" stop-opacity="0"/>
+              <stop offset="70%" stop-color="#960000" stop-opacity="0.08"/>
+              <stop offset="100%" stop-color="#960000" stop-opacity="0.2"/>
+            </radialGradient>
+            <filter id="bodyGlow">
+              <feGaussianBlur stdDeviation="2" result="blur"/>
+              <feMerge><feMergeNode in="blur"/><feMergeNode in="SourceGraphic"/></feMerge>
+            </filter>
+          </defs>
+
+          <!-- RF fire aura around body -->
+          <ellipse cx="180" cy="210" rx="70" ry="90" fill="url(#rfGlow)">
+            <animate attributeName="rx" values="65;75;65" dur="2s" repeatCount="indefinite"/>
+            <animate attributeName="ry" values="85;95;85" dur="2s" repeatCount="indefinite"/>
+          </ellipse>
+
+          <!-- Character silhouette (Templar/Inquisitor build) -->
+          <g filter="url(#bodyGlow)" opacity="0.85">
+            <!-- Head -->
+            <circle cx="180" cy="95" r="18" fill="#201c14" stroke="#3d2e1f" stroke-width="1.5"/>
+            <!-- Neck -->
+            <rect x="175" y="113" width="10" height="10" fill="#201c14" stroke="none"/>
+            <!-- Shoulders -->
+            <path d="M145 125 Q160 118 180 123 Q200 118 215 125 L215 140 L145 140 Z" fill="#201c14" stroke="#3d2e1f" stroke-width="1"/>
+            <!-- Torso -->
+            <path d="M150 140 L150 220 Q150 235 165 240 L195 240 Q210 235 210 220 L210 140 Z" fill="#201c14" stroke="#3d2e1f" stroke-width="1"/>
+            <!-- Left arm -->
+            <path d="M145 130 L125 140 L115 180 L120 220 L130 220 L135 185 L145 150 Z" fill="#201c14" stroke="#3d2e1f" stroke-width="1"/>
+            <!-- Right arm -->
+            <path d="M215 130 L235 140 L245 180 L240 220 L230 220 L225 185 L215 150 Z" fill="#201c14" stroke="#3d2e1f" stroke-width="1"/>
+            <!-- Left leg -->
+            <path d="M155 240 L150 290 L148 340 L162 340 L165 290 L170 245 Z" fill="#201c14" stroke="#3d2e1f" stroke-width="1"/>
+            <!-- Right leg -->
+            <path d="M190 245 L195 290 L198 340 L212 340 L210 290 L205 240 Z" fill="#201c14" stroke="#3d2e1f" stroke-width="1"/>
+          </g>
+        </svg>
+
+        <!-- Equipment slots positioned ON the character -->
+        <div id="char-equip" style="position:absolute;top:0;left:0;width:100%;height:100%;z-index:3;">
+          <!-- Helmet — on head -->
+          <div class="char-slot" data-slot="Helmet" style="position:absolute;top:52px;left:50%;transform:translateX(-50%);width:52px;height:52px;" onclick="showItemDetail('Helmet')"></div>
+          <!-- Body Armour — on torso -->
+          <div class="char-slot" data-slot="Body Armour" style="position:absolute;top:135px;left:50%;transform:translateX(-50%);width:60px;height:80px;" onclick="showItemDetail('Body Armour')"></div>
+          <!-- Gloves — left hand -->
+          <div class="char-slot" data-slot="Gloves" style="position:absolute;top:175px;left:60px;width:46px;height:46px;" onclick="showItemDetail('Gloves')"></div>
+          <!-- Shield — right hand -->
+          <div class="char-slot" data-slot="Shield" style="position:absolute;top:155px;right:58px;width:50px;height:56px;" onclick="showItemDetail('Shield')"></div>
+          <!-- Boots — on feet -->
+          <div class="char-slot" data-slot="Boots" style="position:absolute;bottom:18px;left:50%;transform:translateX(-50%);width:64px;height:40px;" onclick="showItemDetail('Boots')"></div>
+          <!-- Ring 1 — left hand ring finger -->
+          <div class="char-slot char-slot-sm" data-slot="Ring 1" style="position:absolute;top:215px;left:80px;width:30px;height:30px;" onclick="showItemDetail('Ring 1')"></div>
+          <!-- Ring 2 — right hand ring finger -->
+          <div class="char-slot char-slot-sm" data-slot="Ring 2" style="position:absolute;top:215px;right:80px;width:30px;height:30px;" onclick="showItemDetail('Ring 2')"></div>
+          <!-- Amulet — neck -->
+          <div class="char-slot char-slot-sm" data-slot="Amulet" style="position:absolute;top:115px;left:50%;transform:translateX(-50%);width:30px;height:30px;" onclick="showItemDetail('Amulet')"></div>
+          <!-- Belt — waist -->
+          <div class="char-slot" data-slot="Belt" style="position:absolute;top:235px;left:50%;transform:translateX(-50%);width:60px;height:26px;" onclick="showItemDetail('Belt')"></div>
+        </div>
+
+        <!-- Buff bar (above character head) -->
+        <div id="buff-bar" style="position:absolute;top:12px;left:50%;transform:translateX(-50%);display:flex;gap:4px;z-index:4;">
+          <div class="buff-icon" title="Determination" style="--buff-color:#7a8090;">
+            <div class="buff-inner">&#x1F6E1;</div>
+          </div>
+          <div class="buff-icon" title="Purity of Fire" style="--buff-color:#960000;">
+            <div class="buff-inner">&#x1F525;</div>
+          </div>
+          <div class="buff-icon" title="Vitality" style="--buff-color:#4ae63a;">
+            <div class="buff-inner">&#x1F49A;</div>
+          </div>
+          <div class="buff-icon" title="Righteous Fire" style="--buff-color:#e8a444;">
+            <div class="buff-inner">&#x2604;</div>
+          </div>
+          <div class="buff-icon" title="Molten Shell" style="--buff-color:#af6025;">
+            <div class="buff-inner">&#x1F30B;</div>
+          </div>
+          <div class="buff-icon" title="Fortify" style="--buff-color:#c4a830;">
+            <div class="buff-inner">&#x2694;</div>
+          </div>
+        </div>
+
+        <!-- Combat mode overlay (hidden by default, shown during sim) -->
+        <div id="combat-overlay" style="display:none;position:absolute;top:0;left:0;width:100%;height:100%;z-index:10;">
+        </div>
+      </div>
+
+      <!-- Score Rings -->
+      <div class="score-row">
+        <div class="score-ring-sm">
+          <svg width="68" height="68"><circle cx="34" cy="34" r="28" fill="none" stroke="#1a1410" stroke-width="5"/><circle cx="34" cy="34" r="28" fill="none" stroke="gold" stroke-width="5" stroke-dasharray="175.93" stroke-dashoffset="45.74" stroke-linecap="round"/></svg>
+          <div class="sr-inner"><div class="sr-val" style="color:gold;">74</div><div class="sr-label">Overall</div></div>
+        </div>
+        <div class="score-ring-sm">
+          <svg width="56" height="56"><circle cx="28" cy="28" r="22" fill="none" stroke="#1a1410" stroke-width="4"/><circle cx="28" cy="28" r="22" fill="none" stroke="#4ae63a" stroke-width="4" stroke-dasharray="138.23" stroke-dashoffset="24.88" stroke-linecap="round"/></svg>
+          <div class="sr-inner"><div class="sr-val" style="color:#4ae63a;font-size:13px;">82</div><div class="sr-label">Def</div></div>
+        </div>
+        <div class="score-ring-sm">
+          <svg width="56" height="56"><circle cx="28" cy="28" r="22" fill="none" stroke="#1a1410" stroke-width="4"/><circle cx="28" cy="28" r="22" fill="none" stroke="gold" stroke-width="4" stroke-dasharray="138.23" stroke-dashoffset="47.00" stroke-linecap="round"/></svg>
+          <div class="sr-inner"><div class="sr-val" style="color:gold;font-size:13px;">66</div><div class="sr-label">Off</div></div>
+        </div>
+      </div>
+
+      <!-- Passive Tree Mini-View -->
+      <div class="passive-mini" onclick="showPanel('passive')" title="Click to view passive tree analysis">
+        <div id="passive-tree-mini"></div>
+        <div class="passive-mini-label">&#x1F333; Passive Tree &mdash; 121/123 pts &bull; Click to analyze</div>
+      </div>
+
+      <!-- Harbinger Warnings (top 3) -->
+      <div>
+        <div style="font-size:9px;color:var(--text-dim);text-transform:uppercase;letter-spacing:1px;font-family:'Cinzel',serif;margin-bottom:4px;">&#x2620; Harbinger</div>
+        <div id="harbinger-compact"></div>
+      </div>
+    </div>
+
+    <!-- RIGHT PANEL -->
+    <div class="sidebar-right" id="sidebar-right">
+      <div class="rp-header">
+        <div class="rp-title" id="rp-title">Prophecy</div>
+        <button class="rp-close" onclick="showDefaultPanel()" title="Close">&#x2715;</button>
+      </div>
+      <div class="rp-content" id="rp-content"></div>
+    </div>
+
+  </div>
+
+  <!-- ========== BOTTOM HUD BAR ========== -->
+  <div class="hud-bar">
+    <div class="orb-life"><span class="orb-val">6,453</span></div>
+    <div class="orb-mana"><span class="orb-val">102</span></div>
+    <div class="hud-divider"></div>
+    <div class="gem-btns" id="gem-btns"></div>
+  </div>
+
+  <script>
+    // ==========================================
+    // DATA (copied from pob-advisor.html)
+    // ==========================================
+    const BUILD = {
+      stats: { mana:534, manaReserved:432 },
+      totalValue: 47.3,
+      items: [
+        { id:1, slot:"Gloves", name:"Searing Purity", base:"Titan Gauntlets", rarity:"UNIQUE", score:72, value:3.1, sockets:"RRRR", icon:"\u{1F9E4}", mods:["+94 to maximum Life","+42% to Fire Resistance","+28% to Cold Resistance","+1 to Level of all Fire Skill Gems"], tierInfo:[{mod:"+94 Life",tier:"T1",color:"var(--tier1)"},{mod:"+42% Fire Res",tier:"T1",color:"var(--tier1)"}], openAffixes:{prefixes:0,suffixes:0}, weaknesses:[] },
+        { id:2, slot:"Boots", name:"Doom Stride", base:"Titan Greaves", rarity:"RARE", score:55, value:3.2, sockets:"RRRR", icon:"\u{1F462}", mods:["+72 to maximum Life","+35% to Fire Resistance","+18% to Lightning Resistance","30% increased Movement Speed","+12% to Cold Resistance"], tierInfo:[{mod:"+72 Life",tier:"T3",color:"var(--tier3)"},{mod:"+35% Fire Res",tier:"T3",color:"var(--tier3)"},{mod:"30% MS",tier:"T1",color:"var(--tier1)"}], openAffixes:{prefixes:1,suffixes:0}, weaknesses:[{issue:"Low life roll (72, need 80+)"}] },
+        { id:3, slot:"Body Armour", name:"Soul Ward", base:"Astral Plate", rarity:"RARE", score:88, value:12.5, sockets:"RRRBGR", icon:"\u{1F6E1}", mods:["+12% all Elemental Res","+112 to maximum Life","+1500 to Armour","8% increased maximum Life","+40% to Fire Resistance"], tierInfo:[{mod:"+112 Life",tier:"T1",color:"var(--tier1)"},{mod:"+40% Fire Res",tier:"T2",color:"var(--tier2)"}], openAffixes:{prefixes:0,suffixes:1}, weaknesses:[] },
+        { id:4, slot:"Helmet", name:"Glyph Crest", base:"Royal Burgonet", rarity:"RARE", score:70, value:5.4, sockets:"RRRR", icon:"\u{1FA96}", mods:["+78 to maximum Life","+38% to Fire Resistance","+32% to Lightning Resistance","Nearby Enemies have -9% to Fire Resistance","+220 to Armour"], tierInfo:[{mod:"+78 Life",tier:"T2",color:"var(--tier2)"},{mod:"-9% Fire Res",tier:"\u2014",color:"var(--chaos)"}], openAffixes:{prefixes:1,suffixes:0}, weaknesses:[{issue:"No lab enchant"}] },
+        { id:5, slot:"Ring 1", name:"Torment Circle", base:"Ruby Ring", rarity:"RARE", score:68, value:4.1, sockets:null, icon:"\u{1F48D}", mods:["+30% to Fire Res (implicit)","+62 to maximum Life","+18% to Cold Resistance","+12% to Lightning Resistance","+15% to Fire DoT Multi"], tierInfo:[{mod:"+62 Life",tier:"T4",color:"var(--tier4)"},{mod:"+15% DoT",tier:"T2",color:"var(--tier2)"}], openAffixes:{prefixes:1,suffixes:0}, weaknesses:[{issue:"Low life roll (62)"}] },
+        { id:6, slot:"Amulet", name:"Oblivion Braid", base:"Turquoise Amulet", rarity:"RARE", score:82, value:6.8, sockets:null, icon:"\u{1F4FF}", mods:["+22 Dex/Int (implicit)","+75 to maximum Life","+28% to Fire Resistance","+1 to Level of all Fire Skill Gems","12% increased maximum Life"], tierInfo:[{mod:"+75 Life",tier:"T2",color:"var(--tier2)"},{mod:"+1 Fire Gems",tier:"\u2014",color:"var(--chaos)"}], openAffixes:{prefixes:0,suffixes:1}, weaknesses:[] },
+        { id:7, slot:"Shield", name:"Rise of the Phoenix", base:"Mosaic Kite Shield", rarity:"UNIQUE", score:75, value:0.5, sockets:"RRR", icon:"\u{1F6E1}", mods:["+60 to maximum Life","+25% to Fire Resistance","+8% to maximum Fire Resistance","+15% all Elemental Resistances","100% increased Armour"], tierInfo:[], openAffixes:{prefixes:0,suffixes:0}, weaknesses:[{issue:"Consider Aegis Aurora upgrade"}] },
+        { id:8, slot:"Belt", name:"Havoc Clasp", base:"Crystal Belt", rarity:"RARE", score:85, value:8.2, sockets:null, icon:"\u{1F4BF}", mods:["+75 ES (implicit)","+88 to maximum Life","+42% to Fire Resistance","+35% to Cold Resistance","+28 to Strength","12% increased maximum Life"], tierInfo:[{mod:"+88 Life",tier:"T2",color:"var(--tier2)"},{mod:"+42% Fire Res",tier:"T1",color:"var(--tier1)"}], openAffixes:{prefixes:0,suffixes:0}, weaknesses:[] },
+        { id:9, slot:"Ring 2", name:"Doom Whorl", base:"Opal Ring", rarity:"RARE", score:42, value:1.5, sockets:null, icon:"\u{1F48D}", mods:["25% inc Ele Dmg (implicit)","+45 to maximum Life","+22% to Fire Resistance","+15% to Lightning Resistance","5% increased maximum Life"], tierInfo:[{mod:"+45 Life",tier:"T5",color:"var(--tier5)"},{mod:"+22% Fire Res",tier:"T4",color:"var(--tier4)"}], openAffixes:{prefixes:1,suffixes:1}, weaknesses:[{issue:"Very low life roll (45)"},{issue:"Missing fire DoT multi"}] },
+      ],
+      issues: [
+        { severity:"warning", issue:"Chaos Resistance very low: 15%", fix:"Add chaos res on rings or amulet" },
+        { severity:"warning", issue:"Low resist overcap \u2014 vulnerable to Ele Weakness maps", fix:"Need +24% overcap on cold/lightning" },
+        { severity:"warning", issue:"Ring 2 score: 42/100 \u2014 weakest slot", fix:"Replace with life + fire DoT multi + resist ring" },
+        { severity:"info", issue:"Ring 1 has low life roll (62)", fix:"Upgrade to T1-T2 life ring" },
+        { severity:"info", issue:"Body Armour has 1 open suffix", fix:"Benchcraft a useful suffix" },
+        { severity:"info", issue:"Enlighten only level 3", fix:"Buy or level Enlighten 4 for mana savings" },
+        { severity:"info", issue:"5 support gems ready for corruption (20/20)", fix:"Corrupt for 21/20 \u2014 ~10-15% DPS each" },
+      ],
+      suggestions: [
+        { priority:"high", slot:"Ring 2", message:"Replace Ring 2 \u2014 worst item (42/100)", details:"Find: +80 life, +fire DoT multi, +resists.\nEst. cost: 3-8 div", impact:"+400 life, +15% DPS", marketSearch:"Opal Ring, life>=80, fire DoT multi", marketFound:{name:"Woe Circle",price:"3 div",dpsGain:"+15%",lifeGain:"+350"} },
+        { priority:"high", slot:"Ring 1", message:"Upgrade Ring 1 life roll", details:"Current: +62 life (T4). Target: +80+ life (T1-T2).\nEst. cost: 5-12 div", impact:"+200 life", marketSearch:"Ruby Ring, life>=80, DoT multi, res", marketFound:{name:"Grim Loop",price:"5 div",dpsGain:"+8%",lifeGain:"+180"} },
+        { priority:"medium", slot:"Boots", message:"Craft open prefix on Boots", details:"Benchcraft: +70 life or hybrid life/armour.\nCost: free", impact:"+70 life (free!)", marketSearch:null, marketFound:null },
+        { priority:"medium", slot:"Gems", message:"Corrupt 5 gems at 20/20", details:"Burning Damage, Elemental Focus, Lifetap, Swift Affliction, Efficacy", impact:"~10-15% DPS per success", marketSearch:"21/20 Burning Damage Support", marketFound:{name:"21/20 Burning Damage",price:"1.5 div",dpsGain:"+12%",lifeGain:"0"} },
+        { priority:"low", slot:"Shield", message:"Consider Aegis Aurora upgrade", details:"Massive ES on block recovery.\nEst. cost: 15-25 div", impact:"Huge survivability boost", marketSearch:"Aegis Aurora", marketFound:{name:"Aegis Aurora",price:"18 div",dpsGain:"-5%",lifeGain:"+2000 EHP"} },
+        { priority:"low", slot:"Helmet", message:"Get RF helmet enchant", details:"40% increased RF damage or +RF AoE.\nRun Uber Lab", impact:"+8-12% DPS", marketSearch:null, marketFound:null },
+      ],
+      gems: [
+        { skill:"Righteous Fire", color:"red", gems:[{name:"Righteous Fire",level:21,quality:23,maxed:true},{name:"Burning Damage",level:20,quality:20,maxed:false},{name:"Elemental Focus",level:20,quality:20,maxed:false},{name:"Lifetap",level:20,quality:20,maxed:false},{name:"Swift Affliction",level:20,quality:20,maxed:false},{name:"Efficacy",level:20,quality:20,maxed:false}] },
+        { skill:"Fire Trap", color:"red", gems:[{name:"Fire Trap",level:20,quality:20,maxed:false},{name:"Burning Damage",level:20,quality:20,maxed:false},{name:"Trap & Mine Speed",level:20,quality:20,maxed:false},{name:"Swift Affliction",level:20,quality:20,maxed:false}] },
+        { skill:"Auras", color:"blue", gems:[{name:"Determination",level:20,quality:20,maxed:false},{name:"Purity of Fire",level:21,quality:20,maxed:true},{name:"Vitality",level:20,quality:20,maxed:false},{name:"Enlighten",level:3,quality:0,maxed:false}] },
+        { skill:"Movement + Guard", color:"green", gems:[{name:"Shield Charge",level:1,quality:0,maxed:false},{name:"Faster Attacks",level:20,quality:20,maxed:false},{name:"Molten Shell",level:20,quality:20,maxed:false},{name:"CWDT",level:1,quality:0,maxed:false}] },
+      ],
+      checklist: [
+        {label:"Elemental resists capped",done:true},{label:"4000+ life",done:true},{label:"5000+ life",done:true},{label:"6000+ life",done:true},
+        {label:"Chaos resist \u2265 0",done:true},{label:"Chaos resist \u2265 50",done:false},{label:"Movement speed on boots",done:true},{label:"Guard skill (Molten Shell)",done:true},
+        {label:"500K+ DPS",done:true},{label:"1M+ DPS",done:true},{label:"3M+ DPS",done:false},{label:"All gems level 20+",done:false},
+        {label:"Ailment immunity plan",done:false},{label:"Resist overcap for curses",done:false},
+      ],
+    };
+
+    const DEFENSE_LAYERS = [
+      { layer:"Life Pool", value:"6,453", detail:"Base 2,305 \u00d7 2.8 (180% inc)", icon:"\u2764", color:"var(--life)" },
+      { layer:"Energy Shield", value:"1,820", detail:"Hybrid from gear", icon:"\uD83D\uDEE1", color:"var(--es)" },
+      { layer:"Armour", value:"28,450", detail:"53% phys reduction vs 5K hit", icon:"\u26CA", color:"var(--lightning)" },
+      { layer:"Block", value:"45% / 32%", detail:"Attack / Spell block", icon:"\u25C8", color:"var(--chaos)" },
+      { layer:"Max Fire Res", value:"83%", detail:"75 base + 8 Rise of Phoenix", icon:"\uD83D\uDD25", color:"var(--fire)" },
+      { layer:"Life Regen", value:"2,450/s", detail:"Net after RF degen: +450/s", icon:"\u267B", color:"var(--success)" },
+      { layer:"Molten Shell", value:"~7,400 absorb", detail:"20% of armour on trigger", icon:"\uD83E\uDEA8", color:"#af6025" },
+      { layer:"Fortify", value:"20% less hit dmg", detail:"From Shield Charge", icon:"\u2694", color:"var(--gold)" },
+    ];
+
+    const AILMENTS = [
+      { name:"Freeze", immune:true, source:"Ruby Flask of Heat" },
+      { name:"Ignite", immune:true, source:"Ascendancy" },
+      { name:"Shock", immune:false, source:null },
+      { name:"Bleed", immune:true, source:"Life Flask of Staunching" },
+      { name:"Poison", immune:false, source:null },
+      { name:"Corrupted Blood", immune:false, source:null },
+      { name:"Stun", immune:false, source:null },
+      { name:"Curse", immune:true, source:"Basalt Flask of Warding" },
+    ];
+
+    const DPS_SOURCES = [
+      { source:"Righteous Fire", value:2841057, pct:66, type:"Fire DoT", color:"var(--fire)" },
+      { source:"Fire Trap (Burning)", value:1050000, pct:24, type:"Fire DoT", color:"#e8a444" },
+      { source:"Fire Trap (Hit)", value:400000, pct:9, type:"Fire Hit", color:"var(--lightning)" },
+      { source:"Other", value:50000, pct:1, type:"Misc", color:"var(--text-muted)" },
+    ];
+
+    const MULTIPLIERS = [
+      { label:"Base Burning DPS", value:"1,245", type:"base" },
+      { label:"\u00d7 Increased Fire (420%)", value:"\u00d75.2", type:"inc" },
+      { label:"\u00d7 Burning Damage (59% more)", value:"\u00d71.59", type:"more" },
+      { label:"\u00d7 Elemental Focus (34% more)", value:"\u00d71.34", type:"more" },
+      { label:"\u00d7 Swift Affliction (29% more)", value:"\u00d71.29", type:"more" },
+      { label:"\u00d7 Efficacy (24% more)", value:"\u00d71.24", type:"more" },
+      { label:"\u00d7 Lifetap (20% more)", value:"\u00d71.20", type:"more" },
+      { label:"\u00d7 DoT Multi (180%)", value:"\u00d72.80", type:"multi" },
+      { label:"\u00d7 Enemy Fire Res (-9%)", value:"\u00d71.04", type:"pen" },
+    ];
+
+    const FLASKS = [
+      { name:"Divine Life Flask", suffix:"of Staunching", mods:["Instant Recovery","Bleed Immunity"] },
+      { name:"Ruby Flask", suffix:"of Heat", mods:["+6% max Fire Res","Freeze Immunity"] },
+      { name:"Granite Flask", suffix:"of Iron Skin", mods:["+3000 Armour","+60% inc Armour"] },
+      { name:"Quicksilver Flask", suffix:"of Adrenaline", mods:["+40% Move Speed","+20% inc Move Speed"] },
+      { name:"Basalt Flask", suffix:"of Warding", mods:["15% Phys Reduction","Curse Immunity"] },
+    ];
+
+    const PROVIDER_CONFIG = {
+      seer:      { auth:'none',   models:[], label:'The Seer (Local)' },
+      claude:    { auth:'apikey', models:['claude-sonnet-4-20250514','claude-opus-4-20250514','claude-haiku-4-20250414'], label:'Claude (Anthropic)' },
+      openai:    { auth:'apikey', models:['gpt-4o','gpt-4o-mini','o3-mini'], label:'ChatGPT (OpenAI)' },
+      gemini:    { auth:'oauth',  models:['gemini-2.5-pro','gemini-2.5-flash'], label:'Gemini (Google)' },
+      groq:      { auth:'apikey', models:['llama-3.3-70b','mixtral-8x7b'], label:'Groq' },
+      ollama:    { auth:'none',   models:['llama3.2','mistral','phi3'], label:'Ollama (Local)' },
+      openrouter:{ auth:'oauth',  models:['auto'], label:'OpenRouter' },
+    };
+
+    // ==========================================
+    // HUD GEM BUTTONS
+    // ==========================================
+    const HUD_GEMS = [
+      { id:'prophecy', icon:'\u2721', label:'Prophecy', color:'var(--fire)' },
+      { id:'grimoire', icon:'\uD83D\uDCD6', label:'Grimoire', color:'var(--chaos)' },
+      { id:'stash',    icon:'\uD83D\uDCE6', label:'Stash', color:'var(--gold)' },
+      { id:'combat',   icon:'\u2694',  label:'Combat', color:'var(--fire)' },
+      { id:'defenses', icon:'\uD83D\uDEE1', label:'Defenses', color:'var(--cold)' },
+      { id:'dps',      icon:'\uD83D\uDCA5', label:'DPS', color:'var(--unique-bright)' },
+      { id:'gems',     icon:'\uD83D\uDC8E', label:'Gems', color:'var(--success)' },
+      { id:'passive',  icon:'\uD83C\uDF33', label:'Passive Tree', color:'var(--success)' },
+      { id:'blood',    icon:'\u2620',  label:'Blood Pact', color:'var(--life)' },
+      { id:'darkpath', icon:'\uD83D\uDDE1', label:'Dark Path', color:'var(--chaos)' },
+      { id:'forge',    icon:'\uD83D\uDD28', label:'The Forge', color:'var(--unique-bright)' },
+      { id:'cursemap', icon:'\uD83D\uDDFA', label:'Curse Map', color:'var(--danger)' },
+      { id:'harbinger',icon:'\u26A0',  label:'Harbinger', color:'var(--warning)' },
+      { id:'settings', icon:'\u2699',  label:'Settings', color:'var(--text-muted)' },
+    ];
+
+    let activePanel = 'prophecy';
+    let activeItemId = null;
+
+    // ==========================================
+    // HELPERS
+    // ==========================================
+    const rarityColors = { UNIQUE:"var(--unique)", RARE:"var(--rare)", MAGIC:"var(--magic)", NORMAL:"var(--normal)" };
+    function scoreColor(s) { return s >= 80 ? "var(--success)" : s >= 60 ? "var(--warning)" : s >= 40 ? "var(--unique)" : "var(--danger)"; }
+    function fmtDps(n) { return n >= 1e6 ? (n/1e6).toFixed(2)+"M" : n >= 1e3 ? (n/1e3).toFixed(0)+"K" : n; }
+
+    function renderSockets(sockStr) {
+      if (!sockStr) return '';
+      const colors = { R:'#d20000', G:'#1ea82e', B:'#1e6ec4', W:'#c8c8c8' };
+      return sockStr.split('').map((s,i) => {
+        const c = colors[s] || colors.W;
+        const link = i < sockStr.length - 1 ? '<span style="display:inline-block;width:4px;height:2px;background:'+c+'40;vertical-align:middle;"></span>' : '';
+        return '<span style="display:inline-block;width:9px;height:9px;border-radius:50%;background:radial-gradient(circle at 30% 30%,'+c+','+c+'80);border:1px solid '+c+'60;box-shadow:0 0 3px '+c+'30;vertical-align:middle;"></span>'+link;
+      }).join('');
+    }
+
+    // ==========================================
+    // RENDER EQUIPMENT GRID
+    // ==========================================
+    // ==========================================
+    // RENDER CHARACTER BODY EQUIPMENT
+    // ==========================================
+    function renderCharEquip() {
+      const slots = document.querySelectorAll('.char-slot[data-slot]');
+      const rarityBorders = { UNIQUE:'#af6025', RARE:'#ffff77', MAGIC:'#8888ff', NORMAL:'#c8c8c8' };
+      slots.forEach(el => {
+        const slotName = el.dataset.slot;
+        const item = BUILD.items.find(i => i.slot === slotName);
+        if (item) {
+          const rc = rarityBorders[item.rarity] || '#c8c8c8';
+          const sc = scoreColor(item.score);
+          el.style.borderColor = rc + '60';
+          el.style.background = `radial-gradient(circle at 40% 40%, ${rc}12, rgba(19,15,24,0.7))`;
+          el.innerHTML = `<span style="font-size:${el.classList.contains('char-slot-sm')?'12px':'18px'};">${item.icon}</span>
+            <span class="slot-label">${item.name} (${item.score})</span>`;
+          el.title = `${item.name} — ${item.base} — Score: ${item.score}`;
+        } else {
+          el.innerHTML = `<span style="opacity:0.2;font-size:12px;">+</span><span class="slot-label">${slotName}</span>`;
+        }
+      });
+    }
+
+    // (showItemDetail defined below — handles both slot name and item ID)
+
+    function renderEquipGrid() {
+      const slotOrder = [
+        "Weapon 1","Helmet","Shield",
+        "Gloves","Body Armour","Boots",
+        "Ring 1","Belt","Ring 2",
+        null,"Amulet",null,
+      ];
+      const slotIcons = {
+        "Weapon 1":"\u2694","Helmet":"\u{1FA96}","Shield":"\u{1F6E1}",
+        "Gloves":"\u{1F9E4}","Body Armour":"\u{1F6E1}","Boots":"\u{1F462}",
+        "Ring 1":"\u{1F48D}","Belt":"\u{1F4BF}","Ring 2":"\u{1F48D}",
+        "Amulet":"\u{1F4FF}"
+      };
+      document.getElementById('equip-grid').innerHTML = slotOrder.map(slotName => {
+        if (!slotName) return '<div></div>';
+        const item = BUILD.items.find(i => i.slot === slotName);
+        if (!item) {
+          return `<div class="equip-slot-empty"><div style="font-size:18px;opacity:0.3;">${slotIcons[slotName]||'?'}</div><div style="font-size:7px;color:var(--text-dim);">${slotName}</div></div>`;
+        }
+        const sc = scoreColor(item.score);
+        const rc = rarityColors[item.rarity];
+        return `<div class="equip-slot" onclick="showItemDetail(${item.id})" data-item="${item.id}">
+          <div class="slot-icon">${item.icon}</div>
+          <div class="slot-name" style="color:${rc};">${item.name}</div>
+          <div class="slot-label">${item.slot}</div>
+          <div class="slot-score" style="color:${sc};">${item.score}</div>
+        </div>`;
+      }).join('');
+    }
+
+    // ==========================================
+    // RENDER HARBINGER COMPACT
+    // ==========================================
+    function renderHarbingerCompact() {
+      document.getElementById('harbinger-compact').innerHTML = BUILD.issues.slice(0,3).map((iss, idx) =>
+        `<div class="harbinger-compact warning" style="animation-delay:${idx*0.05}s;"><span class="h-icon">\u26A0</span><span class="h-text">${iss.issue}</span></div>`
+      ).join('');
+    }
+
+    // ==========================================
+    // RENDER HUD GEM BUTTONS
+    // ==========================================
+    function renderGemBtns() {
+      document.getElementById('gem-btns').innerHTML = HUD_GEMS.map(g =>
+        `<div class="gem-btn ${activePanel===g.id?'active':''}" style="color:${g.color};border-color:${activePanel===g.id?'var(--blood-bright)':g.color+'60'};background:radial-gradient(circle at 35% 35%,${g.color}20,transparent);" onclick="showPanel('${g.id}')" data-gem="${g.id}">
+          ${g.icon}
+          <span class="gem-tip">${g.label}</span>
+        </div>`
+      ).join('');
+    }
+
+    // ==========================================
+    // PANEL SWITCHING
+    // ==========================================
+    function showPanel(id) {
+      activePanel = id;
+      activeItemId = null;
+      renderGemBtns();
+      const el = document.getElementById('rp-title');
+      const content = document.getElementById('rp-content');
+      // On mobile, open the sidebar
+      document.getElementById('sidebar-right').classList.add('open');
+
+      const panelMap = {
+        prophecy: { title:'Prophecy', render:renderProphecy },
+        grimoire: { title:'Grimoire', render:renderGrimoire },
+        stash:    { title:'Stash', render:renderStash },
+        combat:   { title:'The Arena', render:renderCombat },
+        defenses: { title:'Defenses', render:renderDefenses },
+        dps:      { title:'DPS', render:renderDPS },
+        gems:     { title:'Gems', render:renderGemsPanel },
+        passive:  { title:'Passive Tree', render:renderPassiveTree },
+        blood:    { title:'Blood Pact', render:renderBloodPact },
+        darkpath: { title:'Dark Path', render:renderDarkPath },
+        forge:    { title:'The Forge', render:renderForge },
+        cursemap: { title:'Curse Map', render:renderCurseMap },
+        harbinger:{ title:'Harbinger', render:renderHarbinger },
+        settings: { title:'Settings', render:renderSettings },
+      };
+      const p = panelMap[id];
+      if (p) { el.textContent = p.title; p.render(content); }
+    }
+
+    function showDefaultPanel() {
+      document.getElementById('sidebar-right').classList.remove('open');
+      showPanel('prophecy');
+    }
+
+    function showItemDetail(idOrSlot) {
+      // Accept both item ID (number) or slot name (string)
+      const item = typeof idOrSlot === 'string'
+        ? BUILD.items.find(i => i.slot === idOrSlot)
+        : BUILD.items.find(i => i.id === idOrSlot);
+      if (!item) return;
+      activeItemId = item.id;
+      activePanel = null;
+      renderGemBtns();
+      // Highlight character slot
+      document.querySelectorAll('.char-slot').forEach(s => s.classList.remove('active'));
+      const charSlot = document.querySelector(`.char-slot[data-slot="${item.slot}"]`);
+      if (charSlot) charSlot.classList.add('active');
+      document.getElementById('rp-title').textContent = item.slot;
+      document.getElementById('sidebar-right').classList.add('open');
+      const c = document.getElementById('rp-content');
+      const rc = rarityColors[item.rarity];
+      const sc = scoreColor(item.score);
+      const mods = item.mods.map((m,i) => {
+        const t = item.tierInfo[i] ? `<span class="mod-tier" style="color:${item.tierInfo[i].color};background:${item.tierInfo[i].color}15;">${item.tierInfo[i].tier}</span>` : '';
+        return `<div class="mod-item"><span style="color:var(--text-muted);font-size:7px;">\u25CF</span>${m} ${t}</div>`;
+      }).join('');
+      const sockets = item.sockets ? `<div style="padding:6px 0;">${renderSockets(item.sockets)}</div>` : '';
+      const open = (item.openAffixes.prefixes > 0 || item.openAffixes.suffixes > 0) ?
+        `<div style="margin-top:8px;padding:6px 8px;background:#4ae63a08;border:1px solid #4ae63a25;border-radius:2px;font-size:10px;color:var(--success);font-weight:600;">Open: ${item.openAffixes.prefixes > 0 ? item.openAffixes.prefixes+' prefix' : ''}${item.openAffixes.prefixes && item.openAffixes.suffixes ? ', ' : ''}${item.openAffixes.suffixes > 0 ? item.openAffixes.suffixes+' suffix' : ''}<div style="font-size:9px;color:#4ae63a80;margin-top:2px;">Benchcraft available</div></div>` : '';
+      const weak = item.weaknesses.map(w => `<div style="margin-top:4px;padding:6px 8px;background:#d2000008;border:1px solid #d2000025;border-radius:2px;font-size:10px;color:var(--danger);display:flex;align-items:center;gap:4px;">\u26A0 ${w.issue}</div>`).join('');
+
+      c.innerHTML = `
+        <div class="poe-tooltip" style="margin-bottom:10px;">
+          <div class="tt-header">
+            <div style="font-size:14px;font-weight:700;color:${rc};">${item.name}</div>
+            <div style="font-size:10px;color:var(--text-muted);">${item.base}</div>
+          </div>
+          <div class="tt-body">
+            ${sockets}
+            ${mods}
+            ${open}
+            ${weak}
+          </div>
+        </div>
+        <div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:8px;">
+          <span style="font-size:11px;color:var(--text-dim);">Score: <strong style="color:${sc};font-family:'JetBrains Mono',monospace;">${item.score}/100</strong></span>
+          <span style="font-size:11px;color:var(--gold);font-family:'JetBrains Mono',monospace;">${item.value} divine</span>
+        </div>
+        <div style="display:flex;justify-content:space-between;font-size:10px;color:var(--text-dim);">
+          <span>Rarity: <span style="color:${rc};">${item.rarity}</span></span>
+          <span>Slot: ${item.slot}</span>
+        </div>
+      `;
+
+      // Highlight active slot in grid
+      document.querySelectorAll('.equip-slot').forEach(s => s.classList.remove('active'));
+      const slotEl = document.querySelector(`.equip-slot[data-item="${itemId}"]`);
+      if (slotEl) slotEl.classList.add('active');
+    }
+
+    // ==========================================
+    // PANEL RENDERERS
+    // ==========================================
+    function renderProphecy(el) {
+      el.innerHTML = '<div class="section-label">\u2721 The Seer Foretells</div>' +
+        BUILD.suggestions.map((s, idx) => {
+          const mf = s.marketFound;
+          const marketHtml = mf ? `<div style="margin-top:6px;padding:6px 8px;background:linear-gradient(135deg,#e8d44d08,#e8d44d04);border:1px solid #e8d44d20;border-radius:2px;">
+            <div style="font-size:8px;color:var(--gold);text-transform:uppercase;letter-spacing:1px;font-family:'Cinzel',serif;margin-bottom:3px;">\uD83D\uDD0D Found on Market</div>
+            <div style="display:flex;justify-content:space-between;align-items:center;">
+              <div><div style="font-size:11px;font-weight:600;color:var(--rare);">${mf.name}</div><div style="font-size:9px;color:var(--text-muted);">DPS: <span style="color:var(--success);">${mf.dpsGain}</span> \u2022 Life: <span style="color:var(--success);">${mf.lifeGain}</span></div></div>
+              <div style="text-align:right;"><div style="font-size:12px;font-weight:800;color:var(--gold);font-family:'JetBrains Mono',monospace;">${mf.price}</div><button class="market-btn" style="margin-top:3px;font-size:8px;padding:2px 8px;">Buy Now \u2192</button></div>
+            </div></div>` : (s.marketSearch ? '<div style="margin-top:6px;text-align:center;"><button class="market-btn" style="font-size:9px;">Seek the Market \u2192</button></div>' : '');
+          return `<div class="suggestion-card" style="animation-delay:${idx*0.04}s;">
+            <div style="display:flex;align-items:center;gap:6px;margin-bottom:6px;"><span class="suggestion-prio ${s.priority}">${s.priority}</span><span style="font-size:10px;color:var(--text-muted);">${s.slot}</span></div>
+            <div style="font-size:12px;color:var(--text-bright);font-weight:600;margin-bottom:3px;">${s.message}</div>
+            <div style="font-size:10px;color:var(--text-muted);margin-bottom:4px;line-height:1.4;">${s.details.replace(/\n/g,'<br>')}</div>
+            <div style="font-size:10px;color:var(--success);font-style:italic;">${s.impact}</div>
+            ${marketHtml}
+          </div>`;
+        }).join('');
+    }
+
+    function renderGrimoire(el) {
+      el.innerHTML = `
+        <div style="display:flex;align-items:center;gap:6px;margin-bottom:8px;">
+          <div style="width:7px;height:7px;border-radius:50%;background:var(--success);box-shadow:0 0 6px #4ae63a60;"></div>
+          <span style="font-size:9px;color:var(--text-muted);font-family:'JetBrains Mono',monospace;" id="active-provider">The Seer (Local)</span>
+        </div>
+        <div style="display:flex;flex-wrap:wrap;gap:4px;margin-bottom:10px;">
+          <button class="grimoire-q-btn" onclick="askSeer(this)">Why do I perish in T16?</button>
+          <button class="grimoire-q-btn" onclick="askSeer(this)">What should I upgrade next?</button>
+          <button class="grimoire-q-btn" onclick="askSeer(this)">Can I run Uber bosses?</button>
+          <button class="grimoire-q-btn" onclick="askSeer(this)">Explain my DPS chain</button>
+        </div>
+        <div style="background:linear-gradient(180deg,#1a1712,#161410);border:1px solid var(--border);border-radius:2px;padding:10px;margin-bottom:8px;min-height:160px;max-height:300px;overflow-y:auto;box-shadow:inset 0 0 15px rgba(0,0,0,0.3);">
+          <div style="font-size:8px;color:var(--chaos);text-transform:uppercase;letter-spacing:2px;font-family:'Cinzel',serif;margin-bottom:8px;">\uD83D\uDC41 The Seer Speaks</div>
+          <div style="font-size:11px;color:var(--text);line-height:1.6;font-style:italic;">
+            "I have peered into the void and examined your build, Exile.<br><br>
+            Your Ring 2 is a weakness \u2014 the life roll is barely worthy of a white mob drop.
+            At +45 life, this is Tier 5.<br><br>
+            The harbinger of your death whispers two truths: your chaos resistance
+            leaves you practically naked against corruption, and your overcap
+            is too thin to survive Elemental Weakness maps.<br><br>
+            What aspect shall I divine deeper, Exile?"
+          </div>
+        </div>
+        <div style="display:flex;gap:6px;">
+          <input type="text" class="grimoire-input" placeholder="Whisper to the Seer...">
+          <button class="invoke-btn">Invoke</button>
+        </div>
+        <div style="display:flex;justify-content:space-between;margin-top:6px;font-size:8px;color:var(--text-dim);">
+          <span>Powered by <span id="provider-label">The Seer Engine (local)</span></span>
+          <span>\uD83D\uDD12 No data leaves your PC</span>
+        </div>`;
+    }
+
+    function renderStash(el) {
+      // Stash tab selector
+      const tabs = [
+        { name:'Currency', color:'var(--gold)', active:true },
+        { name:'Gear', color:'var(--rare)', active:false },
+        { name:'Dump', color:'var(--unique)', active:false },
+        { name:'Fragments', color:'var(--chaos)', active:false },
+        { name:'Maps', color:'var(--text-muted)', active:false },
+      ];
+
+      // Mock stash grid items (PoE uses 12x12 grid, items have width x height)
+      const stashItems = [
+        { name:'Divine Orb', x:0, y:0, w:1, h:1, color:'var(--gold)', icon:'\uD83D\uDFE1', count:12 },
+        { name:'Chaos Orb', x:1, y:0, w:1, h:1, color:'var(--currency-color)', icon:'\u26AB', count:340 },
+        { name:'Exalted Orb', x:2, y:0, w:1, h:1, color:'var(--gold)', icon:'\uD83D\uDFE1', count:8 },
+        { name:'Orb of Alchemy', x:3, y:0, w:1, h:1, color:'var(--currency-color)', icon:'\u26AB', count:87 },
+        { name:'Orb of Scouring', x:4, y:0, w:1, h:1, color:'var(--currency-color)', icon:'\u26AB', count:142 },
+        { name:'Vaal Orb', x:5, y:0, w:1, h:1, color:'var(--chaos)', icon:'\uD83D\uDD34', count:23 },
+        { name:'Regal Orb', x:0, y:1, w:1, h:1, color:'var(--currency-color)', icon:'\u26AB', count:45 },
+        { name:'Orb of Fusing', x:1, y:1, w:1, h:1, color:'var(--currency-color)', icon:'\u26AB', count:680 },
+        { name:'Jeweller Orb', x:2, y:1, w:1, h:1, color:'var(--currency-color)', icon:'\u26AB', count:420 },
+        { name:'Chromatic', x:3, y:1, w:1, h:1, color:'var(--currency-color)', icon:'\u26AB', count:1200 },
+        { name:'Blessed Orb', x:4, y:1, w:1, h:1, color:'var(--currency-color)', icon:'\u26AB', count:18 },
+        { name:'Annulment', x:5, y:1, w:1, h:1, color:'var(--chaos)', icon:'\uD83D\uDD34', count:5 },
+        { name:"Watcher's Eye", x:0, y:2, w:1, h:1, color:'var(--unique)', icon:'\uD83D\uDC41', count:1, rarity:'unique', value:'15d' },
+        { name:'Simulacrum Splinter', x:1, y:2, w:1, h:1, color:'var(--chaos)', icon:'\uD83D\uDD2E', count:87, progress:'87/100' },
+        { name:'The Doctor', x:2, y:2, w:1, h:1, color:'var(--unique)', icon:'\uD83C\uDCCF', count:4, progress:'4/6' },
+        { name:'The Nurse', x:3, y:2, w:1, h:1, color:'var(--unique)', icon:'\uD83C\uDCCF', count:7, progress:'7/8' },
+        { name:'Astral Plate (6L)', x:0, y:3, w:2, h:4, color:'var(--rare)', icon:'\uD83D\uDEE1', count:1, rarity:'rare', value:'8d' },
+        { name:'Torment Eye', x:2, y:3, w:1, h:2, color:'var(--rare)', icon:'\uD83E\uDDE4', count:1, rarity:'rare', upgrade:true },
+        { name:'Dread Spiral', x:3, y:3, w:1, h:1, color:'var(--rare)', icon:'\uD83D\uDC8D', count:1, rarity:'rare', upgrade:true },
+      ];
+
+      const cellSize = 20;
+      const gridCols = 12;
+      const gridRows = 12;
+
+      el.innerHTML = `
+        <div class="section-label">\uD83D\uDCE6 Stash &mdash; Inventory Intelligence</div>
+
+        <!-- Stash tab selector (like PoE stash tabs) -->
+        <div style="display:flex;gap:1px;margin-bottom:8px;overflow-x:auto;">
+          ${tabs.map(t => `
+            <button onclick="this.parentElement.querySelectorAll('button').forEach(b=>b.style.borderBottomColor='transparent');this.style.borderBottomColor='${t.color}'" style="
+              padding:4px 10px;font-size:9px;font-family:'Cinzel',serif;font-weight:600;
+              background:${t.active?'var(--bg-card)':'var(--bg-dark)'};
+              border:1px solid var(--border);border-bottom:2px solid ${t.active?t.color:'transparent'};
+              border-radius:2px 2px 0 0;color:${t.active?'var(--text-bright)':'var(--text-dim)'};
+              cursor:pointer;white-space:nowrap;
+            ">${t.name}</button>
+          `).join('')}
+        </div>
+
+        <!-- Visual Stash Grid (12x12 like PoE) -->
+        <div style="position:relative;width:${gridCols * cellSize}px;height:${gridRows * cellSize}px;background:var(--bg-dark);border:1px solid var(--border);margin:0 auto 8px;overflow:hidden;">
+          <!-- Grid lines -->
+          ${Array.from({length:gridCols+1}, (_,i) => `<div style="position:absolute;left:${i*cellSize}px;top:0;width:1px;height:100%;background:#3a302820;"></div>`).join('')}
+          ${Array.from({length:gridRows+1}, (_,i) => `<div style="position:absolute;top:${i*cellSize}px;left:0;height:1px;width:100%;background:#3a302820;"></div>`).join('')}
+
+          <!-- Items placed in grid -->
+          ${stashItems.map(item => {
+            const rarityBg = item.rarity === 'unique' ? '#af602520' : item.rarity === 'rare' ? '#ffff7710' : '#14121080';
+            const border = item.upgrade ? '#4ae63a60' : item.rarity === 'unique' ? '#af602540' : item.rarity === 'rare' ? '#ffff7720' : '#3a302840';
+            const glow = item.upgrade ? 'box-shadow:0 0 6px #4ae63a30;' : item.value ? 'box-shadow:0 0 4px #e8d44d15;' : '';
+            return `<div title="${item.name}${item.count>1?' x'+item.count:''}${item.value?' — '+item.value:''}${item.progress?' ('+item.progress+')':''}" style="
+              position:absolute;
+              left:${item.x * cellSize}px;top:${item.y * cellSize}px;
+              width:${item.w * cellSize - 1}px;height:${item.h * cellSize - 1}px;
+              background:${rarityBg};border:1px solid ${border};
+              display:flex;flex-direction:column;align-items:center;justify-content:center;
+              font-size:${Math.min(item.w, item.h) > 1 ? '14px' : '10px'};
+              cursor:pointer;transition:all 0.15s;${glow}
+            " onmouseenter="this.style.borderColor='var(--gold)';this.style.zIndex='5'" onmouseleave="this.style.borderColor='${border}';this.style.zIndex='0'">
+              <span>${item.icon}</span>
+              ${item.count > 1 ? `<span style="font-size:7px;font-weight:800;color:var(--text);font-family:'JetBrains Mono',monospace;line-height:1;">${item.count > 999 ? Math.floor(item.count/1000)+'K' : item.count}</span>` : ''}
+              ${item.upgrade ? `<span style="position:absolute;top:-1px;right:-1px;width:6px;height:6px;border-radius:50%;background:var(--success);box-shadow:0 0 4px #4ae63a80;"></span>` : ''}
+              ${item.value ? `<span style="position:absolute;bottom:0;right:1px;font-size:6px;color:var(--gold);font-family:'JetBrains Mono',monospace;">${item.value}</span>` : ''}
+            </div>`;
+          }).join('')}
+        </div>
+
+        <!-- Currency Summary -->
+        <div style="display:flex;justify-content:space-between;align-items:center;padding:6px 8px;background:var(--bg-card);border:1px solid var(--border);border-radius:2px;margin-bottom:8px;">
+          <span style="font-size:10px;color:var(--text-muted);">Total Liquid</span>
+          <span style="font-size:14px;font-weight:800;color:var(--gold);font-family:'JetBrains Mono',monospace;text-shadow:0 0 6px #e8d44d20;">47.3 divine</span>
+        </div>
+
+        <!-- Free Upgrades Found -->
+        <div class="section-label">\u2B06 Free Upgrades in Your Stash</div>
+        <div style="background:var(--bg-card);border:1px solid #4ae63a30;border-left:3px solid var(--success);border-radius:2px;padding:6px 8px;margin-bottom:4px;cursor:pointer;" onclick="showItemDetail('Gloves')">
+          <div style="display:flex;justify-content:space-between;align-items:center;">
+            <div><div style="font-size:11px;font-weight:600;color:var(--rare);">Torment Eye</div><div style="font-size:9px;color:var(--text-muted);">Gloves \u2014 +200 life over current</div></div>
+            <span style="font-size:8px;color:var(--success);font-family:'JetBrains Mono',monospace;background:#4ae63a12;padding:2px 6px;border-radius:2px;">FREE</span>
+          </div>
+        </div>
+        <div style="background:var(--bg-card);border:1px solid #4ae63a30;border-left:3px solid var(--success);border-radius:2px;padding:6px 8px;margin-bottom:4px;cursor:pointer;" onclick="showItemDetail('Ring 2')">
+          <div style="display:flex;justify-content:space-between;align-items:center;">
+            <div><div style="font-size:11px;font-weight:600;color:var(--rare);">Dread Spiral</div><div style="font-size:9px;color:var(--text-muted);">Ring \u2014 +fire DoT multi, better than Ring 2</div></div>
+            <span style="font-size:8px;color:var(--success);font-family:'JetBrains Mono',monospace;background:#4ae63a12;padding:2px 6px;border-radius:2px;">FREE</span>
+          </div>
+        </div>
+
+        <!-- Sellable Items -->
+        <div class="section-label" style="margin-top:8px;">\uD83D\uDCB0 Sellable Items</div>
+        <div style="background:var(--bg-card);border:1px solid var(--border);border-radius:2px;padding:6px 8px;margin-bottom:3px;">
+          <div style="display:flex;justify-content:space-between;align-items:center;">
+            <div><span style="font-size:11px;color:var(--unique);font-weight:600;">Watcher\u2019s Eye</span><div style="font-size:8px;color:var(--text-dim);">Determination + Purity mods</div></div>
+            <span style="font-size:12px;font-weight:800;color:var(--gold);font-family:'JetBrains Mono',monospace;">~15d</span>
+          </div>
+        </div>
+        <div style="background:var(--bg-card);border:1px solid var(--border);border-radius:2px;padding:6px 8px;margin-bottom:3px;">
+          <div style="display:flex;justify-content:space-between;align-items:center;">
+            <div><span style="font-size:11px;color:var(--rare);font-weight:600;">Astral Plate (6L)</span><div style="font-size:8px;color:var(--text-dim);">T2 life, tri-res, outgrown</div></div>
+            <span style="font-size:12px;font-weight:800;color:var(--gold);font-family:'JetBrains Mono',monospace;">~8d</span>
+          </div>
+        </div>
+        <div style="padding:4px 8px;font-size:10px;color:var(--text-muted);">Sellable total: <strong style="color:var(--gold);">~32 divine</strong></div>
+
+        <!-- Div Card Progress -->
+        <div class="section-label" style="margin-top:8px;">\uD83C\uDCCF Div Cards</div>
+        <div style="background:var(--bg-card);border:1px solid var(--border);border-radius:2px;padding:6px 8px;margin-bottom:3px;">
+          <div style="display:flex;justify-content:space-between;font-size:10px;margin-bottom:3px;">
+            <span style="color:var(--unique);font-weight:600;">The Doctor</span>
+            <span style="color:var(--gold);font-family:'JetBrains Mono',monospace;">4/6</span>
+          </div>
+          <div style="height:4px;background:var(--bg-dark);border-radius:2px;overflow:hidden;">
+            <div style="height:100%;width:66%;background:linear-gradient(90deg,var(--unique),var(--gold));border-radius:2px;"></div>
+          </div>
+          <div style="font-size:8px;color:var(--text-dim);margin-top:2px;">2 more = Headhunter</div>
+        </div>
+        <div style="background:var(--bg-card);border:1px solid var(--border);border-radius:2px;padding:6px 8px;margin-bottom:3px;">
+          <div style="display:flex;justify-content:space-between;font-size:10px;margin-bottom:3px;">
+            <span style="color:var(--unique);font-weight:600;">The Nurse</span>
+            <span style="color:var(--gold);font-family:'JetBrains Mono',monospace;">7/8</span>
+          </div>
+          <div style="height:4px;background:var(--bg-dark);border-radius:2px;overflow:hidden;">
+            <div style="height:100%;width:87%;background:linear-gradient(90deg,var(--unique),var(--gold));border-radius:2px;"></div>
+          </div>
+          <div style="font-size:8px;color:var(--text-dim);margin-top:2px;">1 more = The Doctor card</div>
+        </div>
+
+        <!-- Splinters -->
+        <div class="section-label" style="margin-top:8px;">\uD83D\uDD2E Splinters</div>
+        <div style="display:flex;gap:4px;flex-wrap:wrap;">
+          <div style="flex:1;min-width:100px;background:var(--bg-card);border:1px solid var(--border);border-radius:2px;padding:5px 6px;">
+            <div style="display:flex;justify-content:space-between;font-size:9px;"><span style="color:var(--text);">Simulacrum</span><span style="color:var(--chaos);font-family:'JetBrains Mono',monospace;">87/100</span></div>
+            <div style="height:3px;background:var(--bg-dark);border-radius:2px;overflow:hidden;margin-top:3px;"><div style="height:100%;width:87%;background:var(--chaos);border-radius:2px;"></div></div>
+          </div>
+          <div style="flex:1;min-width:100px;background:var(--bg-card);border:1px solid var(--border);border-radius:2px;padding:5px 6px;">
+            <div style="display:flex;justify-content:space-between;font-size:9px;"><span style="color:var(--text);">Shaper</span><span style="color:var(--success);font-family:'JetBrains Mono',monospace;">4/4 \u2713</span></div>
+            <div style="height:3px;background:var(--bg-dark);border-radius:2px;overflow:hidden;margin-top:3px;"><div style="height:100%;width:100%;background:var(--success);border-radius:2px;"></div></div>
+          </div>
+        </div>
+
+        <!-- PoE OAuth gate -->
+        <div style="margin-top:10px;padding:8px;background:linear-gradient(135deg,#1a150e08,#af602508);border:1px solid rgba(175,96,37,0.25);border-radius:2px;text-align:center;cursor:pointer;" onclick="showPanel('settings')">
+          <div style="font-size:10px;color:var(--unique-bright);font-weight:700;font-family:'Cinzel',serif;">\uD83D\uDD17 Connect PoE Account for Live Stash</div>
+          <div style="font-size:8px;color:var(--text-dim);margin-top:2px;">Real-time sync \u2022 Search all tabs \u2022 Auto-price items</div>
+        </div>
+      `;
+    }
+
+    function renderCombat(el) {
+      el.innerHTML = `
+        <div class="section-label">\u2694 The Arena</div>
+        <div class="combat-card">
+          <div style="font-size:12px;font-weight:600;color:var(--text-bright);margin-bottom:6px;">\uD83D\uDC7E T16 Rare Monster</div>
+          <div style="font-size:9px;color:var(--text-muted);margin-bottom:6px;">4,000,000 HP \u2022 30% ele res</div>
+          <div class="hp-bar" style="margin-bottom:8px;"><div class="hp-bar-fill monster" style="width:100%;"><div class="hp-bar-text">4,000,000 / 4,000,000</div></div></div>
+          <div style="display:grid;grid-template-columns:1fr 1fr;gap:4px;">
+            <div class="combat-stat"><span style="color:var(--text-muted);">Your DPS</span><span style="color:var(--unique-bright);font-family:'JetBrains Mono',monospace;font-weight:700;">2.84M</span></div>
+            <div class="combat-stat"><span style="color:var(--text-muted);">Eff. DPS</span><span style="color:var(--unique-bright);font-family:'JetBrains Mono',monospace;font-weight:700;">1.99M</span></div>
+            <div class="combat-stat"><span style="color:var(--text-muted);">TTK</span><span style="color:var(--text-bright);font-family:'JetBrains Mono',monospace;font-weight:700;">1.6s</span></div>
+            <div class="combat-stat"><span style="color:var(--text-muted);">Hits</span><span style="color:var(--text-bright);font-family:'JetBrains Mono',monospace;font-weight:700;">3</span></div>
+          </div>
+        </div>
+        <div class="section-label" style="margin-top:8px;">Boss Readiness</div>
+        <div style="background:linear-gradient(180deg,#1a1712,#161410);border:1px solid var(--border);border-radius:2px;padding:8px;">
+          <div class="boss-row"><span style="font-size:14px;width:22px;text-align:center;">\uD83D\uDC79</span><span style="flex:1;">Shaper</span><span style="font-size:9px;color:var(--text-muted);font-family:'JetBrains Mono',monospace;width:42px;text-align:right;">~3:20</span><span class="boss-status ready">READY</span></div>
+          <div class="boss-row"><span style="font-size:14px;width:22px;text-align:center;">\uD83D\uDC7E</span><span style="flex:1;">Elder</span><span style="font-size:9px;color:var(--text-muted);font-family:'JetBrains Mono',monospace;width:42px;text-align:right;">~3:00</span><span class="boss-status ready">READY</span></div>
+          <div class="boss-row"><span style="font-size:14px;width:22px;text-align:center;">\u2620</span><span style="flex:1;">Uber Elder</span><span style="font-size:9px;color:var(--text-muted);font-family:'JetBrains Mono',monospace;width:42px;text-align:right;">~5:30</span><span class="boss-status risky">RISKY</span></div>
+          <div class="boss-row"><span style="font-size:14px;width:22px;text-align:center;">\uD83D\uDC41</span><span style="flex:1;">Sirus A9</span><span style="font-size:9px;color:var(--text-muted);font-family:'JetBrains Mono',monospace;width:42px;text-align:right;">~4:10</span><span class="boss-status ready">READY</span></div>
+          <div class="boss-row"><span style="font-size:14px;width:22px;text-align:center;">\uD83D\uDD2E</span><span style="flex:1;">Maven</span><span style="font-size:9px;color:var(--text-muted);font-family:'JetBrains Mono',monospace;width:42px;text-align:right;">~6:00</span><span class="boss-status not-ready">FAIL</span></div>
+          <div class="boss-row"><span style="font-size:14px;width:22px;text-align:center;">\uD83D\uDC80</span><span style="flex:1;">The Feared</span><span style="font-size:9px;color:var(--text-muted);font-family:'JetBrains Mono',monospace;width:42px;text-align:right;">~8:00+</span><span class="boss-status not-ready">FAIL</span></div>
+          <div class="boss-row"><span style="font-size:14px;width:22px;text-align:center;">\uD83D\uDD25</span><span style="flex:1;">Uber Shaper</span><span style="font-size:9px;color:var(--text-muted);font-family:'JetBrains Mono',monospace;width:42px;text-align:right;">\u2014</span><span class="boss-status not-ready">LETHAL</span></div>
+        </div>
+        <div class="combat-card" style="margin-top:8px;">
+          <div style="font-size:11px;font-weight:600;color:var(--text-bright);margin-bottom:4px;">\uD83D\uDDFA Map Clear \u2014 Strand T16</div>
+          <div style="font-size:9px;color:var(--text-muted);margin-bottom:6px;">~400 monsters \u2022 RF + Fire Trap</div>
+          <div style="display:grid;grid-template-columns:1fr 1fr;gap:4px;">
+            <div class="combat-stat"><span style="color:var(--text-muted);">Clear</span><span style="color:var(--text-bright);font-family:'JetBrains Mono',monospace;font-weight:700;">~2:30</span></div>
+            <div class="combat-stat"><span style="color:var(--text-muted);">Div/hr</span><span style="color:var(--gold);font-family:'JetBrains Mono',monospace;font-weight:700;">~8</span></div>
+          </div>
+        </div>`;
+    }
+
+    function renderDefenses(el) {
+      el.innerHTML = '<div class="section-label">\u26CA Defense Layers</div>' +
+        DEFENSE_LAYERS.map(d =>
+          `<div style="background:linear-gradient(135deg,#1a1712,#161410);border:1px solid var(--border);border-left:3px solid ${d.color};border-radius:2px;padding:6px 8px;margin-bottom:3px;display:flex;justify-content:space-between;align-items:center;">
+            <div style="display:flex;align-items:center;gap:6px;"><span style="font-size:14px;">${d.icon}</span><div><div style="font-size:11px;font-weight:600;color:var(--text-bright);">${d.layer}</div><div style="font-size:9px;color:var(--text-muted);">${d.detail}</div></div></div>
+            <div style="font-size:13px;font-weight:800;color:${d.color};font-family:'JetBrains Mono',monospace;">${d.value}</div>
+          </div>`
+        ).join('') +
+        '<div class="section-label" style="margin-top:8px;">Resists</div>' +
+        '<div style="background:linear-gradient(180deg,#1a1712,#161410);border:1px solid var(--border);border-radius:2px;padding:8px;">' +
+          '<div style="display:flex;justify-content:space-between;padding:3px 0;font-size:10px;border-bottom:1px solid #201c14;"><span>\uD83D\uDD25 Fire</span><span style="color:var(--success);font-family:\'JetBrains Mono\',monospace;">80% (+5)</span></div>' +
+          '<div style="display:flex;justify-content:space-between;padding:3px 0;font-size:10px;border-bottom:1px solid #201c14;"><span>\u2744 Cold</span><span style="color:var(--success);font-family:\'JetBrains Mono\',monospace;">76% (+1)</span></div>' +
+          '<div style="display:flex;justify-content:space-between;padding:3px 0;font-size:10px;border-bottom:1px solid #201c14;"><span>\u26A1 Lightning</span><span style="color:var(--success);font-family:\'JetBrains Mono\',monospace;">79% (+4)</span></div>' +
+          '<div style="display:flex;justify-content:space-between;padding:3px 0;font-size:10px;"><span>\u2620 Chaos</span><span style="color:var(--danger);font-family:\'JetBrains Mono\',monospace;">15%</span></div>' +
+        '</div>' +
+        '<div class="section-label" style="margin-top:8px;">Ailment Immunity</div>' +
+        '<div style="background:linear-gradient(180deg,#1a1712,#161410);border:1px solid var(--border);border-radius:2px;padding:6px 8px;">' +
+        AILMENTS.map(a =>
+          `<div style="display:flex;align-items:center;gap:6px;padding:3px 0;border-bottom:1px solid #201c1440;font-size:10px;">
+            <span style="color:${a.immune?'var(--success)':'var(--danger)'};">${a.immune?'\u2713':'\u2717'}</span>
+            <span style="flex:1;color:${a.immune?'var(--text-muted)':'var(--text)'};">${a.name}</span>
+            <span style="font-size:8px;font-family:'JetBrains Mono',monospace;color:${a.immune?'var(--success)':'var(--danger)'};">${a.immune?a.source:'VULNERABLE'}</span>
+          </div>`
+        ).join('') + '</div>';
+    }
+
+    function renderDPS(el) {
+      const typeColors = { base:'var(--text)', inc:'var(--lightning)', more:'var(--success)', multi:'var(--chaos)', pen:'var(--fire)' };
+      el.innerHTML = '<div class="section-label">Total DPS</div>' +
+        '<div style="font-size:28px;font-weight:800;color:var(--fire);font-family:\'JetBrains Mono\',monospace;text-shadow:0 0 16px #cf3a1f40;margin-bottom:12px;animation:subtlePulse 3s ease-in-out infinite;">2.84M</div>' +
+        '<div class="section-label">Damage Sources</div>' +
+        DPS_SOURCES.map(s =>
+          `<div style="margin-bottom:8px;">
+            <div style="display:flex;justify-content:space-between;font-size:10px;margin-bottom:2px;">
+              <span style="color:var(--text);">${s.source}</span>
+              <span style="color:${s.color};font-family:'JetBrains Mono',monospace;font-weight:700;">${fmtDps(s.value)} <span style="font-size:8px;color:var(--text-dim);">(${s.pct}%)</span></span>
+            </div>
+            <div style="height:8px;background:#1a0a04;border-radius:2px;overflow:hidden;border:1px solid rgba(42,30,48,0.3);">
+              <div style="height:100%;width:${s.pct}%;background:linear-gradient(90deg,${s.color}88,${s.color});border-radius:2px;"></div>
+            </div>
+          </div>`
+        ).join('') +
+        '<div class="section-label" style="margin-top:10px;">Multiplier Chain (RF)</div>' +
+        '<div style="background:linear-gradient(180deg,#1a1712,#161410);border:1px solid var(--border);border-radius:2px;padding:8px;">' +
+        MULTIPLIERS.map(m =>
+          `<div style="display:flex;justify-content:space-between;padding:3px 0;border-bottom:1px solid #201c1420;font-size:10px;">
+            <span style="color:var(--text);">${m.label}</span>
+            <span style="font-family:'JetBrains Mono',monospace;font-weight:700;color:${typeColors[m.type]||'var(--text)'};">${m.value}</span>
+          </div>`
+        ).join('') +
+        `<div style="display:flex;justify-content:space-between;margin-top:8px;padding-top:6px;border-top:2px solid rgba(207,60,24,0.3);">
+          <span style="font-size:12px;font-weight:700;color:var(--text-bright);font-family:'Cinzel',serif;">Final DPS</span>
+          <span style="font-size:16px;font-weight:800;color:var(--fire);font-family:'JetBrains Mono',monospace;">2.84M</span>
+        </div></div>`;
+    }
+
+    function renderGemsPanel(el) {
+      el.innerHTML = '<div class="section-label">\uD83D\uDC8E Linked Setups</div>' +
+        BUILD.gems.map(g => {
+          const sockStr = g.gems.map(() => g.color==='red'?'R':g.color==='blue'?'B':'G').join('');
+          const dotC = g.color==='red'?'#d20000':g.color==='blue'?'#1e6ec4':'#1ea82e';
+          return `<div class="gem-group-card">
+            <div style="font-size:11px;font-weight:600;color:var(--text-bright);margin-bottom:4px;display:flex;align-items:center;gap:6px;">
+              <span style="display:inline-block;width:10px;height:10px;border-radius:50%;background:radial-gradient(circle at 30% 30%,${dotC},${dotC}80);box-shadow:0 0 3px ${dotC}40;"></span>
+              ${g.skill}
+            </div>
+            <div style="padding:2px 0 6px;">${renderSockets(sockStr)}</div>
+            ${g.gems.map(gem => {
+              const cls = gem.maxed ? 'color:var(--success);' : '';
+              const lcls = gem.level >= 20 ? 'color:var(--success);' : 'color:var(--warning);';
+              let badge = '';
+              if (!gem.maxed && gem.level >= 20) badge = '<span style="font-size:7px;padding:1px 4px;border-radius:2px;background:gold18;color:var(--warning);border:1px solid gold30;font-family:\'JetBrains Mono\',monospace;">Corrupt?</span>';
+              else if (gem.level < 20) badge = '<span style="font-size:7px;padding:1px 4px;border-radius:2px;background:#d2000018;color:var(--danger);border:1px solid #d2000030;font-family:\'JetBrains Mono\',monospace;">Level up</span>';
+              return `<div style="display:flex;justify-content:space-between;align-items:center;padding:3px 0;border-bottom:1px solid #201c14;font-size:10px;">
+                <span style="${cls}display:flex;align-items:center;gap:4px;"><span style="display:inline-block;width:5px;height:5px;border-radius:50%;background:${dotC};box-shadow:0 0 2px ${dotC};"></span>${gem.name}</span>
+                <span style="display:flex;align-items:center;gap:4px;"><span style="${lcls}font-family:'JetBrains Mono',monospace;font-size:9px;">${gem.level}/${gem.quality}</span>${badge}</span>
+              </div>`;
+            }).join('')}
+          </div>`;
+        }).join('') +
+        `<div style="background:linear-gradient(180deg,#1a1712,#161410);border:1px solid var(--border);border-radius:2px;padding:8px;margin-top:6px;">
+          <div style="font-size:8px;color:var(--text-dim);text-transform:uppercase;letter-spacing:1px;font-family:'Cinzel',serif;margin-bottom:4px;">Mana Reservation</div>
+          <div style="height:6px;background:linear-gradient(180deg,#0a0a1a,#060818);border-radius:3px;overflow:hidden;margin-bottom:4px;border:1px solid #1e1830;">
+            <div style="height:100%;width:${Math.round(BUILD.stats.manaReserved/BUILD.stats.mana*100)}%;background:linear-gradient(90deg,var(--cold),var(--chaos));border-radius:3px;"></div>
+          </div>
+          <div style="display:flex;justify-content:space-between;font-size:9px;">
+            <span style="color:var(--text-dim);">Reserved: <span style="color:var(--cold);font-family:'JetBrains Mono',monospace;">${BUILD.stats.manaReserved}/${BUILD.stats.mana}</span></span>
+            <span style="color:var(--text-dim);">Free: <span style="color:var(--success);font-family:'JetBrains Mono',monospace;">${BUILD.stats.mana - BUILD.stats.manaReserved}</span></span>
+          </div>
+        </div>`;
+    }
+
+    function renderBloodPact(el) {
+      const done = BUILD.checklist.filter(c => c.done).length;
+      el.innerHTML = `<div class="section-label">\u2620 Blood Pact \u2014 Sworn Goals</div>
+        <div style="font-size:10px;color:var(--text-dim);margin-bottom:8px;">${done}/${BUILD.checklist.length} completed</div>
+        <div style="background:linear-gradient(180deg,#1a1712,#161410);border:1px solid var(--border);border-radius:2px;overflow:hidden;margin-bottom:12px;">
+          ${BUILD.checklist.map(c =>
+            `<div class="check-item"><div class="check-box ${c.done?'done':''}">${c.done?'\u2713':''}</div><span style="color:${c.done?'var(--text-muted)':'var(--text)'};">${c.label}</span></div>`
+          ).join('')}
+        </div>
+        <div class="section-label">\u2726 Blood Rituals</div>
+        <button class="action-btn"><span style="font-size:16px;">\uD83C\uDF33</span><div><div style="font-size:11px;color:var(--text-bright);font-weight:600;">Respec passive tree</div><div style="font-size:9px;color:var(--text-muted);">Save 3 points, same stats</div></div><span style="margin-left:auto;color:var(--border-gold);font-size:9px;font-family:'JetBrains Mono',monospace;">Invoke \u2192</span></button>
+        <button class="action-btn"><span style="font-size:16px;">\uD83D\uDD28</span><div><div style="font-size:11px;color:var(--text-bright);font-weight:600;">Channel benchcrafts</div><div style="font-size:9px;color:var(--text-muted);">Auto-craft life/resist on open slots</div></div><span style="margin-left:auto;color:var(--border-gold);font-size:9px;font-family:'JetBrains Mono',monospace;">Invoke \u2192</span></button>
+        <button class="action-btn"><span style="font-size:16px;">\uD83D\uDC8E</span><div><div style="font-size:11px;color:var(--text-bright);font-weight:600;">Optimize gem links</div><div style="font-size:9px;color:var(--text-muted);">Swap Efficacy \u2192 Conc Effect (+8% DPS)</div></div><span style="margin-left:auto;color:var(--border-gold);font-size:9px;font-family:'JetBrains Mono',monospace;">Invoke \u2192</span></button>`;
+    }
+
+    // ==========================================
+    // PASSIVE TREE MINI-VIEW (center panel)
+    // ==========================================
+    function renderPassiveMini() {
+      const container = document.getElementById('passive-tree-mini');
+      if (!container) return;
+      // Generate a mini constellation of passive nodes
+      // In production this would parse actual tree data from PoB
+      const nodes = [];
+      const links = [];
+      // Simulate a passive tree branch pattern (Templar start area)
+      const centerX = 180, centerY = 60;
+      // Core cluster around start
+      for (let ring = 0; ring < 4; ring++) {
+        const count = ring === 0 ? 1 : ring * 6;
+        const radius = ring * 22;
+        for (let i = 0; i < count; i++) {
+          const angle = (i / count) * Math.PI * 2 + ring * 0.3;
+          const x = centerX + Math.cos(angle) * radius + (Math.random() - 0.5) * 8;
+          const y = centerY + Math.sin(angle) * radius + (Math.random() - 0.5) * 8;
+          const allocated = ring < 3 || Math.random() > 0.3;
+          const isKeystone = ring === 3 && Math.random() > 0.7;
+          nodes.push({ x, y, allocated, isKeystone, size: isKeystone ? 5 : ring === 0 ? 4 : 3 });
+          // Link to previous ring node
+          if (ring > 0 && nodes.length > 1) {
+            const prevIdx = Math.max(0, nodes.length - count - 1 + Math.floor(i / 2));
+            links.push({ from: prevIdx, to: nodes.length - 1, allocated });
+          }
+        }
+      }
+      let html = '';
+      // Render links
+      links.forEach(l => {
+        const from = nodes[l.from], to = nodes[l.to];
+        if (!from || !to) return;
+        const dx = to.x - from.x, dy = to.y - from.y;
+        const len = Math.sqrt(dx*dx + dy*dy);
+        const angle = Math.atan2(dy, dx) * 180 / Math.PI;
+        html += `<div class="passive-link" style="left:${from.x}px;top:${from.y}px;width:${len}px;height:1px;transform:rotate(${angle}deg);opacity:${l.allocated?0.4:0.1};background:${l.allocated?'var(--gold)':'#3a3028'};"></div>`;
+      });
+      // Render nodes
+      nodes.forEach(n => {
+        const cls = n.isKeystone ? 'passive-node keystone' : n.allocated ? 'passive-node allocated' : 'passive-node unallocated';
+        html += `<div class="${cls}" style="left:${n.x - n.size/2}px;top:${n.y - n.size/2}px;width:${n.size}px;height:${n.size}px;"></div>`;
+      });
+      container.innerHTML = html;
+    }
+
+    // ==========================================
+    // PASSIVE TREE FULL PANEL (right sidebar)
+    // ==========================================
+    function renderPassiveTree(el) {
+      el.innerHTML = `
+        <div style="font-size:11px;color:var(--text-muted);margin-bottom:10px;">Passive tree analysis for your Inquisitor build.</div>
+
+        <div style="background:var(--bg-card);border:1px solid var(--border);border-radius:2px;padding:10px;margin-bottom:8px;">
+          <div style="display:flex;justify-content:space-between;margin-bottom:6px;">
+            <span style="font-size:12px;color:var(--text-bright);font-weight:600;font-family:'Cinzel',serif;">Points Spent</span>
+            <span style="font-size:14px;font-weight:800;color:var(--gold);font-family:'JetBrains Mono',monospace;">121 / 123</span>
+          </div>
+          <div style="height:5px;background:var(--bg-dark);border-radius:3px;overflow:hidden;">
+            <div style="height:100%;width:98%;background:linear-gradient(90deg,var(--gold),var(--success));border-radius:3px;"></div>
+          </div>
+          <div style="font-size:10px;color:var(--text-dim);margin-top:4px;">2 unallocated points available</div>
+        </div>
+
+        <div style="font-size:10px;color:var(--text-dim);text-transform:uppercase;letter-spacing:1px;font-family:'Cinzel',serif;margin:10px 0 6px;">&#x1F511; Keystones Active</div>
+        <div style="display:flex;flex-wrap:wrap;gap:4px;margin-bottom:10px;">
+          <span style="font-size:9px;padding:3px 8px;border-radius:2px;background:#8c7a3012;border:1px solid #8c7a3030;color:var(--gold);">Elemental Overload</span>
+          <span style="font-size:9px;padding:3px 8px;border-radius:2px;background:#8c7a3012;border:1px solid #8c7a3030;color:var(--gold);">Unwavering Stance</span>
+          <span style="font-size:9px;padding:3px 8px;border-radius:2px;background:#8c7a3012;border:1px solid #8c7a3030;color:var(--gold);">Iron Reflexes</span>
+        </div>
+
+        <div style="font-size:10px;color:var(--text-dim);text-transform:uppercase;letter-spacing:1px;font-family:'Cinzel',serif;margin:10px 0 6px;">&#x2B06; Next Best 5 Points</div>
+        <div style="background:var(--bg-card);border:1px solid var(--border);border-left:3px solid var(--success);border-radius:2px;padding:8px 10px;margin-bottom:4px;">
+          <div style="display:flex;justify-content:space-between;font-size:11px;">
+            <span style="color:var(--text-bright);">1. Life wheel (Marauder)</span>
+            <span style="color:var(--success);font-family:'JetBrains Mono',monospace;font-size:10px;">+340 life</span>
+          </div>
+          <div style="font-size:9px;color:var(--text-muted);">2 points &bull; Adds 5.3% max life</div>
+        </div>
+        <div style="background:var(--bg-card);border:1px solid var(--border);border-left:3px solid var(--fire);border-radius:2px;padding:8px 10px;margin-bottom:4px;">
+          <div style="display:flex;justify-content:space-between;font-size:11px;">
+            <span style="color:var(--text-bright);">2. Fire DoT mastery</span>
+            <span style="color:var(--fire);font-family:'JetBrains Mono',monospace;font-size:10px;">+8% DPS</span>
+          </div>
+          <div style="font-size:9px;color:var(--text-muted);">1 point &bull; +20% burning damage mastery</div>
+        </div>
+        <div style="background:var(--bg-card);border:1px solid var(--border);border-left:3px solid var(--gold);border-radius:2px;padding:8px 10px;margin-bottom:4px;">
+          <div style="display:flex;justify-content:space-between;font-size:11px;">
+            <span style="color:var(--text-bright);">3. Jewel socket</span>
+            <span style="color:var(--gold);font-family:'JetBrains Mono',monospace;font-size:10px;">flexible</span>
+          </div>
+          <div style="font-size:9px;color:var(--text-muted);">2 points &bull; Near Scion, 3-point travel</div>
+        </div>
+
+        <div style="font-size:10px;color:var(--text-dim);text-transform:uppercase;letter-spacing:1px;font-family:'Cinzel',serif;margin:10px 0 6px;">&#x26A0; Inefficient Nodes</div>
+        <div style="background:#d2000008;border:1px solid #d2000020;border-radius:2px;padding:8px 10px;margin-bottom:4px;">
+          <div style="font-size:11px;color:var(--danger);">&#x2717; "Coordination" (+10 Dex)</div>
+          <div style="font-size:9px;color:var(--text-muted);">You don't need Dex &mdash; respec saves 1 point</div>
+        </div>
+        <div style="background:#d2000008;border:1px solid #d2000020;border-radius:2px;padding:8px 10px;margin-bottom:4px;">
+          <div style="font-size:11px;color:var(--danger);">&#x2717; 3 travel nodes near Ranger</div>
+          <div style="font-size:9px;color:var(--text-muted);">Shorter path exists via Duelist &mdash; save 2 points</div>
+        </div>
+
+        <div style="font-size:10px;color:var(--text-dim);text-transform:uppercase;letter-spacing:1px;font-family:'Cinzel',serif;margin:10px 0 6px;">&#x1F4FF; Jewel Sockets</div>
+        <div style="display:flex;flex-direction:column;gap:4px;">
+          <div style="display:flex;justify-content:space-between;font-size:11px;padding:4px 0;border-bottom:1px solid #3a302830;">
+            <span style="color:var(--text);">Marauder socket</span>
+            <span style="color:var(--success);font-family:'JetBrains Mono',monospace;font-size:10px;">&#x2713; Equipped</span>
+          </div>
+          <div style="display:flex;justify-content:space-between;font-size:11px;padding:4px 0;border-bottom:1px solid #3a302830;">
+            <span style="color:var(--text);">Templar socket</span>
+            <span style="color:var(--success);font-family:'JetBrains Mono',monospace;font-size:10px;">&#x2713; Equipped</span>
+          </div>
+          <div style="display:flex;justify-content:space-between;font-size:11px;padding:4px 0;border-bottom:1px solid #3a302830;">
+            <span style="color:var(--text);">Scion socket</span>
+            <span style="color:var(--warning);font-family:'JetBrains Mono',monospace;font-size:10px;">Empty (2pts to reach)</span>
+          </div>
+        </div>
+
+        <div style="margin-top:10px;padding:8px;background:#c4a83008;border:1px solid #c4a83020;border-radius:2px;font-size:10px;color:var(--gold);text-align:center;">
+          &#x1F333; Full interactive passive tree viewer coming in Tauri app
+        </div>
+      `;
+    }
+
+    // ==========================================
+    // POWER-UP ANIMATION (triggered on upgrade)
+    // ==========================================
+    function triggerPowerUp(message) {
+      const viz = document.getElementById('character-viz');
+      if (!viz) return;
+
+      // Flash the character body
+      const body = viz.querySelector('.char-body');
+      if (body) {
+        body.classList.add('char-powerup');
+        setTimeout(() => body.classList.remove('char-powerup'), 800);
+      }
+
+      // Expanding ring effect
+      const ring = document.createElement('div');
+      ring.className = 'powerup-ring';
+      viz.appendChild(ring);
+      setTimeout(() => ring.remove(), 800);
+
+      // Floating text
+      const text = document.createElement('div');
+      text.className = 'powerup-text';
+      text.textContent = message || 'POWER UP';
+      viz.appendChild(text);
+      setTimeout(() => text.remove(), 1500);
+    }
+
+    // Hook: when a suggestion "Invoke" button is clicked, trigger power-up
+    window.applyUpgrade = function(slot, impact) {
+      triggerPowerUp(impact || '+DPS');
+      // In production: apply change to PoB, re-analyze, update all panels
+    };
+
+    function renderDarkPath(el) {
+      el.innerHTML = `
+        <div class="section-label">\u2620 Build Identity</div>
+        <div style="background:linear-gradient(135deg,#1a0a0e,#130a18);border:1px solid var(--border-blood);border-radius:2px;padding:10px;margin-bottom:10px;">
+          <div style="display:flex;justify-content:space-between;align-items:center;">
+            <div>
+              <div style="font-size:15px;font-weight:800;color:var(--text-bright);font-family:'Cinzel',serif;">RF Inquisitor</div>
+              <div style="font-size:9px;color:var(--text-muted);margin-top:2px;">Fire DoT Tank \u2022 Life-Based \u2022 Facetank</div>
+            </div>
+            <div style="background:#4ae63a15;border:1px solid #4ae63a30;border-radius:2px;padding:3px 8px;">
+              <div style="font-size:9px;color:var(--success);font-family:'JetBrains Mono',monospace;font-weight:800;">S-TIER</div>
+            </div>
+          </div>
+          <div style="display:flex;gap:4px;margin-top:6px;flex-wrap:wrap;">
+            ${['Fire DoT','High Regen','Block','Shield','Armour'].map(t => `<span style="font-size:8px;padding:1px 6px;border-radius:2px;background:#d0209012;border:1px solid #d0209025;color:var(--chaos);">${t}</span>`).join('')}
+          </div>
+        </div>
+        <div class="section-label">Choose Your Dark Path</div>
+        <div style="background:linear-gradient(135deg,#1a1712,#161410);border:1px solid var(--border);border-left:3px solid var(--life);border-radius:2px;padding:8px;margin-bottom:6px;">
+          <div style="font-size:12px;font-weight:700;color:var(--life);font-family:'Cinzel',serif;">\uD83D\uDEE1 The Immortal</div>
+          <div style="font-size:9px;color:var(--text-muted);margin:3px 0 6px;">Max survivability \u2014 facetank everything</div>
+          <div style="font-size:9px;color:var(--text);line-height:1.5;">
+            \u2022 Aegis Aurora (+ES on block)<br>
+            \u2022 Melding of the Flesh (+max res 90%)<br>
+            \u2022 Cost: ~40-60d \u2022 DPS: -5% \u2022 Surv: +massive
+          </div>
+        </div>
+        <div style="background:linear-gradient(135deg,#1a1712,#161410);border:1px solid var(--border);border-left:3px solid var(--fire);border-radius:2px;padding:8px;margin-bottom:6px;">
+          <div style="font-size:12px;font-weight:700;color:var(--fire);font-family:'Cinzel',serif;">\uD83D\uDD25 The Inferno</div>
+          <div style="font-size:9px;color:var(--text-muted);margin:3px 0 6px;">Max damage \u2014 melt bosses</div>
+          <div style="font-size:9px;color:var(--text);line-height:1.5;">
+            \u2022 Ashes of the Stars (+1 all gems)<br>
+            \u2022 Awakened supports + Clusters<br>
+            \u2022 Cost: ~30-50d \u2022 DPS: +45% \u2022 Surv: same
+          </div>
+        </div>
+        <div style="background:linear-gradient(135deg,#1a1712,#161410);border:1px solid var(--border);border-left:3px solid var(--lightning);border-radius:2px;padding:8px;margin-bottom:6px;">
+          <div style="font-size:12px;font-weight:700;color:var(--lightning);font-family:'Cinzel',serif;">\u26A1 The Exile</div>
+          <div style="font-size:9px;color:var(--text-muted);margin:3px 0 6px;">Max speed \u2014 zoom currency farming</div>
+          <div style="font-size:9px;color:var(--text);line-height:1.5;">
+            \u2022 Mageblood belt (permanent flasks)<br>
+            \u2022 +30% MS boots + Onslaught<br>
+            \u2022 Cost: ~80-150d \u2022 Clear: +60%
+          </div>
+        </div>`;
+    }
+
+    function renderForge(el) {
+      el.innerHTML = `
+        <div class="section-label">\uD83D\uDD28 The Forge \u2014 Smart Crafting Advisor</div>
+        <div style="font-size:11px;color:var(--text-muted);margin-bottom:10px;">Based on the currency you have, here are the best crafts to do right now.</div>
+
+        <!-- Player Currency Summary -->
+        <div style="background:var(--bg-card);border:1px solid var(--border);border-radius:2px;padding:10px;margin-bottom:10px;">
+          <div style="font-size:9px;color:var(--text-dim);text-transform:uppercase;letter-spacing:1px;font-family:'Cinzel',serif;margin-bottom:6px;">Your Currency</div>
+          <div style="display:flex;flex-wrap:wrap;gap:6px;font-size:10px;font-family:'JetBrains Mono',monospace;">
+            <span style="color:var(--gold);">12 Divine</span> \u2022
+            <span style="color:var(--currency-color);">340 Chaos</span> \u2022
+            <span style="color:var(--currency-color);">680 Fusing</span> \u2022
+            <span style="color:var(--currency-color);">142 Scour</span>
+          </div>
+          <div style="display:flex;flex-wrap:wrap;gap:6px;font-size:10px;font-family:'JetBrains Mono',monospace;margin-top:4px;">
+            <span style="color:var(--unique-bright);">8\u00d7 Ess. Anger</span> \u2022
+            <span style="color:var(--unique-bright);">5\u00d7 Ess. Rage</span> \u2022
+            <span style="color:var(--success);">6\u00d7 Pristine</span> \u2022
+            <span style="color:var(--fire);">4\u00d7 Scorched</span>
+          </div>
+        </div>
+
+        <!-- Craft #1: Best Value -->
+        <div style="background:var(--bg-card);border:1px solid #4ae63a30;border-left:3px solid var(--success);border-radius:2px;padding:10px;margin-bottom:8px;">
+          <div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:6px;">
+            <div style="font-size:12px;font-weight:700;color:var(--success);font-family:'Cinzel',serif;">#1 BEST VALUE \u2014 Ring 2 via Essence</div>
+            <span style="font-size:9px;padding:2px 8px;border-radius:2px;background:#4ae63a15;color:var(--success);font-family:'JetBrains Mono',monospace;">SAVES 3-6d</span>
+          </div>
+          <div style="font-size:11px;color:var(--text);line-height:1.6;margin-bottom:8px;">
+            <strong>Target:</strong> Opal Ring with Life + Fire DoT Multi<br>
+            <strong>Method:</strong> Essence of Anger spam<br>
+            <strong>You have:</strong> 8\u00d7 Anger (enough for 2-3 tries)
+          </div>
+          <div style="background:var(--bg-panel);border-radius:2px;padding:8px;margin-bottom:6px;">
+            <div style="font-size:9px;color:var(--text-dim);text-transform:uppercase;letter-spacing:1px;margin-bottom:4px;">Steps</div>
+            <div style="font-size:10px;color:var(--text);line-height:1.8;">
+              1. Buy ilvl 84+ Opal Ring base (\u22481c)<br>
+              2. Essence of Anger \u2192 guaranteed fire damage mod<br>
+              3. If open suffix \u2192 benchcraft fire DoT multi<br>
+              4. If no good mods \u2192 scour + try again
+            </div>
+          </div>
+          <div style="display:flex;justify-content:space-between;font-size:10px;">
+            <div><span style="color:var(--text-muted);">Success rate:</span> <span style="color:var(--success);font-family:'JetBrains Mono',monospace;">~30% per try</span></div>
+            <div><span style="color:var(--text-muted);">Cost:</span> <span style="color:var(--gold);font-family:'JetBrains Mono',monospace;">\u22482 div</span></div>
+          </div>
+          <div style="display:flex;justify-content:space-between;font-size:10px;margin-top:2px;">
+            <div><span style="color:var(--text-muted);">Buy instead:</span> <span style="color:var(--danger);font-family:'JetBrains Mono',monospace;">5-8 div</span></div>
+            <div><span style="color:var(--text-muted);">DPS gain:</span> <span style="color:var(--success);font-family:'JetBrains Mono',monospace;">+12-18%</span></div>
+          </div>
+        </div>
+
+        <!-- Craft #2: Free -->
+        <div style="background:var(--bg-card);border:1px solid var(--border);border-left:3px solid var(--gold);border-radius:2px;padding:10px;margin-bottom:8px;">
+          <div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:6px;">
+            <div style="font-size:12px;font-weight:700;color:var(--gold);font-family:'Cinzel',serif;">#2 FREE \u2014 Benchcraft on Boots</div>
+            <span style="font-size:9px;padding:2px 8px;border-radius:2px;background:#c4a83015;color:var(--gold);font-family:'JetBrains Mono',monospace;">FREE</span>
+          </div>
+          <div style="font-size:11px;color:var(--text);line-height:1.6;">
+            Your Boots have 1 open prefix<br>
+            Benchcraft: <strong>+70 to maximum Life</strong><br>
+            Cost: 4 Alteration Orbs (you have 200+)
+          </div>
+          <div style="font-size:10px;color:var(--success);margin-top:4px;">Impact: +70 life instantly \u2014 do this now!</div>
+        </div>
+
+        <!-- Craft #3: Fossil -->
+        <div style="background:var(--bg-card);border:1px solid var(--border);border-left:3px solid var(--fire);border-radius:2px;padding:10px;margin-bottom:8px;">
+          <div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:6px;">
+            <div style="font-size:12px;font-weight:700;color:var(--fire);font-family:'Cinzel',serif;">#3 MEDIUM \u2014 Helmet Fossil Craft</div>
+            <span style="font-size:9px;padding:2px 8px;border-radius:2px;background:#96000015;color:var(--fire);font-family:'JetBrains Mono',monospace;">~3 DIV</span>
+          </div>
+          <div style="font-size:11px;color:var(--text);line-height:1.6;margin-bottom:6px;">
+            <strong>Target:</strong> Helmet with T1 Life + Fire Res + -Fire Res nearby<br>
+            <strong>Method:</strong> Pristine + Scorched fossil combo<br>
+            <strong>You have:</strong> 6\u00d7 Pristine, 4\u00d7 Scorched
+          </div>
+          <div style="display:flex;justify-content:space-between;font-size:10px;">
+            <div><span style="color:var(--text-muted);">Success:</span> <span style="font-family:'JetBrains Mono',monospace;">~15%/try</span></div>
+            <div><span style="color:var(--text-muted);">Buy:</span> <span style="color:var(--danger);font-family:'JetBrains Mono',monospace;">5-8d</span></div>
+          </div>
+        </div>
+
+        <!-- Craft vs Buy summary -->
+        <div style="background:var(--bg-card);border:1px solid var(--border);border-radius:2px;padding:10px;margin-top:10px;">
+          <div style="font-size:9px;color:var(--text-dim);text-transform:uppercase;letter-spacing:1px;font-family:'Cinzel',serif;margin-bottom:6px;">Craft vs Buy Summary</div>
+          <div style="display:flex;justify-content:space-between;font-size:11px;padding:4px 0;border-bottom:1px solid #3a302820;">
+            <span style="color:var(--text);">Ring 2</span>
+            <span style="color:var(--success);font-family:'JetBrains Mono',monospace;">Craft (~2d) vs Buy (5-8d) \u2192 CRAFT</span>
+          </div>
+          <div style="display:flex;justify-content:space-between;font-size:11px;padding:4px 0;border-bottom:1px solid #3a302820;">
+            <span style="color:var(--text);">Boots prefix</span>
+            <span style="color:var(--gold);font-family:'JetBrains Mono',monospace;">Benchcraft (free) \u2192 DO IT</span>
+          </div>
+          <div style="display:flex;justify-content:space-between;font-size:11px;padding:4px 0;border-bottom:1px solid #3a302820;">
+            <span style="color:var(--text);">Helmet</span>
+            <span style="color:var(--fire);font-family:'JetBrains Mono',monospace;">Craft (~3d) vs Buy (5-8d) \u2192 CRAFT</span>
+          </div>
+          <div style="display:flex;justify-content:space-between;font-size:11px;padding:4px 0;">
+            <span style="color:var(--text);">Aegis Aurora</span>
+            <span style="color:var(--info);font-family:'JetBrains Mono',monospace;">Cannot craft \u2192 BUY (18d)</span>
+          </div>
+          <div style="font-size:10px;color:var(--success);margin-top:8px;text-align:center;">
+            Total savings by crafting: <strong style="font-family:'JetBrains Mono',monospace;">~8-14 divine</strong>
+          </div>
+        </div>
+      `;
+    }
+
+    function renderCurseMap(el) {
+      el.innerHTML = `
+        <div class="section-label">\u2620 Curse Map \u2014 Map Mod Danger</div>
+        <div style="font-size:10px;color:var(--danger);font-weight:600;margin-bottom:6px;">CANNOT RUN:</div>
+        <div class="issue-card critical"><div class="issue-icon">\uD83D\uDC80</div><div><div style="font-size:11px;font-weight:600;color:var(--danger);">No Regeneration</div><div style="font-size:9px;color:var(--text-muted);">RF = instant death without regen</div></div></div>
+        <div class="issue-card critical"><div class="issue-icon">\uD83D\uDC80</div><div><div style="font-size:11px;font-weight:600;color:var(--danger);">Elemental Reflect</div><div style="font-size:9px;color:var(--text-muted);">Fire damage = one-shot yourself</div></div></div>
+
+        <div style="font-size:10px;color:var(--warning);font-weight:600;margin:8px 0 6px;">DANGEROUS:</div>
+        <div class="issue-card warning"><div class="issue-icon">\u26A0</div><div><div style="font-size:11px;font-weight:600;color:var(--warning);">-max Resistances</div><div style="font-size:9px;color:var(--text-muted);">RF degen increases significantly</div></div></div>
+        <div class="issue-card warning"><div class="issue-icon">\u26A0</div><div><div style="font-size:11px;font-weight:600;color:var(--warning);">Less Recovery Rate</div><div style="font-size:9px;color:var(--text-muted);">Regen falls below RF degen</div></div></div>
+        <div class="issue-card warning"><div class="issue-icon">\u26A0</div><div><div style="font-size:11px;font-weight:600;color:var(--warning);">Ele Weakness Curse</div><div style="font-size:9px;color:var(--text-muted);">-24% res \u2014 cold +1, light +4 overcap</div></div></div>
+
+        <div style="font-size:10px;color:var(--success);font-weight:600;margin:8px 0 6px;">SAFE:</div>
+        <div style="padding:6px 8px;background:#4ae63a08;border:1px solid #4ae63a20;border-radius:2px;font-size:10px;color:var(--success);line-height:1.7;">
+          \u2713 Physical Reflect (no phys damage)<br>
+          \u2713 No Mana Regen (Lifetap)<br>
+          \u2713 Hexproof (no curses needed)<br>
+          \u2713 Reduced Flask Charges (minor)
+        </div>`;
+    }
+
+    function renderHarbinger(el) {
+      const icons = { critical:"\uD83D\uDD34", warning:"\u26A0", info:"\u2139" };
+      el.innerHTML = '<div class="section-label">\u2620 Harbinger Warnings (' + BUILD.issues.length + ')</div>' +
+        BUILD.issues.map((i, idx) =>
+          `<div class="issue-card ${i.severity}" style="animation-delay:${idx*0.04}s;"><div class="issue-icon">${icons[i.severity]||icons.info}</div><div><div style="font-size:11px;font-weight:600;color:${i.severity==='warning'?'var(--warning)':i.severity==='critical'?'var(--danger)':'var(--info)'};">${i.issue}</div><div style="font-size:9px;color:var(--text-muted);margin-top:2px;">Remedy: ${i.fix}</div></div></div>`
+        ).join('');
+    }
+
+    function renderSettings(el) {
+      const providers = [
+        { key:'seer', icon:'\uD83D\uDC41', name:'The Seer (Local)', desc:'Free \u2022 Offline \u2022 <100ms', tag:'DEFAULT', tagColor:'var(--success)' },
+        { key:'claude', icon:'\uD83D\uDCAC', name:'Anthropic (Claude)', desc:'Best reasoning \u2022 API key', tag:'API KEY', tagColor:'var(--chaos)' },
+        { key:'openai', icon:'\uD83E\uDD16', name:'OpenAI (ChatGPT)', desc:'GPT-4o \u2022 API key', tag:'API KEY', tagColor:'var(--chaos)' },
+        { key:'gemini', icon:'\u2728', name:'Google (Gemini)', desc:'Gemini Pro \u2022 OAuth', tag:'OAUTH', tagColor:'var(--info)' },
+        { key:'groq', icon:'\u26A1', name:'Groq', desc:'Very fast \u2022 Free tier', tag:'API KEY', tagColor:'var(--chaos)' },
+        { key:'ollama', icon:'\uD83D\uDCBB', name:'Ollama (Local)', desc:'Any model \u2022 Free', tag:'FREE', tagColor:'var(--success)' },
+        { key:'openrouter', icon:'\uD83C\uDF10', name:'OpenRouter', desc:'100+ models \u2022 OAuth', tag:'OAUTH', tagColor:'var(--info)' },
+      ];
+      el.innerHTML = `
+        <div class="section-label">\u2699 Settings</div>
+        <div style="font-size:10px;color:var(--text-bright);font-weight:700;font-family:'Cinzel',serif;margin-bottom:6px;">\uD83D\uDC41 AI Provider</div>
+        ${providers.map(p =>
+          `<div class="provider-option" onclick="this.querySelector('input').checked=true;">
+            <input type="radio" name="provider" value="${p.key}" ${p.key==='seer'?'checked':''} style="accent-color:var(--blood-bright);flex-shrink:0;">
+            <div style="flex:1;"><div style="font-size:10px;color:var(--text-bright);font-weight:600;">${p.icon} ${p.name}</div><div style="font-size:8px;color:var(--text-muted);">${p.desc}</div></div>
+            <span style="font-size:7px;color:${p.tagColor};font-family:'JetBrains Mono',monospace;">${p.tag}</span>
+          </div>`
+        ).join('')}
+
+        <div style="margin-top:10px;background:linear-gradient(180deg,#1a1712,#161410);border:1px solid var(--border);border-radius:2px;padding:8px;">
+          <div style="font-size:10px;color:var(--text-bright);font-weight:700;font-family:'Cinzel',serif;margin-bottom:6px;">\uD83D\uDD11 API Key</div>
+          <div style="display:flex;gap:6px;margin-bottom:6px;">
+            <input type="password" placeholder="sk-ant-..." style="flex:1;padding:6px 8px;background:var(--bg-dark);border:1px solid var(--border);border-radius:2px;color:var(--text);font-family:'JetBrains Mono',monospace;font-size:9px;outline:none;">
+            <button class="market-btn" style="font-size:9px;">Test</button>
+          </div>
+        </div>
+
+        <div style="margin-top:8px;background:linear-gradient(180deg,#1a1712,#161410);border:1px solid var(--border);border-radius:2px;padding:8px;">
+          <div style="font-size:10px;color:var(--text-bright);font-weight:700;font-family:'Cinzel',serif;margin-bottom:6px;">\uD83C\uDFAE PoE Account</div>
+          <button style="width:100%;padding:8px;background:linear-gradient(180deg,#2a1808,#1a1004);border:1px solid var(--unique);border-radius:2px;color:var(--unique-bright);font-family:'Cinzel',serif;font-size:10px;font-weight:700;cursor:pointer;letter-spacing:1px;">\uD83D\uDD17 Connect PoE Account</button>
+          <div style="font-size:8px;color:var(--text-dim);margin-top:4px;">\uD83D\uDD12 Official GGG OAuth \u2022 We never see your password</div>
+        </div>
+
+        <div style="margin-top:8px;background:linear-gradient(180deg,#1a1712,#161410);border:1px solid var(--border);border-radius:2px;padding:8px;">
+          <div style="font-size:10px;color:var(--text-bright);font-weight:700;font-family:'Cinzel',serif;margin-bottom:6px;">\uD83D\uDCC1 PoB Location</div>
+          <input type="text" value="%AppData%/Path of Building/" readonly style="width:100%;padding:6px 8px;background:var(--bg-dark);border:1px solid var(--border);border-radius:2px;color:var(--text-muted);font-family:'JetBrains Mono',monospace;font-size:9px;">
+          <div style="font-size:8px;color:var(--success);margin-top:4px;">\u2713 Auto-detected \u2022 12 builds found</div>
+        </div>
+
+        <div style="margin-top:8px;background:linear-gradient(180deg,#1a1712,#161410);border:1px solid var(--border);border-radius:2px;padding:8px;">
+          <div style="font-size:10px;color:var(--text-bright);font-weight:700;font-family:'Cinzel',serif;margin-bottom:6px;">\u2620 Whisper to the Void</div>
+          <button style="width:100%;padding:6px;background:linear-gradient(180deg,#181614,#141210);border:1px solid var(--border);border-radius:2px;color:var(--text-muted);font-family:'Cinzel',serif;font-size:10px;cursor:pointer;">Report Bug / Feedback \u2192</button>
+        </div>
+
+        <div style="text-align:center;font-size:8px;color:var(--text-dim);margin-top:10px;">PATH of AI v0.1.0 \u2022 Open Source</div>`;
+    }
+
+    function askSeer(btn) {
+      const q = btn.textContent;
+      const chat = document.getElementById('seer-chat');
+      if (!chat) return;
+      // Show user question
+      chat.innerHTML += `<div style="text-align:right;margin:8px 0;"><span style="background:var(--bg-panel);border:1px solid var(--border);border-radius:4px;padding:4px 10px;font-size:11px;color:var(--text);">${q}</span></div>`;
+      // Show typing indicator
+      chat.innerHTML += `<div id="seer-typing" style="font-size:10px;color:var(--chaos);font-style:italic;margin:6px 0;">The Seer peers into the void...</div>`;
+      chat.scrollTop = chat.scrollHeight;
+      // Simulate response after delay
+      setTimeout(() => {
+        const typing = document.getElementById('seer-typing');
+        if (typing) typing.remove();
+        const responses = {
+          'Why do I perish in T16?': 'Your chaos resistance of 15% leaves you practically naked against corruption, Exile. Al-Hezmin\'s poison ground and chaos-damage rares feast upon this weakness. Furthermore, your overcap of merely +1 cold resist means a single Elemental Weakness curse strips your defenses bare.',
+          'What should I upgrade next?': 'Ring 2 is the weakest link in your arsenal, Exile. At score 42, it is barely worthy of a white mob drop. Seek an Opal Ring with +80 life, fire DoT multiplier, and resistances. Cost: 3-8 divine. Impact: +15% DPS, +400 life.',
+          'Can I run Uber bosses?': 'Not yet, Exile. Uber Shaper\'s slam deals 12,400 damage \u2014 your 6,453 life plus Molten Shell absorbs only 10,653. You need Aegis Aurora for ES-on-block recovery, or push your max fire resistance higher to reduce RF degen and free up regen.',
+          'Explain my DPS chain': 'Your Righteous Fire burns at base 1,245 DPS. This is scaled by: 420% increased fire damage (\u00d75.2), then MULTIPLIED by each support: Burning Damage \u00d71.59, Elemental Focus \u00d71.34, Swift Affliction \u00d71.29, Efficacy \u00d71.24, Lifetap \u00d71.20. Finally, your 180% DoT multiplier gives \u00d72.80. Total: 2.84M.',
+        };
+        const answer = responses[q] || 'The void whispers an answer I cannot yet discern, Exile. In the Tauri app, The Seer Engine will divine a proper response.';
+        chat.innerHTML += `<div style="margin:8px 0;padding:8px 10px;background:linear-gradient(135deg,#d0209008,#d0209004);border:1px solid #d0209020;border-radius:4px;font-size:11px;color:var(--text);line-height:1.6;font-style:italic;">\u{1F441} ${answer}</div>`;
+        chat.scrollTop = chat.scrollHeight;
+      }, 1200);
+    }
+
+    // ==========================================
+    // INIT
+    // ==========================================
+    renderCharEquip();
+    renderEquipGrid();
+    renderPassiveMini();
+    renderHarbingerCompact();
+    renderGemBtns();
+    showPanel('prophecy');
+  </script>
+</body>
+</html>

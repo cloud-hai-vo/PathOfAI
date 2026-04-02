@@ -1,0 +1,206 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<PathOfBuilding>
+	<Build level="95" className="Templar" ascendClassName="Inquisitor" mainSocketGroup="1" viewMode="CALCS" targetVersion="3_25" pantheonMajorGod="Arakaali" pantheonMinorGod="Abberath" bandit="None">
+		<PlayerStat stat="Life" value="6453"/>
+		<PlayerStat stat="EnergyShield" value="1820"/>
+		<PlayerStat stat="Mana" value="534"/>
+		<PlayerStat stat="ManaUnreserved" value="102"/>
+		<PlayerStat stat="Armour" value="28450"/>
+		<PlayerStat stat="Evasion" value="4200"/>
+		<PlayerStat stat="FireResist" value="80"/>
+		<PlayerStat stat="ColdResist" value="76"/>
+		<PlayerStat stat="LightningResist" value="79"/>
+		<PlayerStat stat="ChaosResist" value="15"/>
+		<PlayerStat stat="BlockChance" value="45"/>
+		<PlayerStat stat="SpellBlockChance" value="32"/>
+		<PlayerStat stat="FireDotDPS" value="2841057"/>
+		<PlayerStat stat="TotalDPS" value="2841057"/>
+		<PlayerStat stat="LifeRegen" value="2450"/>
+		<PlayerStat stat="Speed" value="1.45"/>
+	</Build>
+	<Tree activeSpec="1">
+		<Spec treeVersion="3_25" ascendClassId="3" classId="5" masteryEffects="" nodes="47114,47000,26270,36874,31508,46408,11420,38180,63649,36543,60501,35894,19144,31683,22088,65167,33940,18033,55571,37569,14930,33631,27929,36949,22618,32947,30847,37326,63795,60181,36678,41970,33545,27656,21330,17315,65210,12926,44184,56029,61834,18790,32640,40867,42917,26067,48768,55190,57560,20807,18436,36017,33753,26196,6538,11730,14606,63048,42760,22994,32710,14021,39861,61471,50338,44824,39085">
+			<URL>https://www.pathofexile.com/passive-skill-tree/SAMPLE_TREE_DATA</URL>
+		</Spec>
+	</Tree>
+	<Items activeItemSet="1">
+		<Item id="1">
+			Rarity: UNIQUE
+			Searing Purity
+			Titan Gauntlets
+			Quality: 20
+			Sockets: R-R-R-R
+			LevelReq: 69
+			Implicits: 0
+			+94 to maximum Life
+			+42% to Fire Resistance
+			+28% to Cold Resistance
+			15% increased Armour
+			+1 to Level of all Fire Skill Gems
+			{tags:gloves}
+		</Item>
+		<Item id="2">
+			Rarity: RARE
+			Doom Stride
+			Titan Greaves
+			Quality: 20
+			Sockets: R-R-R-R
+			LevelReq: 68
+			Implicits: 0
+			+72 to maximum Life
+			+35% to Fire Resistance
+			+18% to Lightning Resistance
+			30% increased Movement Speed
+			+12% to Cold Resistance
+			{tags:boots}
+		</Item>
+		<Item id="3">
+			Rarity: RARE
+			Soul Ward
+			Astral Plate
+			Quality: 20
+			Sockets: R-R-R-B-G-R
+			LevelReq: 62
+			Implicits: 1
+			+12% to all Elemental Resistances
+			+112 to maximum Life
+			+1500 to Armour
+			8% increased maximum Life
+			+40% to Fire Resistance
+			Recover 5% of Life on Kill
+			{tags:body_armour}
+		</Item>
+		<Item id="4">
+			Rarity: RARE
+			Glyph Crest
+			Royal Burgonet
+			Quality: 20
+			Sockets: R-R-R-R
+			LevelReq: 65
+			Implicits: 0
+			+78 to maximum Life
+			+38% to Fire Resistance
+			+32% to Lightning Resistance
+			Nearby Enemies have -9% to Fire Resistance
+			+220 to Armour
+			{tags:helmet}
+		</Item>
+		<Item id="5">
+			Rarity: RARE
+			Torment Circle
+			Ruby Ring
+			LevelReq: 48
+			Implicits: 1
+			+30% to Fire Resistance
+			+62 to maximum Life
+			+18% to Cold Resistance
+			+12% to Lightning Resistance
+			+15% to Fire Damage over Time Multiplier
+			{tags:ring}
+		</Item>
+		<Item id="6">
+			Rarity: RARE
+			Oblivion Braid
+			Turquoise Amulet
+			LevelReq: 55
+			Implicits: 1
+			+22 to Dexterity and Intelligence
+			+75 to maximum Life
+			+28% to Fire Resistance
+			+1 to Level of all Fire Skill Gems
+			12% increased maximum Life
+			{tags:amulet}
+		</Item>
+		<Item id="7">
+			Rarity: UNIQUE
+			Rise of the Phoenix
+			Mosaic Kite Shield
+			LevelReq: 65
+			Implicits: 1
+			+8% to all Elemental Resistances
+			+60 to maximum Life
+			+25% to Fire Resistance
+			+8% to maximum Fire Resistance
+			+15% to all Elemental Resistances
+			100% increased Armour
+			Regenerate 15 Life per second
+			{tags:shield}
+		</Item>
+		<Item id="8">
+			Rarity: RARE
+			Havoc Clasp
+			Crystal Belt
+			LevelReq: 79
+			Implicits: 1
+			+75 to maximum Energy Shield
+			+88 to maximum Life
+			+42% to Fire Resistance
+			+35% to Cold Resistance
+			+28 to Strength
+			12% increased maximum Life
+			{tags:belt}
+		</Item>
+		<Item id="9">
+			Rarity: RARE
+			Doom Whorl
+			Opal Ring
+			LevelReq: 80
+			Implicits: 1
+			25% increased Elemental Damage
+			+45 to maximum Life
+			+22% to Fire Resistance
+			+15% to Lightning Resistance
+			5% increased maximum Life
+			{tags:ring}
+		</Item>
+		<ItemSet id="1" title="Current Gear">
+			<Slot name="Gloves" itemId="1"/>
+			<Slot name="Boots" itemId="2"/>
+			<Slot name="Body Armour" itemId="3"/>
+			<Slot name="Helmet" itemId="4"/>
+			<Slot name="Ring 1" itemId="5"/>
+			<Slot name="Amulet" itemId="6"/>
+			<Slot name="Weapon 1" itemId="7"/>
+			<Slot name="Belt" itemId="8"/>
+			<Slot name="Ring 2" itemId="9"/>
+		</ItemSet>
+	</Items>
+	<Skills activeSkillSet="1">
+		<SkillSet id="1">
+			<Skill mainActiveSkill="1" label="RF" enabled="true" slot="Body Armour">
+				<Gem gemId="RighteousFire" level="21" quality="23" enabled="true" skillId="RighteousFire"/>
+				<Gem gemId="SupportBurningDamage" level="20" quality="20" enabled="true"/>
+				<Gem gemId="SupportElementalFocus" level="20" quality="20" enabled="true"/>
+				<Gem gemId="SupportLifetap" level="20" quality="20" enabled="true"/>
+				<Gem gemId="SupportSwiftAffliction" level="20" quality="20" enabled="true"/>
+				<Gem gemId="SupportEfficacy" level="20" quality="20" enabled="true"/>
+			</Skill>
+			<Skill label="Fire Trap" enabled="true" slot="Gloves">
+				<Gem gemId="FireTrap" level="20" quality="20" enabled="true" skillId="FireTrap"/>
+				<Gem gemId="SupportBurningDamage" level="20" quality="20" enabled="true"/>
+				<Gem gemId="SupportTrapAndMineSpeed" level="20" quality="20" enabled="true"/>
+				<Gem gemId="SupportSwiftAffliction" level="20" quality="20" enabled="true"/>
+			</Skill>
+			<Skill label="Auras" enabled="true" slot="Helmet">
+				<Gem gemId="Determination" level="20" quality="20" enabled="true" skillId="Determination"/>
+				<Gem gemId="Purity of Fire" level="21" quality="20" enabled="true" skillId="PurityOfFire"/>
+				<Gem gemId="Vitality" level="20" quality="20" enabled="true" skillId="Vitality"/>
+				<Gem gemId="SupportEnlighten" level="3" quality="0" enabled="true"/>
+			</Skill>
+			<Skill label="Movement" enabled="true" slot="Boots">
+				<Gem gemId="ShieldCharge" level="1" quality="0" enabled="true" skillId="ShieldCharge"/>
+				<Gem gemId="SupportFasterAttacks" level="20" quality="20" enabled="true"/>
+				<Gem gemId="MoltenShell" level="20" quality="20" enabled="true" skillId="MoltenShell"/>
+				<Gem gemId="SupportCastWhenDamage" level="1" quality="0" enabled="true"/>
+			</Skill>
+		</SkillSet>
+	</Skills>
+	<Config>
+		<Input name="resistancePenalty" number="-60"/>
+		<Input name="enemyIsBoss" string="Pinnacle"/>
+		<Input name="conditionEnemyBurning" boolean="true"/>
+		<Input name="buffOnslaught" boolean="true"/>
+	</Config>
+	<Calcs>
+	</Calcs>
+</PathOfBuilding>
