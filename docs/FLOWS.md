@@ -880,3 +880,368 @@ RUST: Format as GitHub Issue markdown
   ↓
 UI: "Your whisper has been heard, Exile. Tracking: github.com/path-of-ai/issues/42"
 ```
+
+---
+
+## 19. Open Combat Panel (The Arena)
+
+```
+User clicks "⚔ The Arena" in the panel nav
+  ↓
+FRONTEND: invoke('get_combat_summary', { characterId })
+  → Fetch pre-computed boss readiness from Algorithm 20 (Combat Simulator)
+  ↓
+UI: Right panel switches to "The Arena"
+  Shows:
+  ┌──────────────────────────────────────────┐
+  │  ⚔ The Arena                             │
+  │                                          │
+  │  T16 Rare Monster                        │
+  │  HP: 4,000,000 ▓▓▓▓▓▓▓▓▓▓ 100%          │
+  │  Your DPS: 2.84M | Eff DPS: 1.99M       │
+  │  TTK: 1.6s | Hits to kill: 3             │
+  │                                          │
+  │  Boss Readiness                          │
+  │  👹 Shaper     ~3:20  ✅ READY           │
+  │  👾 Elder      ~3:00  ✅ READY           │
+  │  ☠  Uber Elder ~5:30  ⚠️ RISKY          │
+  │  👁 Sirus A9   ~4:10  ✅ READY           │
+  │  🔮 Maven      ~6:00  ❌ NOT READY       │
+  └──────────────────────────────────────────┘
+  ↓
+User clicks a boss row (e.g., "Maven")
+  ↓
+FRONTEND: invoke('simulate_boss_fight', { bossId: 'maven', characterId })
+  → Algorithm 20: run combat simulation with build stats
+  ↓
+UI: Expand inline detail:
+  "Maven: DPS sufficient (phase 1-3), FAIL — chaos res too low for Memory Game
+   Fix: cap chaos res to 60%+ or bring Divine Life Flask"
+  [Copy Fix] [Ask Seer for Details]
+  ↓
+ON ERROR (stats not loaded):
+  UI: "Build data not loaded — import your character first."
+```
+
+---
+
+## 20. Open Defenses Panel
+
+```
+User clicks "⛊ Defenses" in the panel nav
+  ↓
+FRONTEND: invoke('get_defense_layers', { characterId })
+  → Algorithm 14 (Effective HP) + Algorithm 15 (Ailment Immunity)
+  ↓
+UI: Right panel switches to "Defenses"
+  Shows:
+  ┌──────────────────────────────────────────┐
+  │  ⛊ Defense Layers                        │
+  │  🔴 Life        5,240 HP                 │
+  │  🛡 Armour      62%   phys reduction     │
+  │  🌀 Evasion     18%   hit avoidance      │
+  │  🔵 Block       45%   attack block       │
+  │  🟠 Regen       1,240 /s                 │
+  │                                          │
+  │  Resists                                 │
+  │  🔥 Fire    80% (+5)   ❄ Cold  76% (+1) │
+  │  ⚡ Light   79% (+4)   ☠ Chaos  15%     │
+  │                                          │
+  │  Ailment Immunity                        │
+  │  ✓ Freeze (Brine King)                  │
+  │  ✗ Shock — VULNERABLE                   │
+  │  ✓ Ignite (ascendancy)                  │
+  │  ✗ Bleed — need corrupted blood jewel   │
+  └──────────────────────────────────────────┘
+  ↓
+User clicks a VULNERABLE ailment row (e.g., "Shock")
+  ↓
+UI: Expand inline fix suggestion:
+  "No shock immunity detected. Options:
+   • Brine King pantheon (free)
+   • Boot craft 'Stun/Shock avoidance' (~1c)
+   • Taste of Hate flask suffix"
+  [Ask Seer to Prioritize]
+  ↓
+ON ERROR (no build loaded):
+  UI: "No character loaded — connect PoE OAuth or import from PoB."
+```
+
+---
+
+## 21. Open DPS Panel
+
+```
+User clicks "💥 DPS" in the panel nav
+  ↓
+FRONTEND: invoke('get_dps_breakdown', { characterId })
+  → Algorithm 3 (DPS Calculation Engine) → damage source breakdown
+  ↓
+UI: Right panel switches to "DPS"
+  Shows:
+  ┌──────────────────────────────────────────┐
+  │  Total DPS                               │
+  │  2.84M                                   │
+  │                                          │
+  │  Damage Sources                          │
+  │  Righteous Fire    2.10M ███████ 74%     │
+  │  Scorching Ray      0.74M ████   26%     │
+  │                                          │
+  │  Multiplier Chain (RF)                   │
+  │  Base hit damage    1.00x                │
+  │  Increased damage   2.34x (+inc nodes)  │
+  │  More multipliers   1.51x (gem links)   │
+  │  Penetration        1.18x (fire pen)    │
+  │  Final: 2.84M DPS                        │
+  └──────────────────────────────────────────┘
+  ↓
+User hovers a multiplier row
+  ↓
+UI: Tooltip shows sources contributing to that multiplier:
+  "2.34x Increased: 40% (nodes) + 50% (gear) + 44% (gems)"
+  ↓
+User clicks [Ask Seer: What's my best DPS upgrade?]
+  ↓
+FRONTEND: invoke('ask_seer', { query: 'top dps upgrade', characterId })
+  → Algorithm 1 (Seer Routing) → Algorithm 9 (Upgrade Ranker)
+  ↓
+UI: Seer reply appears in right panel or Prophecy panel:
+  "Upgrade Empower Support to level 4: +18% DPS. Cost: ~8 divine."
+  ↓
+ON ERROR (PoB not loaded, calc unavailable):
+  UI: "DPS calculation requires a PoB import or PoE OAuth character."
+```
+
+---
+
+## 22. Open Gems Panel
+
+```
+User clicks "💎 Gems" in the panel nav
+  ↓
+FRONTEND: invoke('get_gem_setups', { characterId })
+  → Algorithm 22 (Gem Optimizer) → linked setups with level/quality/socket data
+  ↓
+UI: Right panel switches to "Gems"
+  Shows:
+  ┌──────────────────────────────────────────┐
+  │  💎 Linked Setups                        │
+  │                                          │
+  │  🔴 Righteous Fire (6L)                  │
+  │  R-R-R-B-G-G                             │
+  │  Righteous Fire  Lv21  Q20  ✅ MAX       │
+  │  Elemental Focus Lv20  Q20  ⚠️ Corrupt? │
+  │  Swift Affliction Lv18 Q15  ❌ Level up  │
+  │  ...                                     │
+  │                                          │
+  │  🔵 Flame Dash (3L)                      │
+  │  B-B-G                                   │
+  │  Flame Dash   Lv20  Q20  ✅              │
+  └──────────────────────────────────────────┘
+  ↓
+User clicks a gem with "❌ Level up" badge
+  ↓
+UI: Expand gem detail:
+  "Swift Affliction Lv18 → Lv20: +4% DPS
+   Buy Lv20 20Q: ~1 chaos | XP to level: ~2.4B"
+  [Buy on Trade] [Level in offhand]
+  ↓
+User clicks a gem with "⚠️ Corrupt?" badge
+  ↓
+UI: Expand corruption advice:
+  "Corrupting Elemental Focus 20/20 → 21/20: expected value positive.
+   Success rate 1/8 → budget: ~40c for reasonable shot.
+   Outcomes: 21/20 gem (+18% DPS), 20/23 (+2% DPS), brick (0 DPS)"
+  [Corrupt Now (The Forge)] [Skip]
+  ↓
+ON ERROR (no gems found in build data):
+  UI: "No gem data found — ensure PoB or OAuth import includes item data."
+```
+
+---
+
+## 23. Open Blood Pact Panel
+
+```
+User clicks "☠ Blood Pact" in the panel nav
+  ↓
+FRONTEND: Load goals from settings.json (local)
+  + invoke('get_blood_pact_goals', { characterId })
+    → Seer generates AI goal list based on current build gaps
+  ↓
+UI: Right panel switches to "Blood Pact"
+  Shows:
+  ┌──────────────────────────────────────────┐
+  │  ☠ Blood Pact — Sworn Goals              │
+  │  3 / 7 completed                         │
+  │                                          │
+  │  ✓ Cap elemental resistances             │
+  │  ✓ Unlock 4L Righteous Fire              │
+  │  ✓ Complete first Lab                    │
+  │  ☐ Corrupt main skill gem to 21/20       │
+  │  ☐ Cap chaos resistance                  │
+  │  ☐ Acquire Watcher's Eye                 │
+  │  ☐ Unlock Uber Lab                       │
+  │                                          │
+  │  ✦ Blood Rituals                         │
+  │  [🌳 Respec passive tree]  Invoke →      │
+  │  [🔨 Channel benchcrafts]  Invoke →      │
+  │  [💎 Optimize gem links]   Invoke →      │
+  └──────────────────────────────────────────┘
+  ↓
+User clicks a goal checkbox to mark complete
+  ↓
+FRONTEND: Toggle `done` flag, save to settings.json
+  UI: Goal moves to "completed" style (dimmed, strikethrough)
+  Progress counter updates: "4 / 7 completed"
+  ↓
+User clicks [🔨 Channel benchcrafts] Blood Ritual
+  ↓
+FRONTEND: invoke('ask_seer', { query: 'benchcraft_slots', characterId })
+  → Seer identifies open mod slots → recommends crafts
+  ↓
+UI: Inline result appears below button:
+  "Open slot on boots: craft 'Faster Movement Speed' (~2c bench, +8% MS)
+   Open prefix on gloves: craft 'Life' prefix (~1c bench, +45-54 life)"
+  [Apply via The Forge] [Dismiss]
+  ↓
+User clicks [🌳 Respec passive tree] Blood Ritual
+  ↓
+FRONTEND: invoke('ask_seer', { query: 'passive_respec', characterId })
+  → Algorithm 48 (Passive Node Recommender) → finds inefficient nodes
+  ↓
+UI: Inline result:
+  "Save 3 points by removing Alacrity cluster (low value).
+   Reinvest: Sovereignty node (+1 aura) — net: +12% max res."
+  [View on Passive Tree] [Apply in PoB]
+  ↓
+ON ERROR (no build loaded):
+  UI: Blood Rituals are grayed out. "Import your build to unlock Rituals."
+```
+
+---
+
+## 24. Open Dark Path Panel
+
+```
+User clicks "🗡 Dark Path" in the panel nav
+  ↓
+FRONTEND: invoke('get_dark_path', { characterId })
+  → Seer classifies build archetype + generates 3 evolution paths
+  ↓
+UI: Right panel switches to "Dark Path"
+  Shows:
+  ┌──────────────────────────────────────────┐
+  │  ☠ Build Identity                        │
+  │  RF Inquisitor           [S-TIER]        │
+  │  Fire DoT · High Regen · Block · Armour  │
+  │                                          │
+  │  Choose Your Dark Path                   │
+  │                                          │
+  │  🛡 The Immortal                         │
+  │  Max survivability — facetank everything │
+  │  Aegis Aurora + Melding of the Flesh     │
+  │  Cost ~50d | DPS -5% | Surv: +massive   │
+  │  [Walk This Path]                        │
+  │                                          │
+  │  🔥 The Inferno                          │
+  │  Max damage — melt bosses                │
+  │  Mageblood + influenced chest            │
+  │  Cost ~100d | DPS +35% | Surv: -10%     │
+  │  [Walk This Path]                        │
+  │                                          │
+  │  ⚡ The Ascendant  ← RECOMMENDED        │
+  │  Balanced hybrid                         │
+  │  Watcher's Eye + cluster jewels          │
+  │  Cost ~25d | DPS +15% | Surv: +10%      │
+  │  [Walk This Path]  ← active             │
+  └──────────────────────────────────────────┘
+  ↓
+User clicks [Walk This Path] on "The Immortal"
+  ↓
+FRONTEND: invoke('set_active_path', { characterId, path: 'immortal' })
+  → Save path selection to settings.json
+  → Regenerate Sworn Goals checklist (Blood Pact) for this path direction
+  ↓
+UI: Path card gets "← active" indicator
+  Notification: "Dark Path updated. Blood Pact goals refreshed for The Immortal."
+  ↓
+User clicks a path card (not the button) to expand details
+  ↓
+UI: Expand path card inline:
+  Full upgrade sequence: step-by-step items in priority order
+  Each item: price estimate + stat impact
+  "1. Aegis Aurora (~10d) → +block, +ES on block
+   2. Melding of the Flesh (~40d) → +max res 90%
+   3. Glorious Vanity (Xibaqua) (~5d) → Divine Flesh keystone"
+  [View All in Build Progression]
+  ↓
+ON ERROR (Seer not available):
+  UI: Paths grayed out. "Dark Path analysis requires Seer — ensure AI is connected."
+  Fallback: show last-cached paths if available
+```
+
+---
+
+## 25. Open Curse Map Panel
+
+```
+User clicks "🗺 Curse Map" in the panel nav
+  ↓
+FRONTEND: invoke('get_map_mod_analysis', { characterId, mapMods: currentMapMods })
+  → Algorithm 39 (Map Mod Danger Scorer) evaluates all active mods
+  ↓
+UI: Right panel switches to "Curse Map — Map Mod Danger"
+  Shows:
+  ┌──────────────────────────────────────────┐
+  │  ☠ Curse Map — Map Mod Danger            │
+  │                                          │
+  │  CANNOT RUN:                             │
+  │  💀 No Regeneration                      │
+  │     RF = instant death without regen     │
+  │  💀 Elemental Reflect                    │
+  │     Fire damage = one-shot yourself      │
+  │                                          │
+  │  DANGEROUS:                              │
+  │  ⚠ -max Resistances                     │
+  │     RF degen increases significantly     │
+  │  ⚠ Less Recovery Rate                   │
+  │     Regen falls below RF degen           │
+  │  ⚠ Elemental Weakness Curse             │
+  │     -24% res — check overcap            │
+  │                                          │
+  │  SAFE:                                   │
+  │  ✓ Physical Reflect  (no phys damage)   │
+  │  ✓ No Mana Regen     (Lifetap)          │
+  │  ✓ Hexproof          (no curses needed) │
+  └──────────────────────────────────────────┘
+  ↓
+User hovers/clicks a CANNOT RUN mod (e.g., "No Regeneration")
+  ↓
+UI: Expand inline explanation:
+  "RF deals 3,800 degen/s. Without regeneration you have:
+   5,240 HP ÷ 3,800 degen = 1.38s before death.
+   Skip this map or respec to Juggernaut temporarily."
+  [Roll Map Again] [Skip Map]
+  ↓
+User has no active map loaded (panel opened from nav)
+  ↓
+UI: Show input field:
+  "Paste map mods here or link from trade:"
+  [________________________]  [Analyze]
+  ↓
+User pastes map mod text from PoE clipboard
+  ↓
+FRONTEND: invoke('parse_map_mods', { rawText })
+  → Algorithm 39: parse + score each mod for this build
+  ↓
+UI: Danger assessment refreshes with pasted mods
+  ↓
+BACKGROUND (with PoE OAuth):
+  App can read current map mods from Client.txt (Algorithm 41)
+  → Auto-refreshes Curse Map panel when user enters a new map zone
+  UI: "📍 Now in Lair of the Hydra — mods auto-loaded"
+  ↓
+ON ERROR (Algorithm 39 not ready / build not loaded):
+  UI: "Map mod analysis requires build data. Import your character first."
+```

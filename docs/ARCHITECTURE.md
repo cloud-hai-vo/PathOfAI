@@ -686,9 +686,26 @@ export const store = new Store();
 
 ### 2.7 Facade Pattern (The Seer — Three-Engine Architecture)
 
-The Seer is NOT an AI model. It's a **calculation engine with natural language output**.
-Three engines work together: Calculator (85%), Knowledge Base (12%), Cloud AI (3%).
-See [ENGINE-DESIGN.md](ENGINE-DESIGN.md) for full details.
+The Seer is NOT a general-purpose AI model. It's a **purpose-built PoE analysis system
+with natural language output**. There are two levels of description — both are correct:
+
+**Routing level (user-visible):** Three engines share query load.
+
+| Engine | % of queries | What it handles | Latency |
+|--------|-------------|-----------------|---------|
+| Calculator | ~85% | Math queries — DPS, EHP, resist, item compare | <500ms |
+| Seer (local) | ~12% | PoE knowledge, build advice, tree, crafting | <100ms |
+| Cloud AI | ~3% | Complex theory, new patch content, creative | 1-5s |
+
+**Implementation level (the Seer engine internals):** The local "Seer" engine is
+implemented as **5 specialized neural networks + a rule-based ResponseGen**. See
+[ALGORITHMS.md — Algorithm 42](ALGORITHMS.md#42-seer-network-architecture) for full
+network architecture (ItemNet/BuildNet/TreeNet/QueryNet/EmbedNet + ResponseGen).
+
+These two descriptions do not conflict: "3 engines" is the routing strategy;
+"5 networks" is the implementation of the middle engine.
+
+See [ENGINE-DESIGN.md](ENGINE-DESIGN.md) for formula details.
 
 ```rust
 // src-tauri/src/seer/mod.rs
@@ -1048,6 +1065,70 @@ class Store {
 
 export const store = new Store();
 ```
+
+---
+
+## 3.x pob_verify Module — PoB Lua Verification Engine
+
+### Purpose
+
+`pob_verify/` provides **optional cross-verification** of our Rust DPS/defence
+calculations against Path of Building's own Lua calc engine. This is NOT the primary
+calc path — it is a correctness check only.
+
+```
+Our Rust calc (primary, always on)
+    │
+    ├── result ──→ comparator.rs ──→ check for significant diff (>2%)
+    │                                     │
+    │             pob_verify/ (optional) ◄┘
+    │             lua_bridge.rs loads PoB Lua modules via mlua
+    │             runs: CalcSetup.PerformCalcs()
+    │             extracts: TotalDPS, life, resists, etc.
+    │
+    └── if diff > threshold → emit "pob-discrepancy" event → user sees warning
+```
+
+### When pob_verify Runs
+
+| Trigger | Behavior |
+|---------|----------|
+| Settings: "Enable PoB verification" ON | Runs after every full calc |
+| On-demand: user clicks "Cross-check with PoB" | Single run |
+| Settings: OFF or mlua feature not compiled | `pob_verify = None` — silently skipped |
+
+### What Is Compared
+
+```rust
+pub struct CalcComparison {
+    pub our_dps:      f64,
+    pub pob_dps:      f64,
+    pub dps_diff_pct: f64,    // abs((ours - pob) / pob * 100)
+
+    pub our_life:     f64,
+    pub pob_life:     f64,
+    pub life_diff_pct: f64,
+
+    pub our_fire_res: f64,
+    pub pob_fire_res: f64,
+    // ... cold, lightning, chaos resist
+
+    pub significant_diff: bool,   // any field > 2% off
+    pub issues: Vec<String>,      // human-readable list of discrepancies
+}
+```
+
+### Why 2% Threshold
+
+Floating-point rounding and minor formula interpretation differences (e.g., rounding
+order in a product chain) routinely produce sub-2% variation. 2% is large enough to
+be a genuine formula bug, small enough to not trigger on normal float noise.
+
+### Dependency
+
+Requires `mlua` crate with `lua54` feature. If not available (e.g., on ARM or minimal
+builds), `pob_verify` is compiled out via `#[cfg(feature = "pob_verify")]`. The app
+works fully without it — PoB verification is a quality tool, not a hard dependency.
 
 ---
 

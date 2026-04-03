@@ -325,6 +325,11 @@ Alert types:
 
 ## 3. THE SEER ENGINE — THREE-ENGINE ARCHITECTURE
 
+> ⚠ **HISTORICAL / SUPERSEDED** — The custom neural-network model described below
+> was evaluated and replaced by the five-network Seer architecture (50-80MB,
+> CPU-only, <100ms inference). See [ALGORITHMS.md — Algorithm 42](ALGORITHMS.md#42-seer-network-architecture)
+> for the current design. The content below is retained as design rationale only.
+
 > **Architecture Update:** After analysis, we determined that custom AI model
 > training is unnecessary. 97% of queries are answered by deterministic
 > calculation + structured data lookup. See [ENGINE-DESIGN.md](ENGINE-DESIGN.md).
