@@ -4,8 +4,110 @@
 
 Path of AI is a **Tauri desktop app**:
 - **Backend:** Rust (performance-critical logic, file I/O, AI inference, system access)
-- **Frontend:** HTML/CSS/TypeScript (UI rendering, user interaction)
+- **Frontend:** Vanilla TypeScript + HTML/CSS (UI rendering, user interaction)
 - **Communication:** Tauri IPC commands (frontend calls Rust functions)
+
+Related docs:
+- [ENGINE-DESIGN.md](ENGINE-DESIGN.md) — Calculator formulas + three-engine architecture
+- [FLOWS.md](FLOWS.md) — All 14 user interaction flows
+- [IPC-SPEC.md](IPC-SPEC.md) — Complete Tauri command + event contract
+- [DATABASE.md](DATABASE.md) — SQLite schema
+- [CONFIG-SCHEMA.md](CONFIG-SCHEMA.md) — settings.json + tauri.conf.json
+
+---
+
+## SYSTEM ARCHITECTURE DIAGRAM
+
+```
+┌─────────────────────────────────────────────────────────────────────┐
+│                        PATH OF AI (Tauri 2)                        │
+│                                                                     │
+│  ┌─────────────────────────────────────────────────────────────┐   │
+│  │  FRONTEND (Vanilla TypeScript + HTML/CSS)                    │   │
+│  │                                                              │   │
+│  │  ┌──────────┐ ┌──────────┐ ┌──────────┐ ┌──────────────┐   │   │
+│  │  │ Character │ │   Stat   │ │  Right   │ │   HUD Bar    │   │   │
+│  │  │   Viz    │ │ Sidebar  │ │  Panel   │ │ (Gem Buttons)│   │   │
+│  │  └──────────┘ └──────────┘ └──────────┘ └──────────────┘   │   │
+│  │                                                              │   │
+│  │  ┌──────────────────────────────────────────────────────┐   │   │
+│  │  │  Store (state management) ←→ invoke() / listen()     │   │   │
+│  │  └──────────────────────────┬───────────────────────────┘   │   │
+│  └─────────────────────────────┼───────────────────────────────┘   │
+│                                │ Tauri IPC                          │
+│  ┌─────────────────────────────┼───────────────────────────────┐   │
+│  │  BACKEND (Rust)             │                                │   │
+│  │                             ▼                                │   │
+│  │  ┌──────────────────────────────────────────────────────┐   │   │
+│  │  │  COMMANDS (thin adapters — parse → delegate → respond)│   │   │
+│  │  │  analyze_build | ask_seer | get_prices | apply_upgrade│   │   │
+│  │  └──────────┬──────────────┬─────────────┬──────────────┘   │   │
+│  │             │              │             │                   │   │
+│  │  ┌──────────▼──────┐  ┌───▼───────┐  ┌──▼───────────┐      │   │
+│  │  │  CALCULATOR     │  │   SEER    │  │   MARKET     │      │   │
+│  │  │  (Our Rust Calc)│  │  (Router) │  │ (poe.ninja)  │      │   │
+│  │  │                 │  │           │  │              │      │   │
+│  │  │ offense_calc.rs │  │ intent    │  │ price_cache  │      │   │
+│  │  │ defense_calc.rs │  │ classify  │  │ buy_advisor  │      │   │
+│  │  │ formulas.rs     │  │ → calc    │  │ upgrade_find │      │   │
+│  │  │ what_if.rs      │  │ → KB      │  └──────────────┘      │   │
+│  │  │ validator.rs    │  │ → cloud   │                         │   │
+│  │  └────────┬────────┘  └─────┬─────┘                         │   │
+│  │           │                 │                                │   │
+│  │  ┌────────▼─────────────────▼──────────────────────────┐    │   │
+│  │  │  CORE (pure domain logic — NO external dependencies) │    │   │
+│  │  │  pob_parser | build_analyzer | build_detector       │    │   │
+│  │  │  combat_sim | gem_optimizer  | map_mod_analyzer      │    │   │
+│  │  └────────┬────────────────────────────────────────────┘    │   │
+│  │           │                                                  │   │
+│  │  ┌────────▼────────────────────────────────────────────┐    │   │
+│  │  │  DATA (game data loading — RePoE JSONs)             │    │   │
+│  │  │  mod_database | gem_database | tree_database        │    │   │
+│  │  │  unique_database | loader | updater                 │    │   │
+│  │  └─────────────────────────────────────────────────────┘    │   │
+│  │                                                              │   │
+│  │  ┌──────────────────────────────────────────────────────┐   │   │
+│  │  │  SERVICES (background tasks)                          │   │   │
+│  │  │  file_watcher | price_poller | update_checker         │   │   │
+│  │  └──────────────────────────────────────────────────────┘   │   │
+│  └──────────────────────────────────────────────────────────────┘   │
+│                                                                     │
+│  ┌─────────────┐  ┌─────────────┐  ┌─────────────┐                │
+│  │  SQLite DB  │  │  PoB Files  │  │ PathOfAI_Data│                │
+│  │  (cache,    │  │  (XML read/ │  │ (settings,   │                │
+│  │   history)  │  │   write)    │  │  game-data,  │                │
+│  └─────────────┘  └─────────────┘  │  backups)    │                │
+│                                     └─────────────┘                │
+├─────────────────────────────────────────────────────────────────────┤
+│  EXTERNAL SERVICES (network, optional)                              │
+│  ┌───────────┐  ┌──────────────┐  ┌──────────────┐                │
+│  │ poe.ninja │  │ Claude API   │  │ GitHub       │                │
+│  │ (prices)  │  │ (cloud AI)   │  │ (updates)    │                │
+│  └───────────┘  └──────────────┘  └──────────────┘                │
+└─────────────────────────────────────────────────────────────────────┘
+```
+
+### Data Flow: Build Analysis Pipeline
+
+```
+PoB XML file
+    ↓ (file_watcher detects change, or user loads)
+pob_parser::parse()
+    ↓ BuildData { class, items, gems, tree, config }
+build_detector::detect()
+    ↓ archetype: FireDot, main_skill: RF
+calculator::calculate()
+    ↓ offense: { dps, breakdown }, defense: { life, resists, ehp }
+build_analyzer::analyze()
+    ↓ scores, issues, suggestions (multi-path)
+validator::validate_all()
+    ↓ every suggestion verified (DPS exact, resists checked)
+market::check_prices()  (background)
+    ↓ prices attached to suggestions
+→ AnalysisResult returned to frontend via IPC
+    ↓
+UI updates all panels simultaneously
+```
 
 ---
 
@@ -37,7 +139,18 @@ path-of-ai/
 │   │   │   ├── build_detector.rs     # Archetype / skill / playstyle detection
 │   │   │   ├── mod_impact.rs         # DPS/stat impact calculation
 │   │   │   ├── defense_sim.rs        # EHP, damage taken simulation
-│   │   │   ├── combat_sim.rs         # "The Arena" — boss/monster fight simulation
+│   │   │   ├── combat_sim.rs         # "The Arena" — combat simulation engine
+│   │   │   ├── boss_ai.rs           # Boss attack patterns, phases, telegraphs
+│   │   │   ├── map_gen.rs           # Map monster pack generation per tier
+│   │   │
+│   │   ├── renderer/                # Native GPU renderer (wgpu — character + combat)
+│   │   │   ├── mod.rs
+│   │   │   ├── engine.rs            # wgpu setup, surface config, render loop
+│   │   │   ├── character.rs         # Character sprite/skeleton + equipment overlays
+│   │   │   ├── monsters.rs          # Monster sprites + HP bars + death effects
+│   │   │   ├── particles.rs         # GPU particle system (fire, ice, lightning)
+│   │   │   ├── combat_scene.rs      # Combat simulation scene (map or boss arena)
+│   │   │   └── camera.rs            # Isometric camera + viewport
 │   │   │   ├── gem_optimizer.rs      # Gem swap / level / quality analysis
 │   │   │   ├── map_mod_analyzer.rs   # "Curse Map" — dangerous map mod detection
 │   │   │   └── item_image.rs         # Item → PoE CDN image URL resolver
@@ -50,6 +163,14 @@ path-of-ai/
 │   │   │   ├── tree_database.rs      # Passive tree (PoE1 + PoE2 layouts)
 │   │   │   ├── unique_database.rs    # Searchable unique item database (~1200 items)
 │   │   │   └── updater.rs            # Auto-update data from GitHub Releases
+│   │   │
+│   │   ├── poe_api/                  # PoE Official API (PRIMARY build import)
+│   │   │   ├── mod.rs
+│   │   │   ├── oauth.rs              # OAuth flow (authorize, token exchange, refresh)
+│   │   │   ├── characters.rs         # Fetch character list + equipped items
+│   │   │   ├── passive_tree.rs       # Fetch allocated passives + jewels
+│   │   │   ├── stash_tabs.rs         # Fetch stash contents (tabs, items, currency)
+│   │   │   └── api_to_build.rs       # Convert PoE API response → BuildData struct
 │   │   │
 │   │   ├── market/                   # Market intelligence
 │   │   │   ├── mod.rs
@@ -141,7 +262,12 @@ path-of-ai/
 │   │   ├── unique-search.ts          # Searchable unique item database
 │   │   ├── calc-breakdown.ts         # DPS calculation breakdown ("Show The Math")
 │   │   ├── party-panel.ts            # Party composition analyzer
-│   │   └── build-share.ts            # Build share code generator/importer
+│   │   ├── build-share.ts            # Build share code generator/importer
+│   │   ├── combat-renderer.ts       # Arena: animated combat simulation canvas
+│   │   ├── boss-renderer.ts         # Boss sprite + attack animations + phases
+│   │   ├── monster-renderer.ts      # Monster packs + HP bars + death effects
+│   │   ├── damage-numbers.ts        # Floating damage number particles
+│   │   └── upgrade-preview.ts       # Side-by-side before/after simulation
 │   ├── services/
 │   │   ├── api.ts                    # Typed wrappers around Tauri invoke()
 │   │   ├── store.ts                  # Frontend state management
@@ -1019,6 +1145,7 @@ data/           → depends on models + ports         (implements data ports)
 market/         → depends on models + ports         (implements PriceProvider)
 seer/           → depends on calculator + core     (orchestrates domain)
 pob_verify/     → depends on mlua (optional)       (optional verification adapter)
+renderer/       → depends on wgpu + winit + glam  (native GPU, center panel only)
 services/       → depends on tauri + domain ports  (background task adapters)
 ```
 
@@ -1361,6 +1488,10 @@ sha2 = "0.10"                       # Checksum verification for updates
 regex = "1"                          # Intent classification (Seer query router)
 uuid = { version = "1", features = ["v4"] }  # Build share codes
 base64 = "0.22"                      # Item clipboard format parsing
+wgpu = "24"                          # Native GPU rendering (Vulkan/Metal/DX12)
+winit = "0.30"                       # Window handle for wgpu surface
+image = "0.25"                       # Sprite/texture loading
+glam = "0.29"                        # Math (vectors, matrices for rendering)
 ```
 
 ---

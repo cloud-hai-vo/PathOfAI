@@ -34,6 +34,8 @@ ALL game data JSONs we need come from RePoE. Run the extraction on every PoE pat
 | `cluster_jewel_notables.json` | All cluster notable passives | **P1** |
 | `active_skill_types.json` | Skill type categories for gem compatibility | **P1** |
 | `gem_tags.json` | Gem tag ID → name translations | **P1** |
+| `quest_rewards.json` | Which quest gives which gem reward per class | **P1** |
+| `passive_tree.json` | Node positions + connections (for tree viewer) | **P0** |
 | `cost_types.json` | Resource cost definitions | **P2** |
 | `npc_master.json` | Master signature mods | **P2** |
 | `uniques.json` | Unique item names + art files | **P2** |
@@ -65,7 +67,95 @@ Item Analysis needs:
 
 ---
 
-## 1. PATH OF BUILDING (PoB XML)
+## 1. POE OFFICIAL API (PRIMARY — OAuth Character Import)
+
+**This is the DEFAULT way to get build data.** No PoB required.
+
+### OAuth Setup
+```
+Authorization URL: https://www.pathofexile.com/oauth/authorize
+Token URL:         https://www.pathofexile.com/oauth/token
+Scopes needed:     account:profile account:stashes account:characters
+Redirect URI:      http://localhost:{PORT}/callback (local server)
+```
+
+### API Endpoints We Use
+
+> **NOTE:** Exact endpoint URLs must be verified against the official
+> [PoE Developer API Reference](https://www.pathofexile.com/developer/docs/reference)
+> before implementation. The endpoints below are based on community documentation
+> and may need updating. Register for API access via oauth@grindinggear.com.
+
+| Endpoint (verify) | Category | What It Returns |
+|---|---|---|
+| `GET /api/account/profile` | Account Profile | Account name, badges |
+| `GET /api/account/characters` | Account Characters | All characters (name, class, level, league) |
+| `GET /api/character/{name}` | Character Detail | Equipped items, gems, sockets |
+| `GET /api/character/{name}/passives` | Passive Tree | Allocated nodes, jewels, masteries |
+| `GET /api/stash/{league}` | Stash Tabs (PoE1) | Tab list (names, types, colors) |
+| `GET /api/stash/{league}/{tabId}` | Stash Items | Items in a specific tab |
+
+**Required headers:**
+```
+User-Agent: OAuth pathofai/0.1.0 (contact: dev@pathofai.com)
+Authorization: Bearer {access_token}
+```
+
+**Rate limits (dynamic):**
+- Check `X-Rate-Limit-*` response headers
+- Typical: 45 requests per 60 seconds
+- Implement exponential backoff on 429 responses
+
+### API Response → BuildData Conversion
+
+```
+PoE API character response:
+  → items[] (each item has: name, base, mods, sockets, links)
+  → Convert each mod string to structured ModInfo (tier detection)
+  → Map socket groups to gem links
+  → Parse passive tree hashes → node IDs → allocated nodes
+  → Detect: class, ascendancy, level, bandits, pantheon
+  → Build: same BuildData struct as PoB parser produces
+  
+Result: BuildData that works identically with our Calculator
+  regardless of whether it came from OAuth or PoB XML.
+```
+
+### Differences: OAuth Data vs PoB Data
+
+| Aspect | PoE OAuth (live) | PoB XML (file) |
+|---|---|---|
+| **Items** | Exact current gear | May be outdated |
+| **Gems** | Exact current levels | May be planned (not yet leveled) |
+| **Tree** | Exact allocated nodes | May include planned nodes |
+| **Config** | NOT available (no boss selection, no flask config) | Available (boss type, charges, flasks) |
+| **Calcs** | NOT available (must use our calculator) | Available (PoB pre-computed DPS/life) |
+| **Stash** | Available (live currency, items) | NOT available |
+| **Theorycraft** | NOT possible (live data only) | Yes (plan builds before equipping) |
+
+**Implication for our Calculator:**
+- OAuth builds: we MUST calculate everything ourselves (no PoB Calcs section)
+- PoB builds: we CAN use PoB's pre-computed Calcs as a shortcut/verification
+- Our Rust calculator must handle BOTH cases identically
+
+### Rate Limits
+```
+PoE API rate limits:
+  - 45 requests per 60 seconds (per IP)
+  - Account-specific endpoints: 30 per 60 seconds
+  - Stash endpoints: 20 per 60 seconds
+  
+Our strategy:
+  - Fetch character data on first load → cache for 5 minutes
+  - Fetch stash data on demand → cache for 5 minutes
+  - Show "refreshing..." when re-fetching
+  - Never auto-refresh faster than rate limits
+  - Circuit breaker: if 3 consecutive 429s → wait 120 seconds
+```
+
+---
+
+## 2. PATH OF BUILDING (PoB XML — OPTIONAL Alternative)
 
 ### What We Parse (pob-parser.js)
 - Build: class, level, ascendancy, bandit, pantheon, stats
@@ -126,7 +216,7 @@ Cluster jewels have `{variant:X}` tags, notable assignments, enchant type
 
 ---
 
-## 2. POEDB.TW
+## 3. POEDB.TW
 
 ### P0 — Must Integrate
 
@@ -157,7 +247,7 @@ Required for: "Use Pristine + Scorched fossil combo for +life +fire DoT"
 
 ---
 
-## 3. POEWIKI.NET
+## 4. POEWIKI.NET
 
 ### P1 — Important
 

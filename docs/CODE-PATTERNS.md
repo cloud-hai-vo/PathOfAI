@@ -109,17 +109,20 @@ impl<P: PriceProvider, D: ModDatabase> BuildAnalyzer<P, D> {
        prices: P,  // can be real or mock
    }
 
-   // BAD: importing concrete type
-   class BuildAnalyzer {
-     constructor() {
-       this.build = globalBuildState.current; // NO
-     }
+   // BAD: importing concrete implementation directly
+   pub struct BuildAnalyzer {
+       prices: PoeNinjaClient,  // WRONG — locked to one implementation
    }
    ```
 
-3. **Default export** — one class/function per module, exported as default
-   ```javascript
-   export default BuildAnalyzer;
+3. **One public struct per module** — exported from `mod.rs`
+   ```rust
+   // core/build_analyzer.rs
+   pub struct BuildAnalyzer<P: PriceProvider> { ... }
+   
+   // core/mod.rs
+   pub mod build_analyzer;
+   pub use build_analyzer::BuildAnalyzer;
    ```
 
 4. **No circular dependencies** — if A imports B, B must not import A
@@ -387,18 +390,22 @@ const hasLife = item.mods.some(m => m.raw === "+94 to maximum Life");
 ### Data-Driven Rendering
 UI receives data objects and renders them. No business logic in UI:
 
-```javascript
-// GOOD: UI just renders what it's given
-function renderIssue(issue) {
-  return `<div class="issue-card ${issue.severity}">
-    <div class="issue-title">${issue.issue}</div>
-    <div class="issue-fix">Fix: ${issue.fix}</div>
-  </div>`;
+```typescript
+// GOOD: UI just renders what backend gives it
+class IssueCard {
+  render(issue: Issue): string {
+    return `<div class="issue-card ${issue.severity}">
+      <div class="issue-title">${issue.issue}</div>
+      <div class="issue-fix">Remedy: ${issue.fix}</div>
+    </div>`;
+  }
 }
 
 // BAD: UI calculates business logic
-function renderResists(stats) {
-  const isCapped = stats.FireResist >= 75; // this belongs in core/
+class ResistPanel {
+  render(stats: DefenseResult) {
+    const isCapped = stats.resists.fire >= 75; // WRONG — belongs in Rust backend
+  }
 }
 ```
 

@@ -2,7 +2,24 @@
 
 ## CORE SYSTEMS
 
-### 1. Two-Way PoB Sync Engine
+### 1. PoE Account Import (PRIMARY — Default)
+Import build data directly from pathofexile.com via OAuth. No PoB required.
+- OAuth login via browser (pathofexile.com/oauth/authorize)
+- Fetch ALL characters from account (name, class, level, league)
+- Fetch equipped items with full mod data for selected character
+- Fetch passive tree (allocated nodes, jewels, masteries)
+- Fetch gem setup (socketed gems, links, levels, quality)
+- Fetch stash tabs (currency, items, fragments, div cards)
+- Live data sync — refresh on demand or every 5 minutes
+- Multi-character support — switch between characters instantly
+- Multi-league support — see characters across Standard, league, HC, SSF
+- "Your character in-game IS your build — no export needed"
+- Rate limit handling: 45 req/60s with circuit breaker + stale cache fallback
+- Token stored encrypted in OS keychain (Tauri Stronghold plugin)
+- Token auto-refresh before expiry
+
+### 1b. PoB File Import (OPTIONAL — For Theorycrafters)
+For players who use Path of Building for theorycrafting planned builds.
 - Auto-detect PoB install path (`%AppData%/Path of Building/`)
 - Auto-detect PoB Community Fork vs original
 - File watcher with debounce (wait 500ms after last change)
@@ -208,6 +225,28 @@ Every upgrade ranked by value:
 - "With Molten Shell active: you survive Shaper Slam with 4200 remaining"
 
 ### Combat Simulator ("The Arena")
+
+> Full specification: **[COMBAT-SIMULATOR.md](COMBAT-SIMULATOR.md)**
+
+**Visual, animated combat simulation** — the character fights monsters and bosses
+on screen with real game mechanics, real damage numbers, and real timing.
+NOT a static calculator — a playable simulation that shows exactly how upgrades
+translate to faster kills and better survival.
+
+Key capabilities:
+- **Character renderer** (99% like in-game): class-specific body, equipment shown
+  visually, aura rings, RF fire effect, buff icons, walk/attack animations
+- **Map combat simulation**: character walks through map, RF burns packs, damage
+  numbers float up, rare monsters have HP bars, currency drops from kills
+- **Boss fight simulation**: scripted boss AI with real attack patterns + phases
+  (Shaper slam, Die Beam, Maven memory game, etc.), telegraph warnings, dodge
+  probability based on move speed
+- **Upgrade preview**: side-by-side simulation (before/after upgrade) playing
+  simultaneously so player can SEE the difference
+- **Multi-step upgrade path**: select multiple upgrades → preview cumulative effect
+  → watch simulation with ALL upgrades applied → apply step by step or all at once
+- **Foresight mode**: preview endgame build even if player can't afford it yet,
+  shows cost breakdown and farming time estimate
 
 Full fight simulation engine that models real combat scenarios — not just
 single-hit survival, but actual fight duration, DPS check phases, and

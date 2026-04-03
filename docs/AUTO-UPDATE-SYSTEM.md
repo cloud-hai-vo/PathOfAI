@@ -355,7 +355,362 @@ The app bundles a complete data set at build time. This means:
 
 ---
 
-## 9. CROSS-PLATFORM: macOS SUPPORT
+## 9. HANDLING BREAKING GAME CHANGES
+
+### The Problem
+
+GGG makes breaking changes every league. Examples from real patches:
+```
+3.28 Mirage:
+  - Awakened Support Gems REMOVED from drop pool (can't suggest them anymore)
+  - Djinn Coins added (new currency type our engine doesn't know)
+  - Exceptional Support Gems added (40+ new gems to rank)
+  - T17 maps removed (boss farming strategy changes)
+  - Reliquarian Scion ascendancy added (new build archetype)
+  - Atlas passive tree completely reworked
+
+3.25 (hypothetical):
+  - Determination nerfed: base armour reduced 30%
+  - New keystone: "Eternal Youth" (ES recharge applies to life)
+  - Molten Shell reworked: now scales with evasion, not armour
+  - Divine Orb replaced by "Chaos Shard" as primary currency
+```
+
+**If our app still suggests Awakened gems after 3.28, it's WRONG and users lose trust.**
+
+### Solution: Data Versioning + Breaking Change Detection
+
+Every game data file has a version tag:
+```json
+{
+  "_meta": {
+    "poeVersion": "3.28",
+    "dataVersion": "2026.03.06",
+    "breakingChanges": [
+      {
+        "type": "removed",
+        "category": "gems",
+        "ids": ["SupportAwakened*"],
+        "description": "Awakened Support Gems removed from game"
+      },
+      {
+        "type": "added",
+        "category": "gems",
+        "ids": ["SupportExceptional*"],
+        "description": "Exceptional Support Gems added"
+      },
+      {
+        "type": "removed",
+        "category": "maps",
+        "ids": ["MapT17*"],
+        "description": "T17 maps removed"
+      },
+      {
+        "type": "changed",
+        "category": "formulas",
+        "ids": ["determination_base_armour"],
+        "description": "Determination base armour reduced 30%"
+      },
+      {
+        "type": "added",
+        "category": "currency",
+        "ids": ["DjinnCoin*"],
+        "description": "Djinn Coins — new league currency"
+      }
+    ]
+  },
+  "data": { ... }
+}
+```
+
+### How the App Handles Each Change Type
+
+```
+TYPE: "removed" (item/gem/mechanic no longer exists)
+  ──────────────────────────────────────────────────
+  ACTION:
+    1. Remove from suggestion pool immediately
+    2. If user's build uses removed item/gem:
+       → Show warning: "⚠ Awakened Burning Damage was removed in 3.28.
+         The Seer suggests: Exceptional Burning Damage (new) as replacement."
+    3. If user's PoB file references removed gem:
+       → Parse still works (backwards compatible)
+       → Calculator flags it: "This gem no longer exists in 3.28"
+       → Prophecy suggests replacement
+    4. Market prices for removed items → mark as "Legacy (Standard only)"
+
+  EXAMPLE:
+    User loads build with Awakened Burning Damage Support
+    → Calculator still calcs DPS with it (the gem data is in old version)
+    → Warning banner: "⚠ This gem was removed in 3.28"
+    → Prophecy: "Replace with Exceptional Burning Damage: -2% DPS but available"
+    → If user is on Standard league: no warning (Awakened gems still exist there)
+
+
+TYPE: "added" (new item/gem/mechanic)
+  ──────────────────────────────────────────────────
+  ACTION:
+    1. Add to gem/item database
+    2. Calculator includes new gems in "best support" ranking
+    3. Prophecy suggests new items if they improve build
+    4. The Forge includes new currency types
+
+  EXAMPLE:
+    Exceptional Support Gems added in 3.28
+    → gem_database gets 40+ new entries
+    → Calculator: "Exceptional Burning Damage: +37% more burning → ranks #2 for RF"
+    → Prophecy: "New gem available: Exceptional Burning Damage (8 div, +12% DPS)"
+    → Djinn Coins added → craft_advisor can suggest imbuing gems
+
+
+TYPE: "changed" (formula/value modification)
+  ──────────────────────────────────────────────────
+  ACTION:
+    1. Update formula constants in game data JSON (NOT in code)
+    2. Re-run calculator → all DPS/defense numbers update automatically
+    3. If major change: show notification to user
+    4. If formula structure changed (not just values): requires code update
+
+  EXAMPLE:
+    Determination base armour reduced 30%
+    → game-data/gems/determination.json: base_armour: 3000 → 2100
+    → Calculator: DPS unchanged, but armour drops → EHP warning
+    → Defense panel: "⚠ Armour dropped from 28,450 to 22,450 after patch"
+    → Prophecy: "Consider Grace or Defiance Banner to compensate"
+
+
+TYPE: "reworked" (mechanic fundamentally changed)
+  ──────────────────────────────────────────────────
+  ACTION:
+    1. Data JSON update handles simple reworks (value changes)
+    2. If rework changes HOW a formula works: requires APP UPDATE (not just data)
+    3. App checks: "data requires app version >= 0.3.0"
+    4. If app version too old: show "Update Path of AI to support 3.28 changes"
+
+  EXAMPLE:
+    Molten Shell reworked: now scales with evasion instead of armour
+    → This changes the FORMULA, not just values
+    → Data file: { "requires_app_version": "0.3.0", "breaking_formula": "guard_molten_shell" }
+    → Old app version: "⚠ Molten Shell was reworked in 3.28. Update Path of AI for accurate calc."
+    → New app version: formula updated in code, data values updated in JSON
+```
+
+### League-Specific Data Handling
+
+```
+When new league launches:
+
+DAY -7 (patch notes released):
+  → We read patch notes manually
+  → Create breaking_changes.json with all removals/additions/changes
+  → Pre-generate data files where possible (gem values, tree layout from datamine)
+
+DAY -1 (patch downloadable):
+  → Run RePoE extraction on new game files
+  → Generate complete data JSONs
+  → Verify against breaking_changes.json (did we catch everything?)
+  → Push as "pre-release" to GitHub
+
+DAY 0 (league launch):
+  → Finalize any last-minute hotfixes
+  → Push stable release
+  → App auto-downloads within 30 minutes
+
+DAY 1-7 (hotfix period):
+  → GGG often hotfixes balance numbers
+  → Monitor patch notes → update data JSONs
+  → Push micro-updates (just changed files)
+
+WEEK 2+ (stable):
+  → Meta settles → update archetype stat weights from poe.ninja
+  → Price data stabilizes → buy advisor becomes accurate
+  → Craft probabilities verified against community data
+```
+
+### League Detection
+
+```rust
+pub fn detect_league_context(build: &BuildData, data: &GameData) -> LeagueContext {
+    LeagueContext {
+        current_league: data.meta.league_name.clone(),     // "Mirage"
+        poe_version: data.meta.poe_version.clone(),        // "3.28"
+        data_version: data.meta.data_version.clone(),      // "2026.03.06"
+        is_standard: build.league == "Standard",
+        is_hardcore: build.league.contains("Hardcore"),
+        is_ssf: build.league.contains("SSF"),
+        
+        // Standard league keeps ALL items (including removed ones)
+        // League-specific items may not exist in Standard yet
+        allow_legacy_items: build.league == "Standard",
+        allow_league_items: !build.league.contains("Standard"),
+    }
+}
+
+// When suggesting items:
+if !league_context.allow_legacy_items && gem.removed_in <= current_version {
+    skip_suggestion("Gem removed in patch X");
+    suggest_replacement(gem);
+}
+```
+
+---
+
+## 10. DATABASE MIGRATION DURING AUTO-UPDATE
+
+### The Problem
+
+When we update game data, the SQLite database may need schema changes:
+- New tables (e.g., `djinn_coins` tracking in Mirage league)
+- New columns (e.g., `imbued_support` field on gems table)
+- Changed indexes (new query patterns for new features)
+- Data cleanup (remove cached prices for items that no longer exist)
+
+### Migration Strategy
+
+```
+PRINCIPLE: Data updates and schema updates are SEPARATE.
+
+DATA UPDATE (every patch, automatic):
+  → Download new JSON files from GitHub Releases
+  → Swap game-data/ directory atomically
+  → NO database schema change needed
+  → Calculator loads new data → all numbers update
+
+SCHEMA UPDATE (with app updates, less frequent):
+  → App version 0.1.0 → 0.2.0 includes new tables/columns
+  → On app startup: check schema_version table
+  → If schema < expected: run migration scripts
+  → Migrations are ADDITIVE (never delete data)
+
+CACHE INVALIDATION (every patch):
+  → price_cache: delete ALL rows (prices change every league)
+  → price_history: keep (historical data is valuable)
+  → build snapshots: keep (user's data)
+  → alerts: keep but validate (is alerted item still in game?)
+```
+
+### Migration Script System
+
+```sql
+-- Stored in app binary as embedded SQL
+-- Each migration has a version number and description
+-- Run in order, skip already-applied migrations
+
+-- Check current version
+SELECT MAX(version) FROM schema_version;
+-- Result: 1 (current)
+
+-- If version < 2, run migration v2:
+-- Migration v2: Add Mirage league support (3.28)
+BEGIN TRANSACTION;
+
+-- Add imbued support tracking to gem analysis cache
+ALTER TABLE builds ADD COLUMN imbued_gems TEXT;  -- JSON array of imbued gem data
+
+-- Add djinn coin tracking
+CREATE TABLE IF NOT EXISTS league_currency (
+    currency_name TEXT PRIMARY KEY,
+    count         INTEGER DEFAULT 0,
+    league        TEXT NOT NULL,
+    updated_at    TEXT NOT NULL
+);
+
+-- Invalidate stale caches from previous league
+DELETE FROM price_cache WHERE league != 'Mirage';
+
+-- Validate alerts: remove alerts for items that no longer exist
+-- (app code handles this, not SQL — needs game data lookup)
+
+-- Record migration
+INSERT INTO schema_version VALUES (2, datetime('now'), 'Mirage league support');
+
+COMMIT;
+```
+
+### Migration Rules
+
+```
+RULE 1: NEVER delete user data
+  → Don't drop tables with build history
+  → Don't delete user settings
+  → Don't remove undo snapshots
+
+RULE 2: Migrations are ADDITIVE
+  → Only ADD columns, tables, indexes
+  → Never REMOVE columns (old data stays, just unused)
+  → Exception: cache tables CAN be cleared (they rebuild)
+
+RULE 3: Migrations are IDEMPOTENT
+  → Running same migration twice is safe (IF NOT EXISTS)
+  → Always check schema_version before running
+
+RULE 4: Migrations run BEFORE app starts
+  → User sees: "Updating database for patch 3.28..."
+  → Takes < 2 seconds for typical migrations
+  → If migration fails: rollback transaction, use old schema, show warning
+
+RULE 5: Data migration happens in BACKGROUND
+  → Schema change: synchronous (before app loads)
+  → Data validation: asynchronous (after app loads)
+  → Example: "Checking 15 price alerts for removed items... 2 removed."
+```
+
+### Cache Invalidation Per Patch
+
+```
+EVERY LEAGUE START:
+  price_cache        → DELETE ALL (prices reset every league)
+  price_history      → KEEP (but start new league's history)
+  build analysis     → RE-CALCULATE (game data changed → results change)
+  stash data         → RE-FETCH (stash resets per league in temp leagues)
+  
+EVERY PATCH (mid-league):
+  price_cache        → DELETE ALL (prices shift after balance changes)
+  build analysis     → RE-CALCULATE only if affected by patch changes
+  alerts             → VALIDATE (check if alerted item still exists)
+  
+EXAMPLE — 3.28 Mirage launch:
+  1. Download new game data (gems, mods, tree, uniques)
+  2. Run schema migration v2 (add imbued_gems, league_currency)
+  3. Clear ALL price caches
+  4. Re-analyze current build:
+     → "⚠ Your Awakened Burning Damage no longer exists in Mirage"
+     → "Suggestion: Exceptional Burning Damage (new, similar effect)"
+  5. Validate alerts:
+     → Alert for "Awakened Burning Damage < 5 div" → remove (item gone)
+     → Alert for "Aegis Aurora < 15 div" → keep (still exists)
+  6. Update UI: show "Updated to patch 3.28 — Mirage league"
+```
+
+### App Version vs Data Version Compatibility
+
+```
+COMPATIBILITY MATRIX:
+
+App Version  | Min Data Version | Max Data Version | Notes
+0.1.0        | 3.24             | 3.28             | Basic calc, no imbued gems
+0.2.0        | 3.28             | 3.29+            | Imbued gems, Exceptional supports
+0.3.0        | 3.29             | 3.30+            | Formula reworks from 3.29
+
+DATA FILE:
+  {
+    "_meta": {
+      "requires_app_version": "0.2.0",  // minimum app version for this data
+      "poeVersion": "3.28"
+    }
+  }
+
+ON UPDATE:
+  IF data.requires_app_version > current_app_version:
+    → Show: "This game data requires Path of AI v0.2.0. You have v0.1.0."
+    → Show: [Update App] button
+    → DO NOT apply data update (would break calculator)
+    → Keep using old data until app is updated
+```
+
+---
+
+## 11. CROSS-PLATFORM: macOS SUPPORT
 
 ### Tauri for Cross-Platform
 
@@ -428,7 +783,7 @@ Pure Rust desktop UI options (egui, iced, dioxus) would be lighter but:
 
 ---
 
-## 10. LOCAL ENGINE vs AI MODEL
+## 12. LOCAL ENGINE vs AI MODEL
 
 ### Three-Tier Intelligence Architecture
 

@@ -1,5 +1,9 @@
 # Path of AI — Advanced Systems Specification
 
+> **⚠ WARNING:** Section 3 of this document ("Custom Local AI Model") is
+> **DEPRECATED**. Do NOT implement it. The current architecture uses
+> Calculator + Knowledge Base instead. See **[ENGINE-DESIGN.md](ENGINE-DESIGN.md)**.
+
 ## 1. ITEM IMAGE SYSTEM
 
 ### Image Sources (Priority Order)
@@ -346,7 +350,22 @@ Our Calculator + Knowledge Base approach:
   → Complete privacy
 ```
 
-### Architecture: Hybrid RAG + Fine-Tuned Small Model
+### ~~Architecture: Hybrid RAG + Fine-Tuned Small Model~~ (DEPRECATED)
+
+> **DEPRECATED (April 2026):** The sections below (Steps 1-8) describe the
+> ORIGINAL plan to train a custom AI model. This plan was REPLACED by the
+> three-engine architecture (Calculator + Knowledge Base + Cloud API).
+>
+> See **[ENGINE-DESIGN.md](ENGINE-DESIGN.md)** for the current architecture.
+>
+> Key decision: 97% of queries are answered by deterministic math (our Rust
+> calculator) + structured data lookup (game data JSONs). No custom model needed.
+> The remaining 3% uses existing cloud APIs (Claude/GPT) — no training.
+>
+> The sections below are preserved for historical reference only.
+> DO NOT implement any of them.
+
+### ~~DEPRECATED~~ Architecture: Hybrid RAG + Fine-Tuned Small Model
 ```
 ┌──────────────────────────────────────────────┐
 │                Path of AI                     │

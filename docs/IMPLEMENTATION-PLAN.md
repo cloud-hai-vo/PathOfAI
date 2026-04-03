@@ -1,25 +1,60 @@
 # Path of AI — Implementation Plan
 
-## MVP Target: 20 weeks (5 months)
+## Open Source Project Structure
+
+This is an **open source project** — not sprint-based.
+Contributors work on issues/milestones at their own pace.
+
+Repository: `github.com/path-of-ai/path-of-ai` (MIT license)
+
+### Contribution Model
+```
+Milestones (ordered by dependency):
+  M1: Core Calculator     ← MUST be first (everything depends on it)
+  M2: Data & Parser       ← game data loading + PoE OAuth + PoB parser
+  M3: Analysis Engine     ← scoring, issues, suggestions, multi-path
+  M4: Seer & Forge        ← query router, templates, crafting advisor
+  M5: Frontend UI         ← Tauri shell, game HUD, character viz
+  M6: Combat Simulator    ← arena, wgpu renderer, boss AI
+  M7: Market & Stash      ← poe.ninja, stash grid, price alerts
+  M8: Polish & Release    ← testing, auto-update, distribution
+
+Contributors can work on ANY milestone if dependencies are met.
+Issues tagged: `good-first-issue`, `help-wanted`, `core-engine`, `ui`, `data`
+```
+
+### Tech Stack for Contributors
+```
+Backend:  Rust (stable) — cargo build
+Frontend: Vanilla TypeScript — no framework
+Renderer: wgpu (native GPU) — optional feature flag
+Desktop:  Tauri 2
+Database: SQLite (rusqlite)
+Tests:    cargo test + vitest + playwright
+CI:       GitHub Actions
+```
 
 ```
 CRITICAL PATH:
-  Rust Calculator → Test Data → Game Data Loader → Suggestion Engine → UI
+  Core Calculator → Data Loader → Analysis Engine → Suggestion Engine → UI
   (everything else depends on the calculator being correct)
 ```
 
 ---
 
-## Sprint 1-2: Rust Calculator Core (Weeks 1-4)
+## Milestone 1: Core Calculator
 
-**Goal:** Calculate life, ES, resists, armour, basic DPS for any PoB build.
+**Goal:** Calculate life, ES, resists, armour, basic DPS for any build
+(imported via PoE OAuth OR PoB file).
 
 ```
-Week 1: Parser + Defense Basics
-  - Port pob-parser.js to Rust (pob_parser.rs)
-  - Parse: build stats, items, skills, tree, config
-  - Parse: <Calcs> section (free pre-computed stats)
+Week 1: Build Data Import + Defense Basics
+  - Implement PoE OAuth flow (oauth.rs — authorize, token exchange, store)
+  - Implement character fetcher (characters.rs — items, passives, gems)
+  - Implement api_to_build.rs — convert PoE API response → BuildData struct
+  - ALSO: Port pob-parser.js to Rust (pob_parser.rs) for PoB file support
   - Parse: {crafted} mod flag, influence tags
+  - Both paths produce the SAME BuildData struct
   - Implement: life, ES, mana calculation
   - Implement: resistance aggregation (flat + %, overcap)
   - Test: parse SampleRFInquisitor.xml → verify life = 6453
@@ -52,7 +87,7 @@ Week 4: Edge Cases
 
 ---
 
-## Sprint 3: Test Infrastructure + Game Data (Weeks 5-6)
+## Milestone 3: Test Infrastructure + Game Data (Weeks 5-6)
 
 **Goal:** Robust test suite + bundled game data.
 
@@ -75,7 +110,7 @@ Week 6: Game Data Loader
 
 ---
 
-## Sprint 4: Build Analysis + Suggestions (Weeks 7-10)
+## Milestone 4: Build Analysis + Suggestions (Weeks 7-10)
 
 **Goal:** Analyze a build, detect issues, suggest upgrades with verified DPS numbers.
 
@@ -112,7 +147,7 @@ Week 10: Crafting Advisor ("The Forge")
 
 ---
 
-## Sprint 5: The Seer Query Engine (Weeks 11-12)
+## Milestone 5: The Seer Query Engine (Weeks 11-12)
 
 **Goal:** User asks question → gets accurate, build-specific answer.
 
@@ -138,7 +173,7 @@ Week 12: Cloud AI Integration
 
 ---
 
-## Sprint 6-7: Frontend (Weeks 13-16)
+## Milestone 6-7: Frontend (Weeks 13-16)
 
 **Goal:** Game-like HUD UI in vanilla TypeScript.
 
@@ -176,7 +211,7 @@ Week 16: Polish + Animations
 
 ---
 
-## Sprint 8: File Watcher + Auto-Update (Weeks 17-18)
+## Milestone 8: File Watcher + Auto-Update (Weeks 17-18)
 
 **Goal:** Real-time sync with PoB + data stays current.
 
@@ -199,7 +234,7 @@ Week 18: Auto-Update System
 
 ---
 
-## Sprint 9-10: E2E Testing + Release (Weeks 19-20)
+## Milestone 9-10: E2E Testing + Release (Weeks 19-20)
 
 ```
 Week 19: E2E Tests + Performance

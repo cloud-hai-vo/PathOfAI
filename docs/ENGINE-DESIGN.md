@@ -1,5 +1,19 @@
 # Path of AI — Engine Design & The Seer Architecture
 
+## Build Data Source
+
+**PoE OAuth is the PRIMARY import method.** PoB file import is optional.
+
+Our calculator receives a `BuildData` struct regardless of source:
+- **From PoE OAuth:** Character data fetched from GGG servers (live, real-time)
+- **From PoB XML:** Build data parsed from PoB export file (may include theorycrafts)
+
+Both paths produce the **SAME `BuildData` struct**. The calculator doesn't know
+or care where the data came from. This means:
+- Our Rust calculator MUST compute everything from scratch (no PoB Calcs shortcut)
+- OAuth users get live data without installing PoB
+- PoB users get theorycraft support + live data if they also connect OAuth
+
 ## The Core Question
 
 How do we make The Seer so accurate that users NEVER need Claude/GPT/Gemini?
@@ -478,24 +492,47 @@ When PoB verification is enabled:
 
 ```
 TIER 1: INSTANT ESTIMATE (<10ms)
-  For browsing and quick comparisons.
   Uses pre-computed impact tables per mod type per archetype.
   Shows "~estimated" label. Accuracy: 85-95%.
 
-  Example: "+15% fire DoT multi on RF at 180% total"
-           = (195/180) - 1 = +8.3% MORE ← instant math
+  WHEN TO USE (exact triggers):
+    → User HOVERS over item in stash/trade (mouse enter, not click)
+    → User SCROLLS through upgrade list (instant feedback per card)
+    → User BROWSES unique database (score shown per item)
+    → Market search results (each item gets estimated DPS diff)
+    → NOT used for: final suggestions, "Apply" decisions, Seer answers
+
+  WHEN TO STOP USING:
+    → User CLICKS item → upgrade to Tier 2
+    → User OPENS item detail panel → upgrade to Tier 2
+    → Timer: if user hovers >500ms → auto-upgrade to Tier 2
+    → Always show "~" prefix on Tier 1 numbers
 
 TIER 2: OUR RUST CALC (<100ms) — DEFAULT
-  For all suggestions, analysis, and detailed views.
   Runs our full Rust calculation engine.
   Shows result without label (this IS the primary engine).
   Accuracy: 99%+ (validated against PoB test suite).
 
+  WHEN TO USE (exact triggers):
+    → Initial build load (full analysis)
+    → User CLICKS an item for detail view
+    → User CLICKS "What if" on any suggestion
+    → Seer answers (all Calculator-routed queries)
+    → Prophecy panel suggestions (all pre-validated)
+    → Combat simulator input (DPS/defense numbers)
+    → ALWAYS used for: "Apply Upgrade" validation
+    → ALWAYS used for: numbers shown WITHOUT "~" prefix
+
 TIER 3: POB LUA VERIFICATION (<500ms) — OPTIONAL
-  For users who want to cross-check against PoB.
   Runs PoB's Lua engine via LuaJIT FFI.
   Shows "PoB: X" alongside our result.
   Accuracy: matches PoB exactly (it IS PoB).
+
+  WHEN TO USE:
+    → ONLY when user enables "PoB Verification" in Settings
+    → Runs AFTER Tier 2 completes (async, non-blocking)
+    → Shows comparison: "Our calc: 2.84M | PoB: 2.84M ✓"
+    → If diff >2%: flag as "⚠ Discrepancy — report for investigation"
 
 USER EXPERIENCE:
   1. User sees suggestion with DPS from our Rust calc (default)
@@ -1886,6 +1923,716 @@ Each card has an "Alternatives" dropdown:
   │  └ Divine existing — 1 div, +3% DPS         │
   └─────────────────────────────────────────────┘
 ```
+
+---
+
+## 5b. INTENT CLASSIFIER — Complete Rule List
+
+The query router classifies user questions using regex pattern matching.
+NO machine learning. Just string matching with priority ordering.
+
+```rust
+/// Intent classification rules — ordered by PRIORITY (first match wins)
+const INTENT_RULES: &[(&str, Intent)] = &[
+    // === DPS / DAMAGE (Engine 1: Calculator) ===
+    (r"(?i)(what|how much).*(dps|damage|dpm)", Intent::DpsCheck),
+    (r"(?i)(increase|improve|more|better|higher).*(dps|damage)", Intent::UpgradeRank),
+    (r"(?i)dps.*(breakdown|chain|how|calculated)", Intent::DpsBreakdown),
+    (r"(?i)(best|optimal|bis).*(support|gem|link)", Intent::GemSwap),
+    (r"(?i)(swap|replace|switch).*(gem|support|link)", Intent::GemSwap),
+    (r"(?i)(awakened|exceptional|transfigured).*(gem|support)", Intent::GemSwap),
+    (r"(?i)(empower|enlighten|enhance)", Intent::GemSwap),
+    
+    // === DEFENSE / SURVIVAL (Engine 1: Calculator) ===
+    (r"(?i)(why|how).*(dying|die|dead|death|killed|rip)", Intent::DefenseAnalysis),
+    (r"(?i)(survive|tank|face.?tank|take.*hit)", Intent::DefenseAnalysis),
+    (r"(?i)(ehp|effective.*hp|effective.*life)", Intent::EhpCalc),
+    (r"(?i)(resist|res|cap|overcap|uncap)", Intent::ResistCheck),
+    (r"(?i)(chaos.*(res|resist)|chaos.*low)", Intent::ResistCheck),
+    (r"(?i)(armour|armor|phys.*reduction|physical.*mitigation)", Intent::DefenseAnalysis),
+    (r"(?i)(block|spell.*block|suppression)", Intent::DefenseAnalysis),
+    (r"(?i)(ailment|freeze|shock|ignite|bleed|poison|stun|immune)", Intent::DefenseAnalysis),
+    (r"(?i)(regen|recovery|leech|life.*gain)", Intent::DefenseAnalysis),
+    
+    // === ITEMS / UPGRADES (Engine 1: Calculator) ===
+    (r"(?i)(what|which).*(upgrade|improve|replace|buy)", Intent::UpgradeRank),
+    (r"(?i)(worst|weakest|lowest).*(slot|item|gear|piece)", Intent::UpgradeRank),
+    (r"(?i)(next|should|priority).*(upgrade|buy|invest)", Intent::UpgradeRank),
+    (r"(?i)(score|rate|value|worth).*(item|ring|amulet|helm)", Intent::ItemScore),
+    (r"(?i)(is this|is it).*(good|upgrade|better|worth)", Intent::ItemCompare),
+    (r"(?i)(compare|versus|vs|difference).*(item|gear)", Intent::ItemCompare),
+    (r"(?i)(open|empty).*(prefix|suffix|affix)", Intent::ItemScore),
+    (r"(?i)(benchcraft|craft.*bench|master.*craft)", Intent::CraftAdvice),
+    
+    // === PASSIVE TREE (Engine 1: Calculator) ===
+    (r"(?i)(passive|tree|node|point|respec)", Intent::TreeAdvice),
+    (r"(?i)(keystone|notable|mastery|jewel.*socket)", Intent::TreeAdvice),
+    (r"(?i)(anoint|cluster.*jewel|timeless|watcher)", Intent::TreeAdvice),
+    (r"(?i)(next.*point|where.*allocate|spec.*into)", Intent::TreeAdvice),
+    
+    // === CRAFTING (Engine 2: Knowledge Base) ===
+    (r"(?i)(craft|fossil|essence|harvest|recombinator)", Intent::CraftAdvice),
+    (r"(?i)(probability|chance|odds|expected.*cost)", Intent::CraftAdvice),
+    (r"(?i)(craft.*vs.*buy|buy.*or.*craft|should.*craft)", Intent::CraftAdvice),
+    (r"(?i)(forge|the.*forge)", Intent::CraftAdvice),
+    (r"(?i)(corruption|corrupt|double.*corrupt|vaal)", Intent::CraftAdvice),
+    
+    // === BOSSES / COMBAT (Engine 2: Knowledge Base) ===
+    (r"(?i)(boss|shaper|elder|sirus|maven|uber)", Intent::BossMechanic),
+    (r"(?i)(ready|can.*i|viable|able).*(boss|shaper|uber)", Intent::BossMechanic),
+    (r"(?i)(slam|beam|die.*beam|bullet.*hell|memory.*game)", Intent::BossMechanic),
+    (r"(?i)(simulate|sim|arena|fight)", Intent::BossMechanic),
+    
+    // === MAP / ATLAS (Engine 2: Knowledge Base) ===
+    (r"(?i)(map.*mod|dangerous.*mod|can.*run|cannot.*run)", Intent::MapMod),
+    (r"(?i)(reflect|no.*regen|ele.*weakness)", Intent::MapMod),
+    (r"(?i)(atlas|favorite.*map|strategy|scarab)", Intent::MapMod),
+    (r"(?i)(clear.*speed|map.*per.*hour|currency.*per)", Intent::MapMod),
+    
+    // === GEMS / SKILLS (Engine 2: Knowledge Base) ===
+    (r"(?i)(how.*work|what.*does|explain|mechanic)", Intent::GemInteraction),
+    (r"(?i)(interaction|synergy|conflict|combo)", Intent::GemInteraction),
+    (r"(?i)(trigger|coc|cwc|cast.*on|spellslinger)", Intent::GemInteraction),
+    
+    // === MARKET (Engine 2: Knowledge Base) ===
+    (r"(?i)(price|cost|how.*much|value|worth).*div", Intent::PriceCheck),
+    (r"(?i)(buy.*now|wait|when.*buy|price.*drop)", Intent::PriceCheck),
+    (r"(?i)(budget|afford|save|invest)", Intent::PriceCheck),
+    
+    // === CREATIVE (Engine 3: Cloud AI) ===
+    (r"(?i)(design|build.*me|create|make.*build)", Intent::BuildDesign),
+    (r"(?i)(league.*start|starter|cheap.*build)", Intent::BuildDesign),
+    (r"(?i)(why|explain.*why|reason|because)", Intent::WhyQuestion),
+    (r"(?i)(compare.*build|vs.*build|which.*better)", Intent::WhyQuestion),
+    (r"(?i)(patch|nerf|buff|change|balance)", Intent::PatchAnalysis),
+];
+
+// DEFAULT: If no pattern matches
+Intent::OpenEnded  // → routes to Cloud AI if available, else "rephrase your question"
+```
+
+### Precedence Rules for Ambiguous Queries
+
+When a query matches MULTIPLE patterns, these rules decide which wins:
+
+```
+RULE 1: Defense/survival ALWAYS wins over offense
+  "Why am I dying? My DPS seems low" → DefenseAnalysis (NOT DpsCheck)
+  Reason: dying is more urgent than DPS optimization
+
+RULE 2: Specific slot/item wins over general upgrade
+  "Should I replace my Ring 2?" → UpgradeRank for Ring 2 (NOT general)
+  "What gem should I use?" → GemSwap (NOT OpenEnded)
+
+RULE 3: Crafting context wins over item context
+  "Should I craft or buy this ring?" → CraftAdvice (NOT ItemCompare)
+  "What fossil for my helmet?" → CraftAdvice (NOT UpgradeRank)
+
+RULE 4: Boss-specific wins over general defense
+  "Can I do Shaper?" → BossMechanic (NOT DefenseAnalysis)
+  "Will I die to Maven?" → BossMechanic (NOT DefenseAnalysis)
+
+RULE 5: If truly ambiguous → route to BOTH engines, merge results
+  "My build feels weak" → Calculator(DefenseAnalysis) + Calculator(DpsCheck)
+  Show both defense issues AND DPS suggestions
+```
+
+### Ambiguous Query Test Cases
+
+```
+Query                                    | Correct Intent    | Why
+─────────────────────────────────────────┼───────────────────┼──────────────
+"Why am I dying in T16?"                 | DefenseAnalysis   | "dying" = defense
+"My DPS is low and I keep dying"         | DefenseAnalysis   | defense > offense (Rule 1)
+"What should I upgrade next?"            | UpgradeRank       | general upgrade
+"Is this ring good?"                     | ItemCompare       | specific item
+"Should I craft or buy a ring?"          | CraftAdvice       | craft context (Rule 3)
+"Can I do Uber Shaper?"                  | BossMechanic      | boss-specific (Rule 4)
+"Explain damage conversion"             | WhyQuestion       | educational → Cloud AI
+"Design me a league starter"            | BuildDesign        | creative → Cloud AI
+"What support gem for RF?"              | GemSwap           | specific gem question
+"Is my chaos res too low?"              | ResistCheck        | specific defense check
+"My build feels weak"                   | DefenseAnalysis + DpsCheck | ambiguous → both (Rule 5)
+```
+
+### Intent → Engine Routing
+
+```
+Engine 1 (Calculator — 85%):
+  DpsCheck, DpsBreakdown, GemSwap, DefenseAnalysis, EhpCalc,
+  ResistCheck, UpgradeRank, ItemScore, ItemCompare, TreeAdvice
+
+Engine 2 (Knowledge Base — 12%):
+  CraftAdvice, BossMechanic, MapMod, GemInteraction, PriceCheck
+
+Engine 3 (Cloud AI — 3%):
+  BuildDesign, WhyQuestion, PatchAnalysis, OpenEnded
+```
+
+---
+
+## 5c. TEMPLATE RESPONSE GENERATOR
+
+The response generator produces natural language from calculation results.
+It uses **template strings with variable injection** — not an AI model.
+
+### Template Structure
+
+```rust
+pub struct ResponseTemplate {
+    intent: Intent,
+    condition: fn(&CalcResult) -> bool,  // when to use this template
+    template: &'static str,              // template with {variables}
+    tone: Tone,                          // Seer personality level
+}
+
+enum Tone {
+    Direct,     // just the facts: "Your DPS is 2.84M"
+    Atmospheric, // dark flavor: "The void reveals your DPS: 2.84M"
+    Dramatic,   // full Seer: "I have peered into the void, Exile..."
+}
+```
+
+### Templates Per Intent
+
+```rust
+// === DPS CHECK ===
+templates.insert(Intent::DpsCheck, vec![
+    ResponseTemplate {
+        condition: |r| r.offense.total_dps > 0,
+        template: "Your total DPS is {total_dps}, Exile.\n\n\
+            Breakdown:\n\
+            {dps_sources}\n\n\
+            {dps_comparison}",
+    },
+]);
+
+// Example output:
+// "Your total DPS is 2.84M, Exile.
+//  Breakdown:
+//  • Righteous Fire: 1.87M (66%)
+//  • Fire Trap (burn): 682K (24%)  
+//  • Fire Trap (hit): 256K (9%)
+//  Top RF Inquisitors average 4.2M — you're at top 35%."
+
+// === DEFENSE ANALYSIS (why dying) ===
+templates.insert(Intent::DefenseAnalysis, vec![
+    ResponseTemplate {
+        condition: |r| r.defense.issues.len() > 0,
+        template: "Your defenses have {issue_count} weaknesses, Exile.\n\n\
+            {issues_list}\n\n\
+            Your effective HP vs T16 rare hit: {ehp_t16}.\n\
+            {ehp_assessment}",
+    },
+]);
+
+// Example output:
+// "Your defenses have 3 weaknesses, Exile.
+//  1. Chaos Resistance at 15% — practically naked against corruption.
+//     Remedy: +chaos res on Ring 2 or amulet.
+//  2. Shock vulnerable — a single shock increases ALL damage taken by 50%.
+//     Remedy: Flask suffix 'of Grounding' or Tempest Shield.
+//  3. Low resist overcap — Elemental Weakness curse strips cold res to 52%.
+//     Remedy: +24% overcap on all elements.
+//  Your effective HP vs T16 rare hit: 8,400 (marginal).
+//  With fixes above: ~14,200 (comfortable)."
+
+// === UPGRADE RANK ===
+templates.insert(Intent::UpgradeRank, vec![
+    ResponseTemplate {
+        condition: |r| r.suggestions.len() > 0,
+        template: "The Seer has divined {suggestion_count} paths forward, Exile.\n\n\
+            {suggestions_ranked}\n\n\
+            Total investment for all: {total_cost} divine.\n\
+            Expected total gain: {total_dps_gain} DPS, {total_life_gain} life.",
+    },
+]);
+
+// === CRAFT ADVICE ===
+templates.insert(Intent::CraftAdvice, vec![
+    ResponseTemplate {
+        condition: |r| r.craft_suggestions.len() > 0,
+        template: "The Forge reveals {craft_count} crafting paths, Exile.\n\n\
+            Best value: {best_craft}\n\
+            Method: {craft_method}\n\
+            Success rate: {success_rate}% per attempt\n\
+            Expected cost: {expected_cost} divine\n\
+            vs Buy on trade: {buy_price} divine\n\
+            Verdict: {craft_verdict}",
+    },
+]);
+
+// === BOSS READINESS ===
+templates.insert(Intent::BossMechanic, vec![
+    ResponseTemplate {
+        condition: |r| true,
+        template: "{boss_name}: {readiness_status}\n\n\
+            {boss_details}\n\n\
+            {survival_checks}\n\n\
+            {upgrade_to_beat}",
+    },
+]);
+
+// Example output:
+// "Shaper: READY (survive slam, ~3:20 fight)
+//  Your effective DPS vs Shaper (40% res): 1.7M
+//  ✅ Survive Shaper Slam (1,240 life remaining with Molten Shell)
+//  ✅ Survive Ball Lightning (regen outheals)
+//  ❌ Die Beam: lethal in 0.8s (must dodge)
+//  After Ring 2 upgrade: fight time drops to 2:48 (-32 seconds)"
+
+// === MAP MOD ===
+templates.insert(Intent::MapMod, vec![
+    ResponseTemplate {
+        template: "Your build {cannot_run_count} lethal mods, Exile.\n\n\
+            ❌ Cannot run: {lethal_mods}\n\
+            ⚠ Dangerous: {dangerous_mods}\n\
+            ✅ Safe: {safe_mods}\n\n\
+            Always roll over: {always_reroll}",
+    },
+]);
+```
+
+### Variable Injection
+
+```rust
+impl ResponseGenerator {
+    pub fn generate(&self, intent: Intent, data: &CalcResult, build: &BuildData) -> String {
+        let template = self.select_template(intent, data);
+        let mut output = template.template.to_string();
+        
+        // Replace variables with actual values
+        output = output.replace("{total_dps}", &format_dps(data.offense.total_dps));
+        output = output.replace("{issue_count}", &data.defense.issues.len().to_string());
+        output = output.replace("{ehp_t16}", &format_number(data.defense.ehp.physical));
+        
+        // Format lists
+        output = output.replace("{issues_list}", &self.format_issues(&data.defense.issues));
+        output = output.replace("{dps_sources}", &self.format_dps_breakdown(&data.offense));
+        output = output.replace("{suggestions_ranked}", &self.format_suggestions(&data.suggestions));
+        
+        // Add Seer personality flavor
+        if template.tone == Tone::Atmospheric {
+            output = format!("I have peered into the void and examined your build, Exile.\n\n{}", output);
+        }
+        
+        output
+    }
+    
+    fn format_dps(n: f64) -> String {
+        if n >= 1_000_000.0 { format!("{:.2}M", n / 1_000_000.0) }
+        else if n >= 1_000.0 { format!("{:.0}K", n / 1_000.0) }
+        else { format!("{:.0}", n) }
+    }
+}
+```
+
+---
+
+## 5d. CORE ALGORITHMS — What Makes The Engine Smart
+
+These algorithms are what differentiate Path of AI from a simple stat calculator.
+They make the engine capable of finding **optimal solutions** across multiple
+competing objectives (DPS vs survivability vs cost).
+
+### Algorithm 1: Multi-Objective Pareto Optimization (Upgrade Ranking)
+
+**Problem:** Player asks "what should I upgrade?" There are 50+ possible upgrades
+across 9 item slots, gems, tree, jewels, flasks. Each upgrade affects DPS, life,
+resists, and costs different amounts. How do we rank them?
+
+**Naive approach (WRONG):** Sort by DPS gain. This ignores life, resists, cost.
+
+**Our approach: Pareto-optimal frontier**
+
+A suggestion is **Pareto-optimal** if no other suggestion is better in ALL dimensions.
+The Pareto frontier is the set of all non-dominated solutions.
+
+```rust
+/// Find Pareto-optimal upgrade suggestions
+/// No single "best" — instead, show the efficient frontier
+pub fn pareto_rank(suggestions: &[Suggestion]) -> Vec<RankedSuggestion> {
+    let mut frontier: Vec<RankedSuggestion> = vec![];
+    
+    for s in suggestions {
+        // A suggestion is Pareto-dominated if another suggestion is
+        // better in ALL dimensions (DPS, Life, Resists, Cost)
+        let dominated = suggestions.iter().any(|other| {
+            other.dps_change >= s.dps_change &&
+            other.life_change >= s.life_change &&
+            other.resist_change >= s.resist_change &&
+            other.cost <= s.cost &&
+            other != s  // not comparing to itself
+        });
+        
+        if !dominated {
+            frontier.push(RankedSuggestion {
+                suggestion: s.clone(),
+                pareto_optimal: true,
+                // Which objective does this suggestion MAXIMIZE?
+                best_for: if s.dps_per_divine() > threshold { "value" }
+                          else if s.dps_change > threshold { "dps" }
+                          else if s.life_change > threshold { "survival" }
+                          else { "balanced" },
+            });
+        }
+    }
+    
+    // Sort frontier by user's preferred dimension
+    // User can switch: [Best Value] [Max DPS] [Max Survival] [Cheapest]
+    frontier.sort_by(|a, b| b.dps_per_divine().partial_cmp(&a.dps_per_divine()).unwrap());
+    frontier
+}
+```
+
+**UI shows:** "These 5 upgrades are all optimal — each is best for a different goal"
+- Ring 2 craft: best DPS per divine (value king)
+- Aegis Aurora: best survivability (enables Uber bosses)
+- Boots benchcraft: cheapest (literally free)
+- Gem corruption: best raw DPS gain (risky)
+- Cluster jewel: best balanced (DPS + life)
+
+### Algorithm 2: Modified Dijkstra — Passive Tree Path Optimization
+
+**Problem:** Find the most efficient path from current tree allocation to a target
+node/keystone. The passive tree is a GRAPH with ~1,300 nodes.
+
+**Why standard Dijkstra isn't enough:** In PoE, the "cost" of traveling through
+a node isn't just 1 point — it's the OPPORTUNITY COST of what that point could
+have been spent on elsewhere.
+
+```rust
+/// Find optimal path to target node on passive tree
+/// Cost = points spent, weighted by value of each travel node
+pub fn optimal_tree_path(
+    tree: &PassiveTree,
+    allocated: &HashSet<NodeId>,
+    target: NodeId,
+    calc: &PathCalcEngine,
+    build: &BuildData,
+) -> TreePath {
+    // Modified Dijkstra where edge weight = opportunity cost
+    let mut dist: HashMap<NodeId, f64> = HashMap::new();
+    let mut prev: HashMap<NodeId, NodeId> = HashMap::new();
+    let mut heap = BinaryHeap::new(); // min-heap by cost
+    
+    // Start from all currently allocated nodes
+    for &node in allocated {
+        dist.insert(node, 0.0);
+        heap.push(Reverse((OrderedFloat(0.0), node)));
+    }
+    
+    while let Some(Reverse((cost, node))) = heap.pop() {
+        if node == target { break; }
+        if cost > dist.get(&node).copied().unwrap_or(f64::MAX) { continue; }
+        
+        for &neighbor in tree.neighbors(node) {
+            if allocated.contains(&neighbor) { continue; } // already allocated
+            
+            // Cost = 1 point + opportunity cost
+            // Opportunity cost = how much DPS/life we LOSE by using this point
+            //                    for travel instead of a valuable node
+            let node_value = calc.node_value(build, neighbor); // DPS+life gain from this node
+            let avg_value = calc.average_unallocated_value(build); // average value of remaining nodes
+            let opportunity_cost = avg_value - node_value; // negative if node is above average
+            
+            let edge_cost = 1.0 + opportunity_cost.max(0.0); // at least 1 point
+            let new_cost = cost.0 + edge_cost;
+            
+            if new_cost < dist.get(&neighbor).copied().unwrap_or(f64::MAX) {
+                dist.insert(neighbor, new_cost);
+                prev.insert(neighbor, node);
+                heap.push(Reverse((OrderedFloat(new_cost), neighbor)));
+            }
+        }
+    }
+    
+    // Reconstruct path
+    let path = reconstruct_path(&prev, target);
+    let total_points = path.len();
+    let total_value = path.iter().map(|n| calc.node_value(build, *n)).sum::<f64>();
+    
+    TreePath { nodes: path, points_cost: total_points, total_value }
+}
+```
+
+**Result:** "Path to Sovereignty wheel: 4 points. Alternative via Templar: 3 points
+(saves 1 point, but misses a life node worth 120 life)."
+
+### Algorithm 3: Knapsack Optimization — Budget-Constrained Upgrades
+
+**Problem:** Player has 20 divine budget. There are 15 possible upgrades ranging
+from 0 to 25 divine. Which combination gives the most DPS within budget?
+
+This is the **0/1 Knapsack Problem** — NP-hard in general, but with ~15 items
+and integer costs, solvable with dynamic programming in milliseconds.
+
+```rust
+/// Find optimal upgrade combination within budget
+/// Uses dynamic programming (pseudo-polynomial time)
+pub fn optimal_upgrade_set(
+    upgrades: &[Upgrade],
+    budget_divine: u32,
+) -> Vec<Upgrade> {
+    let n = upgrades.len();
+    // dp[i][w] = max DPS gain using first i items with budget w
+    let mut dp = vec![vec![0.0f64; (budget_divine + 1) as usize]; n + 1];
+    
+    for i in 1..=n {
+        let item = &upgrades[i - 1];
+        let cost = item.cost_divine as usize;
+        for w in 0..=(budget_divine as usize) {
+            dp[i][w] = dp[i - 1][w]; // don't take item i
+            if cost <= w {
+                let take = dp[i - 1][w - cost] + item.dps_gain;
+                if take > dp[i][w] {
+                    dp[i][w] = take; // take item i
+                }
+            }
+        }
+    }
+    
+    // Backtrack to find which items were selected
+    let mut selected = vec![];
+    let mut w = budget_divine as usize;
+    for i in (1..=n).rev() {
+        if dp[i][w] != dp[i - 1][w] {
+            selected.push(upgrades[i - 1].clone());
+            w -= upgrades[i - 1].cost_divine as usize;
+        }
+    }
+    selected
+}
+```
+
+**Result:** "With 20 divine, optimal set: Ring 2 (3d) + Gem corruptions (5d) +
+Helmet enchant (0d) + Cluster jewel (10d) = 18d spent, +38% total DPS.
+(Better than spending all 20d on one Aegis Aurora which gives only +survival)."
+
+### Algorithm 4: Weighted Scoring with Archetype-Adaptive Weights
+
+**Problem:** How do we score an item as "72/100"? Different builds value different
+stats. RF values fire DoT multi; attack builds value flat physical.
+
+**Our approach:** Pre-computed weight vectors per build archetype, normalized.
+
+```rust
+pub fn score_item(item: &Item, archetype: &Archetype, mod_db: &ModDatabase) -> f64 {
+    let weights = ARCHETYPE_WEIGHTS[archetype];
+    
+    let mut raw_score = 0.0;
+    for m in &item.mods {
+        let tier_info = mod_db.get_tier(&m.stat_id, m.value);
+        let tier_factor = match tier_info.tier {
+            1 => 1.0,    // T1 = full value
+            2 => 0.85,   // T2 = 85% of T1
+            3 => 0.65,
+            4 => 0.40,
+            5 => 0.20,
+            _ => 0.05,
+        };
+        raw_score += m.value * weights.get(&m.stat_type) * tier_factor;
+    }
+    
+    // Normalize to 0-100 scale based on expected score for this slot + level
+    let expected = expected_score(item.slot, archetype, item.ilvl);
+    (raw_score / expected * 100.0).min(100.0)
+}
+
+// Archetype weights — what each build type values
+const ARCHETYPE_WEIGHTS: HashMap<Archetype, HashMap<StatType, f64>> = {
+    "fire_dot" => {
+        "flat_life" => 1.2,
+        "percent_life" => 4.0,
+        "fire_dot_multi" => 15.0,   // king stat for RF
+        "fire_resistance" => 0.3,
+        "chaos_resistance" => 0.8,
+        "fire_damage" => 8.0,
+        "gem_level_fire" => 20.0,   // +1 fire gem = huge for RF
+        "movement_speed" => 3.0,
+        "armour" => 0.05,
+    },
+    "attack_crit" => {
+        "flat_physical" => 10.0,
+        "attack_speed" => 8.0,
+        "crit_chance" => 6.0,
+        "crit_multi" => 5.0,
+        "flat_life" => 1.0,
+        // ...
+    },
+    // ... one per archetype
+};
+```
+
+### Algorithm 5: Greedy + Simulation — Crafting Advisor
+
+**Problem:** Player has 8 Essence of Anger. What's the optimal crafting strategy?
+Each roll is random — we need to decide WHEN TO STOP rolling.
+
+**Approach:** Monte Carlo simulation with early stopping criterion.
+
+```rust
+/// Simulate crafting to find optimal stopping strategy
+pub fn craft_strategy(
+    method: CraftMethod,
+    target_score: f64,       // "good enough" score threshold
+    max_attempts: u32,
+    mod_weights: &ModWeightDB,
+) -> CraftStrategy {
+    let mut results = Vec::new();
+    
+    // Simulate 10,000 crafting attempts
+    for _ in 0..10_000 {
+        let mut best_result = CraftResult::default();
+        let mut total_cost = 0.0;
+        
+        for attempt in 1..=max_attempts {
+            let roll = simulate_single_craft(method, mod_weights);
+            total_cost += method.cost_per_attempt();
+            
+            if roll.score > best_result.score {
+                best_result = roll;
+            }
+            
+            // STOPPING CRITERION: if we hit target score, stop
+            if best_result.score >= target_score {
+                break;
+            }
+            
+            // STOPPING CRITERION: if cost exceeds buy price, stop
+            if total_cost > buy_price_for_target(target_score) {
+                break; // cheaper to just buy it
+            }
+        }
+        
+        results.push((best_result, total_cost));
+    }
+    
+    // Analyze results
+    let avg_cost = results.iter().map(|(_, c)| c).sum::<f64>() / results.len() as f64;
+    let success_rate = results.iter().filter(|(r, _)| r.score >= target_score).count() as f64 / results.len() as f64;
+    let median_attempts = /* ... */;
+    
+    CraftStrategy {
+        expected_cost: avg_cost,
+        success_rate,
+        median_attempts,
+        recommendation: if avg_cost < buy_price { "CRAFT" } else { "BUY" },
+        optimal_stopping_point: /* derived from simulation */,
+    }
+}
+```
+
+### Algorithm 6: Collaborative Filtering — "Players Like You Also Used..."
+
+**Problem:** What upgrades work best for builds SIMILAR to mine? We can learn
+from poe.ninja's data on what top players equip.
+
+**Approach:** Item-based collaborative filtering using build similarity.
+
+```rust
+/// Find upgrades by looking at what similar top builds use
+pub fn collaborative_suggestions(
+    build: &BuildData,
+    top_builds: &[TopBuild],    // from poe.ninja
+) -> Vec<CollaborativeSuggestion> {
+    // 1. Find similar builds (same ascendancy + main skill + similar DPS range)
+    let similar = top_builds.iter()
+        .filter(|tb| tb.ascendancy == build.ascendancy && tb.main_skill == build.main_skill)
+        .collect::<Vec<_>>();
+    
+    // 2. For each item slot, find what the majority of similar builds use
+    let mut suggestions = Vec::new();
+    for slot in EQUIPMENT_SLOTS {
+        let their_items: Vec<&Item> = similar.iter().map(|b| b.item_at(slot)).collect();
+        
+        // Count unique base types + key mods
+        let popular_bases = count_popular(&their_items, |i| &i.base);
+        let popular_mods = count_popular_mods(&their_items);
+        
+        // If top builds use something we DON'T have → suggest it
+        if let Some(top_choice) = popular_bases.first() {
+            if top_choice.name != build.item_at(slot).base {
+                let usage = top_choice.count as f64 / similar.len() as f64;
+                if usage > 0.5 { // >50% of top builds use this
+                    suggestions.push(CollaborativeSuggestion {
+                        slot: slot.to_string(),
+                        item: top_choice.name.clone(),
+                        usage_percent: usage * 100.0,
+                        message: format!(
+                            "{:.0}% of top {} Inquisitors use {} here (you: {})",
+                            usage * 100.0, build.main_skill, top_choice.name, build.item_at(slot).name
+                        ),
+                    });
+                }
+            }
+        }
+    }
+    suggestions
+}
+```
+
+**Result:** "90% of top RF Inquisitors use Aegis Aurora. You use Rise of the Phoenix.
+Switching would give +2000 EHP on block."
+
+### Algorithm 7: Sensitivity Analysis — "What Matters Most?"
+
+**Problem:** Which stat has the HIGHEST impact on DPS right now? If the player
+could magically add 10% of any stat, which gives the most DPS?
+
+**Approach:** Numerical partial derivatives of DPS with respect to each stat.
+
+```rust
+/// Calculate sensitivity of DPS to each stat type
+/// "If I had 10% more of stat X, how much more DPS would I get?"
+pub fn sensitivity_analysis(
+    build: &BuildData,
+    calc: &PathCalcEngine,
+) -> Vec<StatSensitivity> {
+    let base_dps = calc.calculate(build).offense.total_dps;
+    let mut sensitivities = Vec::new();
+    
+    for stat_type in ALL_STAT_TYPES {
+        // Increase this stat by 10%
+        let modified = build.modify_stat(stat_type, 1.10); // +10%
+        let new_dps = calc.calculate(&modified).offense.total_dps;
+        let dps_change = (new_dps - base_dps) / base_dps * 100.0;
+        
+        sensitivities.push(StatSensitivity {
+            stat: stat_type,
+            dps_change_per_10_percent: dps_change,
+        });
+    }
+    
+    // Sort by highest impact
+    sensitivities.sort_by(|a, b| b.dps_change_per_10_percent.partial_cmp(&a.dps_change_per_10_percent).unwrap());
+    sensitivities
+}
+```
+
+**Result:**
+```
+Most impactful stats for your build:
+  1. Fire DoT Multiplier: +10% → +5.6% DPS (INVEST HERE)
+  2. +Gem Level (fire): +10% → +4.2% DPS
+  3. Increased Fire Damage: +10% → +1.9% DPS (diminishing returns — you have 420%)
+  4. Movement Speed: +10% → +0% DPS (but +clear speed)
+```
+
+This tells the player EXACTLY which stats to prioritize on gear — the ones at the
+top of the sensitivity list give the most DPS per point invested.
+
+### Algorithm Summary
+
+| Algorithm | Problem | Complexity | When Used |
+|---|---|---|---|
+| **Pareto Optimization** | Rank upgrades across multiple objectives | O(n²) | Prophecy panel — "best upgrades" |
+| **Modified Dijkstra** | Find shortest path on passive tree | O(V log V) | Tree advice — "respec this path" |
+| **0/1 Knapsack** | Best upgrade combo within budget | O(n × W) | Budget planner — "spend 20d optimally" |
+| **Weighted Scoring** | Score items 0-100 per archetype | O(m) | Arsenal — every item score |
+| **Monte Carlo Simulation** | Crafting probability + stopping | O(10K × attempts) | The Forge — "craft or buy?" |
+| **Collaborative Filtering** | Learn from top builds | O(n × k) | Prophecy — "90% of top players use X" |
+| **Sensitivity Analysis** | Which stat matters most | O(s × calc_time) | DPS panel — "invest in fire DoT multi" |
 
 ---
 
