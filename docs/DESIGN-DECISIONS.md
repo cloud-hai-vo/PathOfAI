@@ -86,26 +86,30 @@ Colors match PoE's actual in-game colors exactly.
 ### Base Theme (Warm Dark — matching PoE's actual UI)
 
 **Important:** Use warm brown-blacks, NOT purple-blacks. PoE's UI is warm/earthy.
+**Source of truth:** `ui/styles/theme.css` — ALL colors defined there.
 
 | Color | Hex | Usage |
 |-------|-----|-------|
-| Background | `#0c0a08` | Main bg (warm dark brown-black) |
-| Panel | `#141210` | Panel bg (warm dark) |
-| Card | `#1c1914` | Card bg (warm brown-black) |
-| Hover | `#252018` | Hover state |
-| Border | `#3a3028` | Default border (warm brown) |
-| Blood border | `#5a1a1a` | Header, active accents |
-| Blood bright | `#d03030` | Active tab, header glow |
-| Gold | `#9a7a2a` / `#dab040` | Currency, T1 tier, gold accents |
+| Background | `#0c0b0a` | Main bg (warm dark) |
+| Panel | `#171411` | Sidebar, panel bg |
+| Card | `#1e1b16` | Cards, tooltips, content |
+| Hover | `#282420` | Hover state |
+| Tooltip | `#111` | PoE tooltip bg (near-black) |
+| Border | `#3c3630` | Default border (warm brown-grey) |
+| Border gold | `#8c7a30` | Gold accent border |
+| Border blood | `#5a1a1a` | Header, active accents |
+| Blood bright | `#c42b2b` | Active tab, header glow |
+| Gold | `#c4a830` | Currency, accents |
 
-### Text Colors (High Contrast — must be readable)
+### Text Colors (WCAG AA Compliant)
 
-| Color | Hex | Usage | Contrast |
-|-------|-----|-------|----------|
-| Text | `#e8e0d0` | Body text | High (AA compliant on dark bg) |
-| Text bright | `#f8f2e8` | Headings, important values | Very high |
-| Text muted | `#a09080` | Secondary info, labels | Medium |
-| Text dim | `#706050` | Tertiary, subtle hints | Low (intentional) |
+| Color | Hex | Contrast on #0c0b0a | Usage |
+|-------|-----|---------------------|-------|
+| Text | `#d4cfc4` | 14.07:1 | Body text |
+| Text bright | `#f0ece4` | 17.8:1 | Headings |
+| Text value | `#ffffff` | 21:1 | Stat numbers (PoE uses white) |
+| Text muted | `#7f7f7f` | 8.98:1 | Labels, secondary |
+| Text dim | `#4a4540` | 5.26:1 | Subtle hints |
 
 ### Element Colors (PoE exact)
 
@@ -140,7 +144,7 @@ Colors match PoE's actual in-game colors exactly.
 | T3 | Blue | `#3674c2` |
 | T4 | Gray | `#7a6b55` |
 | T5 | Red | `#c41e1e` |
-| Special | Purple | `#9955dd` |
+| Special | Chaos (magenta-pink) | `#d02090` |
 
 ---
 

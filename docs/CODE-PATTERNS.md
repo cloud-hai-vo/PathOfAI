@@ -23,19 +23,21 @@ The project is a Tauri app with two sides:
 src-tauri/src/              # Rust backend — business logic, file I/O, AI, APIs
   commands/                 # Tauri IPC handlers (thin wrappers)
   core/                     # Pure business logic (no Tauri dependency)
+  calculator/               # OUR Rust calc engine (primary — we own this)
+  pob_verify/               # PoB Lua verification (optional, feature-gated)
   models/                   # Shared data types (Serialize + Deserialize)
-  data/                     # Game data loading (versioned JSON)
+  data/                     # Game data loading (versioned JSON from poedb/RePoE)
   market/                   # poe.ninja client, price cache, buy advisor
-  seer/                     # Local AI engine (ONNX models + RAG)
+  seer/                     # Query router + response generator (no ML models)
   services/                 # Background tasks (file watcher, price poller)
 
-src/                        # TypeScript frontend — UI rendering
-  components/               # UI components
+src/                        # Frontend (Vanilla TypeScript — NO framework)
+  components/               # UI components (plain TS classes, not React/Vue)
   services/                 # Tauri invoke wrappers, state store, events
-  styles/                   # PoE-themed CSS
+  styles/                   # PoE-exact themed CSS (from horadric-helper palette)
   types/                    # TypeScript types matching Rust models
 
-core/                       # JS prototypes (used during initial development)
+prototypes/                 # JS prototypes (historical — NOT for implementation, see prototypes/README.md)
 ui/                         # HTML/JSX prototypes (used during initial development)
 ```
 
@@ -59,58 +61,55 @@ as the Tauri app is built.
 
 ## 2. MODULE PATTERN
 
-### Every core module follows this structure:
+### Hexagonal Architecture (Ports & Adapters)
 
-```javascript
-/**
- * ModuleName — one-line description of what it does
- * 
- * Responsibilities:
- *   - Responsibility 1
- *   - Responsibility 2
- * 
- * Dependencies: list other core modules it imports
- * Side effects: none (or list them if unavoidable)
- */
+See [ARCHITECTURE.md §4.1](ARCHITECTURE.md) for the full hexagonal diagram.
+Every module follows this structure:
 
-class ModuleName {
-  constructor(dependencies) {
-    // Store injected dependencies
-    // Initialize internal state
-  }
-
-  /** Public method — describe what it does and returns */
-  publicMethod(input) {
-    // Implementation
-    return result;
-  }
-
-  // Private helpers prefixed with underscore
-  _privateHelper() {
-    // Internal logic
-  }
+```rust
+/// ModuleName — one-line description
+///
+/// This is a DOMAIN module — no external dependencies.
+/// Uses traits (ports) for anything external.
+pub struct BuildAnalyzer<P: PriceProvider, D: ModDatabase> {
+    prices: P,      // Injected via trait — can be real API or mock
+    mods: D,        // Injected via trait — can be JSON loader or mock
 }
 
-export default ModuleName;
+impl<P: PriceProvider, D: ModDatabase> BuildAnalyzer<P, D> {
+    pub fn new(prices: P, mods: D) -> Self {
+        Self { prices, mods }
+    }
+
+    /// Public method — describe what it does and returns
+    pub async fn analyze(&self, build: &BuildData) -> Result<AnalysisResult, AnalyzeError> {
+        // Domain logic here — NEVER calls tauri, reqwest, fs directly
+        let score = self.score_items(build)?;
+        let issues = self.detect_issues(build)?;
+        Ok(AnalysisResult { score, issues })
+    }
+
+    /// Private helper — not pub
+    fn score_items(&self, build: &BuildData) -> Result<u8, AnalyzeError> {
+        // Internal logic
+    }
+}
 ```
 
 ### Rules:
 
-1. **One class per file** — file name matches the class in kebab-case
-   - `BuildAnalyzer` → `build-analyzer.js`
-   - `ModImpactCalculator` → `mod-impact-calculator.js`
+1. **One struct per file** — file name matches struct in snake_case
+   - `BuildAnalyzer` → `build_analyzer.rs`
+   - `ModImpactCalculator` → `mod_impact.rs`
 
-2. **Constructor takes dependencies** — never import globals or singletons
-   ```javascript
-   // GOOD: dependency injection
-   class BuildAnalyzer {
-     constructor(buildData) {
-       this.build = buildData.build;
-       this.items = buildData.items;
-     }
+2. **Dependencies via trait generics** — never import concrete implementations
+   ```rust
+   // GOOD: dependency injection via traits
+   pub struct BuildAnalyzer<P: PriceProvider> {
+       prices: P,  // can be real or mock
    }
 
-   // BAD: importing global state
+   // BAD: importing concrete type
    class BuildAnalyzer {
      constructor() {
        this.build = globalBuildState.current; // NO
@@ -403,35 +402,41 @@ function renderResists(stats) {
 }
 ```
 
-### Color Convention (PoE Theme)
+### Color Convention (PoE-Exact from horadric-helper)
+
+See [DESIGN-DECISIONS.md](DESIGN-DECISIONS.md) for full palette with rationale.
+
 ```
-Background:    #0d0a07 (dark)
-Panel:         #1a1410 (slightly lighter)
-Border:        #3d2e1f (brown border)
-Text primary:  #c4b5a0 (parchment)
-Text heading:  #e8dcc8 (bright parchment)
-Text muted:    #6b5a45 (dim)
-Text dimmer:   #4a3d2e (very dim)
-Accent gold:   #8b6914
-Success:       #a3e635 (green)
-Warning:       #eab308 (yellow)
-Danger:        #ef4444 (red)
-Info:          #3b82f6 (blue)
-Purple:        #a855f7
+Backgrounds (warm brown-black, NOT purple):
+  bg-dark:   #0c0b0a     bg-panel:  #171411
+  bg-card:   #1e1b16     bg-hover:  #282420
+  border:    #3c3630     border-gold: #8c7a30
+
+Text (high contrast):
+  text:       #d4cfc4    text-bright: #f0ece4
+  text-value: #ffffff    text-muted:  #7f7f7f
+
+Damage types (PoE exact):
+  Fire: #960000    Cold: #366492    Lightning: gold    Chaos: #d02090
+
+Status:
+  Success: #4ae63a (quest green)    Danger: #d20000 (corrupted)
+  Warning: gold (lightning)         Info: #88f (magic blue)
+
+Rarity (PoE exact):
+  Normal: #c8c8c8  Magic: #88f  Rare: #ff7  Unique: #af6025
 
 Tier colors:
-  T1: #ffd700 (gold)
-  T2: #22c55e (green)
-  T3: #4a9eff (blue)
-  T4: #9ca3af (gray)
-  T5: #ef4444 (red)
+  T1: #e8d44d (gold)    T2: #4ae63a (quest green)    T3: #366492 (cold blue)
+  T4: #7f7f7f (grey)    T5: #d20000 (corrupted red)
 
-Rarity colors (matching PoE):
-  Normal:  #c8c8c8
-  Magic:   #8888ff
-  Rare:    #ffff77
-  Unique:  #af6025
+Special:
+  Corrupted: #d20000    Crafted: #b8daf2 (light blue)
+  Fractured: #a29162    Augmented: #88f (blue for modified stats)
 ```
+
+IMPORTANT: Never use Tailwind colors (#ef4444, #eab308, #a3e635, #3b82f6, etc.).
+Chaos is MAGENTA-PINK (#d02090), NOT purple.
 
 ### Font Convention
 ```

@@ -452,19 +452,19 @@ Pure Rust desktop UI options (egui, iced, dioxus) would be lighter but:
 │  │ SPEED: < 10ms | ACCURACY: 100% | COST: $0        │  │
 │  └───────────────────────────────────────────────────┘  │
 │                                                         │
-│  TIER 2: Seer Engine — Local AI (fast, domain expert)   │
+│  TIER 2: Calculator + Knowledge Base (fast, exact)      │
 │  ┌───────────────────────────────────────────────────┐  │
-│  │ - Item scoring & ranking (ItemNet)                │  │
-│  │ - Build archetype classification (BuildNet)       │  │
-│  │ - Passive tree optimization (TreeNet)             │  │
-│  │ - Upgrade priority suggestions                    │  │
-│  │ - DPS impact estimation                           │  │
-│  │ - User question understanding (QueryNet)          │  │
-│  │ - Knowledge base search (EmbedNet + RAG)          │  │
-│  │ - Natural language response generation            │  │
+│  │ - Item scoring (weighted formula, not ML)          │  │
+│  │ - Build archetype detection (rule engine)          │  │
+│  │ - Passive tree optimization (calc each node)       │  │
+│  │ - DPS impact (our Rust calc engine)                │  │
+│  │ - Upgrade suggestions (calc + rank + validate)     │  │
+│  │ - Crafting probability (mod weight tables)         │  │
+│  │ - Query routing (regex intent classifier)          │  │
+│  │ - Template response generation                     │  │
 │  │                                                   │  │
-│  │ HOW: 5 small neural networks + RAG + templates    │  │
-│  │ SPEED: < 100ms | ACCURACY: 90%+ | COST: $0       │  │
+│  │ HOW: Rust calculator + structured JSON data        │  │
+│  │ SPEED: < 100ms | ACCURACY: 99%+ | COST: $0       │  │
 │  └───────────────────────────────────────────────────┘  │
 │                                                         │
 │  TIER 3: Cloud AI (deep reasoning, creative advice)     │

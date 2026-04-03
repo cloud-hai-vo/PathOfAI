@@ -27,7 +27,7 @@
 
 4. Local Cache (our app stores fetched images)
    → First launch: download full item art pack (~50-100MB)
-   → Store in: %AppData%/PathOfAI/cache/images/
+   → Store in: ./PathOfAI_Data/cache/images/ (same folder as exe)
    → Subsequent launches: serve from cache, update weekly
 ```
 
@@ -119,7 +119,7 @@ class SkillIconResolver {
 
 ### Caching Strategy
 ```
-%AppData%/PathOfAI/
+./PathOfAI_Data/ (portable — same folder as exe, user can change in Settings)
   cache/
     images/
       items/
@@ -319,24 +319,30 @@ Alert types:
 
 ---
 
-## 3. CUSTOM LOCAL AI MODEL FOR POE
+## 3. THE SEER ENGINE — THREE-ENGINE ARCHITECTURE
 
-### Why Custom Local Model?
+> **Architecture Update:** After analysis, we determined that custom AI model
+> training is unnecessary. 97% of queries are answered by deterministic
+> calculation + structured data lookup. See [ENGINE-DESIGN.md](ENGINE-DESIGN.md).
+
+### Why Calculator + Knowledge Base Beats Custom AI
 ```
-Problems with general AI models (Claude/GPT/etc):
-  → Don't know current league mechanics
-  → Outdated PoE knowledge (patches change everything)
-  → Can't access your build data natively
-  → API costs per query
-  → Requires internet
-  → Privacy: some players don't want build data sent externally
+Problems with ANY AI model (custom or cloud):
+  → Can hallucinate PoE facts (even fine-tuned models)
+  → DPS calculations are approximate (math is exact)
+  → Needs retraining every patch
+  → Model size = 2-5GB download
+  → GPU recommended for fast inference
 
-Our local model solves all of these:
-  → Trained specifically on PoE data
-  → Updated every patch
-  → Runs 100% on user's PC
-  → Zero cost per query
-  → Works offline
+Our Calculator + Knowledge Base approach:
+  → 100% accurate DPS (uses PoB's own Lua engine)
+  → 99% accurate game knowledge (structured data from poedb)
+  → Updated by swapping JSON files (no retraining)
+  → ~20MB data download (not gigabytes)
+  → Runs on any CPU instantly
+  → Cannot hallucinate — math + data lookup
+  → Works 100% offline, $0 cost per query
+  → Privacy: nothing leaves user's PC
   → Complete privacy
 ```
 
@@ -700,9 +706,8 @@ workflows, see:
 **[AI-TRAINING-GUIDE.md](AI-TRAINING-GUIDE.md)**
 
 Key highlights:
-- **$0-5 total compute cost** using free GPU tiers (Colab, Kaggle)
-- **2-3 weeks** optimized timeline (down from 4+ months)
-- Only QueryNet needs LLM fine-tuning; other networks use custom small NNs
-- QLoRA + Unsloth = 2-4x faster than standard LoRA training
-- Smaller base model (Phi-3 3.8B) can match 8B for domain-specific tasks
-- Community contribution workflow for continuous improvement
+- **No custom AI model needed** — 97% of queries answered by Calculator + Knowledge Base
+- Our Rust calculation engine is PRIMARY (we own + maintain it)
+- PoB Lua engine is OPTIONAL verification (user can enable in Settings)
+- Cloud AI (Claude/GPT) for the 3% creative queries (optional)
+- See **[ENGINE-DESIGN.md](ENGINE-DESIGN.md)** for the full three-engine architecture

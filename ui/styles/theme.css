@@ -1,0 +1,867 @@
+/*
+ * PATH OF AI — THEME (Production CSS)
+ *
+ * All colors from PoE's horadric-helper (github.com/meta-is-beta/horadric-helper)
+ * + PoE loot filter defaults + game screenshot extraction.
+ *
+ * THIS FILE IS THE SOURCE OF TRUTH for all colors in the app.
+ * Import this in Tauri's index.html: <link rel="stylesheet" href="styles/theme.css">
+ *
+ * Rules:
+ *   - NEVER use Tailwind colors (#ef4444, #eab308, etc.)
+ *   - Chaos is MAGENTA-PINK (#d02090), NOT purple
+ *   - Fire damage text is DARK (#960000), use --fire-bright (#cf3c18) for text on dark bg
+ *   - Backgrounds are WARM brown-black, NOT purple-tinted
+ *   - Stat values are PURE WHITE (#fff) — PoE shows numbers in white
+ *   - Default muted text is NEUTRAL GREY (#7f7f7f) — PoE exact
+ */
+
+:root {
+  /* ═══════════════════════════════
+     BACKGROUNDS (warm brown-black)
+     ═══════════════════════════════ */
+  --bg-dark: #0c0b0a;         /* main app background */
+  --bg-panel: #171411;         /* sidebar, panel backgrounds */
+  --bg-card: #1e1b16;         /* cards, tooltips, content areas */
+  --bg-hover: #282420;         /* hover state for cards */
+  --bg-tooltip: #111;          /* PoE tooltip background (near-black) */
+  --bg-input: #0e0d0b;        /* input field background */
+
+  /* ═══════════════════════════════
+     BORDERS
+     ═══════════════════════════════ */
+  --border: #3c3630;           /* default border (warm brown-grey) */
+  --border-light: #4a4438;     /* slightly brighter border for emphasis */
+  --border-gold: #8c7a30;      /* gold accent border */
+  --border-blood: #5a1a1a;     /* blood accent border (header, active states) */
+
+  /* ═══════════════════════════════
+     TEXT (high contrast for readability)
+     ═══════════════════════════════ */
+  --text: #d4cfc4;             /* body text */
+  --text-bright: #f0ece4;      /* headings, important text */
+  --text-value: #fff;          /* stat numbers — PoE uses pure white */
+  --text-muted: #7f7f7f;       /* labels, secondary text — PoE exact grey */
+  --text-dim: #4a4540;         /* very subtle hints, decorative text */
+
+  /* ═══════════════════════════════
+     BRAND (Path of AI identity)
+     ═══════════════════════════════ */
+  --blood: #8b1a1a;            /* dark blood (backgrounds) */
+  --blood-bright: #c42b2b;     /* bright blood (active tabs, header glow) */
+  --gold: #c4a830;             /* gold accent */
+  --gold-glow: #c4a83040;      /* gold glow (box-shadow, 25% opacity) */
+
+  /* ═══════════════════════════════
+     DAMAGE TYPES (PoE exact)
+     Source: horadric-helper CSS
+     ═══════════════════════════════ */
+  --fire: #960000;             /* fire damage — dark blood red */
+  --fire-bright: #cf3c18;      /* fire text on dark background (brighter variant) */
+  --cold: #366492;             /* cold damage — steel blue */
+  --cold-bright: #5090c0;      /* cold text on dark background */
+  --lightning: #ffd700;        /* lightning — CSS gold */
+  --chaos: #d02090;            /* chaos damage — MAGENTA-PINK (not purple!) */
+  --physical: #c4a882;         /* physical damage — parchment brown */
+
+  /* ═══════════════════════════════
+     STATUS COLORS
+     ═══════════════════════════════ */
+  --life: #c41e1e;             /* life pool, life-related */
+  --life-bright: #ef4040;      /* life numbers on dark bg */
+  --es: #366492;               /* energy shield (same as cold) */
+  --mana: #2060a0;             /* mana pool */
+  --success: #4ae63a;          /* quest green — capped, complete, good */
+  --warning: #ffd700;          /* lightning gold — warnings */
+  --danger: #d20000;           /* corrupted red — critical errors */
+  --info: #8888ff;             /* magic blue — informational */
+
+  /* ═══════════════════════════════
+     RARITY (PoE exact)
+     ═══════════════════════════════ */
+  --rarity-normal: #c8c8c8;
+  --rarity-magic: #8888ff;
+  --rarity-rare: #ffff77;
+  --rarity-unique: #af6025;
+  --rarity-unique-bright: #e8a444;
+  --rarity-gem: #1ba29b;
+  --rarity-currency: #aa9e82;
+
+  /* ═══════════════════════════════
+     MOD COLORS (PoE exact)
+     ═══════════════════════════════ */
+  --mod-augmented: #8888ff;    /* blue — modified/explicit mod text */
+  --mod-crafted: #b8daf2;      /* light blue — benchcrafted mods */
+  --mod-fractured: #a29162;    /* gold-brown — fractured (permanent) mods */
+  --mod-corrupted: #d20000;    /* red — corrupted text */
+  --mod-enchanted: #b8daf2;    /* same as crafted */
+  --mod-scourge: #ff6e25;      /* orange — scourge mods */
+  --mod-essence: #a4d2ff;      /* light blue — essence mods */
+
+  /* ═══════════════════════════════
+     TIER COLORS (item mod quality)
+     ═══════════════════════════════ */
+  --tier1: #e8d44d;            /* gold — best possible roll */
+  --tier2: #4ae63a;            /* quest green — good roll */
+  --tier3: #366492;            /* cold blue — average roll */
+  --tier4: #7f7f7f;            /* PoE grey — below average */
+  --tier5: #d20000;            /* corrupted red — worst tier */
+
+  /* ═══════════════════════════════
+     CRAFTING TAG COLORS (PoE exact)
+     ═══════════════════════════════ */
+  --craft-fire: #ff9a77;
+  --craft-cold: #93d8ff;
+  --craft-lightning: #f8cb76;
+  --craft-chaos: #d8a7d3;
+  --craft-life: #c96e6e;
+  --craft-physical: #c79d93;
+  --craft-caster: #b3f8fe;
+  --craft-speed: #cfeea5;
+  --craft-crit: #b2a7d6;
+
+  /* ═══════════════════════════════
+     ORB GRADIENTS (life/mana/resist)
+     ═══════════════════════════════ */
+  --orb-life-light: #d20000;
+  --orb-life-mid: #8b1a1a;
+  --orb-life-dark: #4a0e0e;
+  --orb-life-border: #5a1a1a;
+
+  --orb-mana-light: #366492;
+  --orb-mana-mid: #1e4a8a;
+  --orb-mana-dark: #0e2a5a;
+  --orb-mana-border: #1e3a6a;
+
+  --orb-fire-light: #6a2a0a;
+  --orb-fire-dark: #1a0a04;
+  --orb-cold-light: #1a3a6a;
+  --orb-cold-dark: #040a1a;
+  --orb-lightning-light: #5a4820;
+  --orb-lightning-dark: #1a1408;
+  --orb-chaos-light: #4a1838;
+  --orb-chaos-dark: #0a0410;
+
+  /* ═══════════════════════════════
+     PASSIVE TREE
+     ═══════════════════════════════ */
+  --passive-allocated: #c4a830;
+  --passive-unallocated: #3c3630;
+  --passive-notable: #c4a830;
+  --passive-keystone: #e8d44d;
+  --passive-title: #eee492;
+
+  /* ═══════════════════════════════
+     FONTS
+     ═══════════════════════════════ */
+  --font-heading: 'Cinzel', serif;           /* headers, tab names, section titles */
+  --font-body: 'Crimson Text', serif;        /* body text, descriptions */
+  --font-mono: 'JetBrains Mono', monospace;  /* numbers, stats, DPS, prices, scores */
+}
+
+
+/* ═══════════════════════════════
+   BASE STYLES
+   ═══════════════════════════════ */
+
+* {
+  margin: 0;
+  padding: 0;
+  box-sizing: border-box;
+  scrollbar-width: thin;
+  scrollbar-color: var(--border) var(--bg-dark);
+}
+::-webkit-scrollbar { width: 5px; }
+::-webkit-scrollbar-track { background: var(--bg-dark); }
+::-webkit-scrollbar-thumb { background: var(--border); border-radius: 3px; }
+
+html, body {
+  height: 100%;
+  overflow: hidden;
+}
+
+body {
+  color: var(--text);
+  font-family: var(--font-body);
+  font-size: 15px;
+  line-height: 1.5;
+  background:
+    radial-gradient(ellipse at 50% 50%, transparent 30%, rgba(0,0,0,0.5) 100%),
+    repeating-linear-gradient(0deg, transparent, transparent 2px, rgba(20,16,10,0.1) 2px, rgba(20,16,10,0.1) 4px),
+    repeating-linear-gradient(90deg, transparent, transparent 3px, rgba(18,14,10,0.08) 3px, rgba(18,14,10,0.08) 5px),
+    var(--bg-dark);
+  background-attachment: fixed;
+}
+
+
+/* ═══════════════════════════════
+   TYPOGRAPHY HIERARCHY
+   ═══════════════════════════════ */
+
+/* Section labels — consistent across all panels */
+.section-label {
+  font-size: 11px;
+  color: var(--text-muted);
+  text-transform: uppercase;
+  letter-spacing: 2px;
+  margin-bottom: 10px;
+  font-family: var(--font-heading);
+  display: flex;
+  align-items: center;
+  gap: 8px;
+}
+.section-label::after {
+  content: '';
+  flex: 1;
+  height: 1px;
+  background: linear-gradient(90deg, var(--border), transparent);
+}
+
+/* Stat values — ALWAYS use mono font, white color, text-shadow glow */
+.stat-value {
+  font-family: var(--font-mono);
+  font-weight: 800;
+  color: var(--text-value);
+  text-shadow: 0 0 8px currentColor;
+}
+
+/* Stat labels — always Cinzel uppercase */
+.stat-label {
+  font-family: var(--font-heading);
+  font-size: 9px;
+  color: var(--text-bright);
+  text-transform: uppercase;
+  letter-spacing: 1.5px;
+}
+
+/* Priority badges */
+.badge-high   { color: var(--danger);  background: rgba(210,0,0,0.1);  border: 1px solid rgba(210,0,0,0.2); }
+.badge-medium { color: var(--warning); background: rgba(255,215,0,0.06); border: 1px solid rgba(255,215,0,0.15); }
+.badge-low    { color: var(--info);    background: rgba(136,136,255,0.08); border: 1px solid rgba(136,136,255,0.15); }
+
+/* Rarity-colored text */
+.rarity-normal { color: var(--rarity-normal); }
+.rarity-magic  { color: var(--rarity-magic); }
+.rarity-rare   { color: var(--rarity-rare); }
+.rarity-unique { color: var(--rarity-unique); }
+
+
+/* ═══════════════════════════════
+   POE ITEM TOOLTIP FRAME
+   (exact match to in-game tooltip)
+   ═══════════════════════════════ */
+
+.poe-tooltip {
+  background: var(--bg-tooltip);
+  border: 1px solid #3c3630;
+  border-top: 1px solid #4a4438;
+}
+.poe-tooltip .tt-header {
+  text-align: center;
+  padding: 8px 16px;
+  border-bottom: 1px solid #3c3630;
+  background: linear-gradient(180deg, #282018, var(--bg-tooltip));
+}
+.poe-tooltip .tt-body {
+  padding: 8px 16px;
+}
+.poe-tooltip .tt-separator {
+  border: none;
+  border-top: 1px solid #3c3630;
+  margin: 4px 0;
+}
+.poe-tooltip .mod-implicit  { color: var(--mod-augmented); }
+.poe-tooltip .mod-explicit  { color: var(--mod-augmented); }
+.poe-tooltip .mod-crafted   { color: var(--mod-crafted); }
+.poe-tooltip .mod-corrupted { color: var(--mod-corrupted); }
+.poe-tooltip .mod-fractured { color: var(--mod-fractured); }
+.poe-tooltip .flavour-text  { color: var(--rarity-unique); font-style: italic; }
+
+
+/* ═══════════════════════════════
+   DECORATIVE: POE FRAME CORNERS
+   ═══════════════════════════════ */
+
+.poe-frame {
+  background: var(--bg-card);
+  border: 1px solid var(--border);
+  border-radius: 2px;
+  position: relative;
+}
+.poe-frame::before {
+  content: '';
+  position: absolute;
+  top: -2px; left: -2px;
+  width: 14px; height: 14px;
+  border-top: 2px solid var(--border-gold);
+  border-left: 2px solid var(--border-gold);
+  pointer-events: none;
+}
+.poe-frame::after {
+  content: '';
+  position: absolute;
+  bottom: -2px; right: -2px;
+  width: 14px; height: 14px;
+  border-bottom: 2px solid var(--border-gold);
+  border-right: 2px solid var(--border-gold);
+  pointer-events: none;
+}
+
+
+/* ═══════════════════════════════
+   BUTTONS — Game-Style Beveled
+   ═══════════════════════════════ */
+
+.btn-game {
+  font-family: var(--font-heading);
+  background: linear-gradient(180deg, #3a2f20, #2a1f15, #1a1510);
+  color: var(--text-bright);
+  border: 1px solid var(--border-gold);
+  border-radius: 2px;
+  padding: 6px 16px;
+  cursor: pointer;
+  font-size: 12px;
+  font-weight: 700;
+  letter-spacing: 0.5px;
+  box-shadow:
+    inset 0 1px 0 rgba(255,255,255,0.1),
+    inset 0 -1px 0 rgba(0,0,0,0.3),
+    0 1px 3px rgba(0,0,0,0.3);
+  transition: all 0.15s;
+}
+.btn-game:hover {
+  background: linear-gradient(180deg, #4a3f28, #3a2f20, #2a1f15);
+  box-shadow:
+    inset 0 1px 0 rgba(255,255,255,0.12),
+    0 0 10px var(--gold-glow);
+}
+.btn-game:active {
+  transform: translateY(1px);
+  box-shadow: inset 0 1px 3px rgba(0,0,0,0.4);
+}
+
+.btn-blood {
+  background: linear-gradient(180deg, #6a2020, #5a1a1a, #4a1515);
+  border-color: var(--blood-bright);
+  color: var(--blood-bright);
+}
+.btn-blood:hover {
+  box-shadow: 0 0 12px rgba(196,43,43,0.3);
+}
+
+
+/* ═══════════════════════════════
+   ISSUE CARDS (Harbinger warnings)
+   ═══════════════════════════════ */
+
+.issue-card {
+  padding: 10px 14px;
+  border-radius: 2px;
+  margin-bottom: 6px;
+  display: flex;
+  gap: 10px;
+  align-items: flex-start;
+}
+.issue-card.critical {
+  background: linear-gradient(135deg, rgba(210,0,0,0.07), rgba(210,0,0,0.03));
+  border: 1px solid rgba(210,0,0,0.2);
+  border-left: 3px solid var(--danger);
+}
+.issue-card.warning {
+  background: linear-gradient(135deg, rgba(255,215,0,0.06), rgba(255,215,0,0.03));
+  border: 1px solid rgba(255,215,0,0.15);
+  border-left: 3px solid var(--warning);
+}
+.issue-card.info {
+  background: linear-gradient(135deg, rgba(136,136,255,0.07), rgba(136,136,255,0.03));
+  border: 1px solid rgba(136,136,255,0.15);
+  border-left: 3px solid var(--info);
+}
+.issue-card .issue-title {
+  font-size: 13px;
+  font-weight: 600;
+}
+.issue-card.critical .issue-title { color: var(--danger); }
+.issue-card.warning  .issue-title { color: var(--warning); }
+.issue-card.info     .issue-title { color: var(--info); }
+.issue-card .issue-fix {
+  font-size: 12px;
+  color: var(--text-muted);
+  margin-top: 3px;
+}
+
+
+/* ═══════════════════════════════
+   SUGGESTION CARDS (Prophecy)
+   ═══════════════════════════════ */
+
+.suggestion-card {
+  background: var(--bg-card);
+  border: 1px solid var(--border);
+  border-radius: 2px;
+  padding: 14px;
+  margin-bottom: 8px;
+}
+.suggestion-prio {
+  font-size: 9px;
+  font-weight: 800;
+  text-transform: uppercase;
+  letter-spacing: 1px;
+  padding: 2px 8px;
+  border-radius: 2px;
+  font-family: var(--font-mono);
+}
+.suggestion-msg {
+  font-size: 14px;
+  color: var(--text-bright);
+  font-weight: 600;
+  margin-bottom: 4px;
+}
+.suggestion-impact {
+  font-size: 12px;
+  color: var(--success);
+  font-style: italic;
+}
+
+
+/* ═══════════════════════════════
+   RESIST ORBS (element indicator)
+   ═══════════════════════════════ */
+
+.resist-orb {
+  width: 30px;
+  height: 30px;
+  border-radius: 50%;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  font-size: 13px;
+  border: 2px solid var(--border);
+  flex-shrink: 0;
+  position: relative;
+}
+/* Glass highlight */
+.resist-orb::after {
+  content: '';
+  position: absolute;
+  top: 3px; left: 5px;
+  width: 8px; height: 5px;
+  background: radial-gradient(ellipse, rgba(255,255,255,0.2), transparent);
+  border-radius: 50%;
+}
+.resist-orb.fire {
+  background: radial-gradient(circle at 35% 30%, var(--orb-fire-light), var(--orb-fire-dark));
+  border-color: var(--fire-bright);
+  box-shadow: 0 0 8px rgba(150,0,0,0.4);
+}
+.resist-orb.cold {
+  background: radial-gradient(circle at 35% 30%, var(--orb-cold-light), var(--orb-cold-dark));
+  border-color: var(--cold);
+  box-shadow: 0 0 8px rgba(54,100,146,0.4);
+}
+.resist-orb.lightning {
+  background: radial-gradient(circle at 35% 30%, var(--orb-lightning-light), var(--orb-lightning-dark));
+  border-color: var(--lightning);
+  box-shadow: 0 0 8px rgba(255,215,0,0.3);
+}
+.resist-orb.chaos {
+  background: radial-gradient(circle at 35% 30%, var(--orb-chaos-light), var(--orb-chaos-dark));
+  border-color: var(--chaos);
+  box-shadow: 0 0 8px rgba(208,32,144,0.3);
+}
+
+
+/* ═══════════════════════════════
+   GEM SOCKETS (skill visualization)
+   ═══════════════════════════════ */
+
+.gem-socket {
+  display: inline-block;
+  border-radius: 50%;
+  box-shadow: 0 0 4px rgba(255,255,255,0.15), inset 0 0 2px rgba(0,0,0,0.5);
+}
+.gem-socket.red   { background: radial-gradient(circle at 30% 30%, #ff5050, #cc3030, #802020); }
+.gem-socket.green { background: radial-gradient(circle at 30% 30%, #50ff50, #30cc30, #208020); }
+.gem-socket.blue  { background: radial-gradient(circle at 30% 30%, #5050ff, #3030cc, #202080); }
+.gem-socket.white { background: radial-gradient(circle at 30% 30%, #e0e0e0, #a0a0a0, #707070); }
+
+
+/* ═══════════════════════════════
+   PASSIVE TREE NODES
+   ═══════════════════════════════ */
+
+.passive-node {
+  position: absolute;
+  border-radius: 50%;
+}
+.passive-node.allocated {
+  background: var(--passive-allocated);
+  box-shadow: 0 0 4px var(--gold-glow);
+}
+.passive-node.notable {
+  background: var(--passive-notable);
+  border-radius: 1px;
+  box-shadow: 0 0 5px var(--gold-glow);
+}
+.passive-node.keystone {
+  border-radius: 2px;
+  border: 2px solid var(--passive-keystone);
+  background: rgba(196,168,48,0.5);
+  box-shadow: 0 0 8px var(--gold-glow);
+}
+.passive-node.unallocated {
+  background: var(--passive-unallocated);
+  border: 1px solid rgba(60,54,48,0.5);
+}
+.passive-link {
+  position: absolute;
+  transform-origin: left center;
+}
+
+
+/* ═══════════════════════════════
+   ACTION BUTTONS (Blood Rituals)
+   ═══════════════════════════════ */
+
+.action-btn {
+  display: flex;
+  align-items: center;
+  gap: 12px;
+  padding: 10px 14px;
+  background: linear-gradient(180deg, var(--bg-card), var(--bg-panel));
+  border: 1px solid var(--border);
+  border-radius: 2px;
+  cursor: pointer;
+  text-align: left;
+  width: 100%;
+  margin-bottom: 6px;
+  transition: all 0.15s;
+  box-shadow: inset 0 1px 0 rgba(255,255,255,0.04), 0 1px 2px rgba(0,0,0,0.2);
+}
+.action-btn:hover {
+  border-color: var(--border-gold);
+  box-shadow: 0 0 8px var(--gold-glow);
+}
+.action-btn:active {
+  transform: translateY(1px);
+}
+
+
+/* ═══════════════════════════════
+   MARKET BUTTON
+   ═══════════════════════════════ */
+
+.market-btn {
+  font-family: var(--font-body);
+  font-size: 11px;
+  background: linear-gradient(180deg, #3a2f20, #2a1f15, #1a1510);
+  color: var(--text-bright);
+  border: 1px solid var(--border-gold);
+  border-radius: 2px;
+  padding: 5px 14px;
+  cursor: pointer;
+  box-shadow: inset 0 1px 0 rgba(255,255,255,0.1), 0 1px 3px rgba(0,0,0,0.3);
+  transition: all 0.15s;
+}
+.market-btn:hover {
+  box-shadow: 0 0 10px var(--gold-glow);
+}
+.market-btn:active {
+  transform: translateY(1px);
+}
+
+
+/* ═══════════════════════════════
+   COMBAT ELEMENTS
+   ═══════════════════════════════ */
+
+.combat-card {
+  background: var(--bg-card);
+  border: 1px solid var(--border);
+  border-radius: 2px;
+  padding: 14px;
+  margin-bottom: 8px;
+  position: relative;
+  overflow: hidden;
+}
+.combat-card::before {
+  content: '';
+  position: absolute;
+  top: 0; left: 0; right: 0;
+  height: 2px;
+  background: linear-gradient(90deg, transparent, var(--fire-bright), transparent);
+}
+
+.combat-stat {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  padding: 6px 10px;
+  background: var(--bg-dark);
+  border-radius: 2px;
+  font-size: 11px;
+  border: 1px solid rgba(60,54,48,0.3);
+}
+
+.boss-row {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  padding: 8px 0;
+  border-bottom: 1px solid rgba(60,54,48,0.3);
+}
+.boss-row:last-child { border-bottom: none; }
+.boss-status {
+  font-size: 10px;
+  padding: 2px 8px;
+  border-radius: 2px;
+  font-weight: 700;
+  font-family: var(--font-mono);
+}
+.boss-status.ready    { color: var(--success); background: rgba(74,230,58,0.08); }
+.boss-status.risky    { color: var(--warning); background: rgba(255,215,0,0.08); }
+.boss-status.not-ready { color: var(--danger);  background: rgba(210,0,0,0.08); }
+
+
+/* ═══════════════════════════════
+   EQUIPMENT SLOTS (character body)
+   ═══════════════════════════════ */
+
+.char-slot {
+  border: 2px solid rgba(140,122,48,0.3);
+  border-radius: 4px;
+  background: rgba(30,27,22,0.7);
+  cursor: pointer;
+  transition: all 0.2s;
+  animation: slotPulse 3s ease-in-out infinite;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  font-size: 22px;
+  box-shadow: inset 0 0 8px rgba(0,0,0,0.4);
+}
+.char-slot:hover {
+  border-color: var(--gold);
+  background: rgba(140,122,48,0.15);
+  box-shadow: 0 0 12px var(--gold-glow);
+  transform: scale(1.08);
+  z-index: 5;
+}
+.char-slot.active {
+  border-color: var(--gold);
+  box-shadow: 0 0 16px var(--gold-glow);
+}
+.char-slot-sm { border-radius: 50%; }
+
+
+/* ═══════════════════════════════
+   BUFF ICONS (above character)
+   ═══════════════════════════════ */
+
+.buff-icon {
+  width: 32px;
+  height: 32px;
+  border-radius: 3px;
+  border: 1px solid color-mix(in srgb, var(--buff-color) 50%, transparent);
+  background: radial-gradient(circle at 40% 40%, color-mix(in srgb, var(--buff-color) 15%, var(--bg-card)), var(--bg-dark));
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  animation: buffFloat 3s ease-in-out infinite;
+  box-shadow: 0 0 6px color-mix(in srgb, var(--buff-color) 20%, transparent);
+  cursor: default;
+  position: relative;
+}
+.buff-inner { font-size: 16px; filter: brightness(1.3); }
+
+/* Stagger float animation */
+.buff-icon:nth-child(2) { animation-delay: 0.3s; }
+.buff-icon:nth-child(3) { animation-delay: 0.6s; }
+.buff-icon:nth-child(4) { animation-delay: 0.9s; }
+.buff-icon:nth-child(5) { animation-delay: 1.2s; }
+.buff-icon:nth-child(6) { animation-delay: 1.5s; }
+
+/* Hover tooltip */
+.buff-icon:hover::after {
+  content: attr(title);
+  position: absolute;
+  top: 36px; left: 50%;
+  transform: translateX(-50%);
+  font-size: 9px;
+  color: var(--text);
+  background: var(--bg-card);
+  border: 1px solid var(--border);
+  padding: 2px 8px;
+  border-radius: 2px;
+  white-space: nowrap;
+  font-family: var(--font-mono);
+  z-index: 20;
+  box-shadow: 0 2px 8px rgba(0,0,0,0.5);
+}
+
+
+/* ═══════════════════════════════
+   HARBINGER COMPACT (warnings)
+   ═══════════════════════════════ */
+
+.harbinger-compact {
+  padding: 6px 8px;
+  margin-bottom: 3px;
+  border-radius: 2px;
+  display: flex;
+  align-items: center;
+  gap: 6px;
+  font-size: 11px;
+}
+.harbinger-compact.warning {
+  background: linear-gradient(135deg, rgba(255,215,0,0.06), rgba(255,215,0,0.03));
+  border: 1px solid rgba(255,215,0,0.15);
+  border-left: 3px solid var(--warning);
+}
+.harbinger-compact .h-icon { font-size: 12px; flex-shrink: 0; }
+.harbinger-compact .h-text { color: var(--warning); font-weight: 600; flex: 1; }
+
+
+/* ═══════════════════════════════
+   SCORE RINGS (small, center panel)
+   ═══════════════════════════════ */
+
+.score-row {
+  display: flex;
+  justify-content: center;
+  gap: 20px;
+}
+.score-ring-sm {
+  text-align: center;
+  position: relative;
+}
+.score-ring-sm svg {
+  transform: rotate(-90deg);
+  filter: drop-shadow(0 0 6px var(--gold-glow));
+}
+.score-ring-sm .sr-inner {
+  position: absolute;
+  top: 50%; left: 50%;
+  transform: translate(-50%, -55%);
+  text-align: center;
+}
+.score-ring-sm .sr-val {
+  font-size: 16px;
+  font-weight: 800;
+  font-family: var(--font-mono);
+  text-shadow: 0 0 8px currentColor;
+}
+.score-ring-sm .sr-label {
+  font-size: 9px;
+  color: var(--text-muted);
+  text-transform: uppercase;
+  letter-spacing: 1.5px;
+  font-family: var(--font-heading);
+}
+
+
+/* ═══════════════════════════════
+   EQUIPMENT GRID (below character)
+   ═══════════════════════════════ */
+
+.equip-grid {
+  display: grid;
+  grid-template-columns: 1fr 1fr 1fr;
+  gap: 5px;
+  max-width: 360px;
+  margin: 0 auto;
+  width: 100%;
+}
+.equip-slot {
+  background: linear-gradient(180deg, var(--bg-card), var(--bg-panel));
+  border: 1px solid var(--border);
+  border-radius: 3px;
+  padding: 8px 6px;
+  text-align: center;
+  cursor: pointer;
+  transition: all 0.15s;
+  position: relative;
+  min-height: 68px;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  box-shadow: inset 0 1px 0 rgba(255,255,255,0.04), inset 0 0 8px rgba(0,0,0,0.3);
+}
+.equip-slot:hover {
+  border-color: var(--border-gold);
+  box-shadow: 0 0 10px var(--gold-glow);
+}
+.equip-slot .slot-icon { font-size: 24px; margin-bottom: 2px; }
+.equip-slot .slot-name { font-size: 9px; font-weight: 600; color: var(--text); white-space: nowrap; overflow: hidden; text-overflow: ellipsis; max-width: 100%; }
+.equip-slot .slot-score {
+  position: absolute;
+  top: 1px; right: 3px;
+  font-size: 9px;
+  font-weight: 800;
+  font-family: var(--font-mono);
+  text-shadow: 0 0 4px currentColor;
+}
+
+
+/* ═══════════════════════════════
+   PASSIVE TREE MINI VIEW
+   ═══════════════════════════════ */
+
+.passive-mini {
+  position: relative;
+  width: 100%;
+  height: 120px;
+  background: radial-gradient(circle at 50% 50%, var(--bg-panel), var(--bg-dark));
+  border: 1px solid var(--border);
+  border-radius: 2px;
+  overflow: hidden;
+  cursor: pointer;
+}
+.passive-mini:hover { border-color: var(--border-gold); }
+.passive-mini-label {
+  position: absolute;
+  bottom: 4px; right: 6px;
+  font-size: 8px;
+  color: var(--text-dim);
+  font-family: var(--font-mono);
+  text-transform: uppercase;
+  letter-spacing: 1px;
+}
+
+
+/* ═══════════════════════════════
+   ACCESSIBILITY — Focus States
+   (WCAG AA: keyboard navigation)
+   ═══════════════════════════════ */
+
+/* All interactive elements get a gold outline on keyboard focus */
+.btn-game:focus-visible,
+.btn-blood:focus-visible,
+.gem-btn:focus-visible,
+.char-slot:focus-visible,
+.equip-slot:focus-visible,
+.action-btn:focus-visible,
+.market-btn:focus-visible {
+  outline: 2px solid var(--gold);
+  outline-offset: 2px;
+  box-shadow: 0 0 12px var(--gold-glow);
+}
+
+/* Input fields */
+input:focus-visible,
+select:focus-visible,
+textarea:focus-visible {
+  outline: none;
+  border-color: var(--blood-bright);
+  box-shadow: 0 0 8px rgba(196,43,43,0.3);
+}
+
+/* Remove default outline but keep our custom one */
+*:focus {
+  outline: none;
+}
+*:focus-visible {
+  outline: 2px solid var(--gold);
+  outline-offset: 2px;
+}

@@ -7,6 +7,64 @@ and new feature ideas discovered from reviewing PoB, poedb, and poewiki.
 
 ---
 
+## 0. RePoE — Primary Game Data Source
+
+**Repository:** [repoe-fork/repoe](https://github.com/repoe-fork/repoe) (more active than original)
+
+ALL game data JSONs we need come from RePoE. Run the extraction on every PoE patch.
+
+### Complete File List (what we MUST download)
+
+| File | What It Contains | Priority |
+|---|---|---|
+| `mods.json` | ALL mod IDs, stat values, spawn weights, item tags | **P0** |
+| `stats.json` | Stat ID definitions (local vs global, aliased) | **P0** |
+| `stat_translations.json` | Stat ID → human-readable text (what appears on items) | **P0** |
+| `base_items.json` | All base types: inventory size, item class, tags, requirements | **P0** |
+| `gems.json` | All skill gems + support gems with stats per level | **P0** |
+| `essences.json` | Essence → guaranteed mods per item class per tier | **P0** |
+| `fossils.json` | Fossil tag multipliers + aux effects | **P0** |
+| `crafting_bench_options.json` | All benchcrafts: cost, item restrictions, stats | **P0** |
+| `default_monster_stats.json` | Monster base stats per level | **P0** |
+| `characters.json` | Player base stats per class | **P0** |
+| `mod_types.json` | Mod type info + fossil-relevant tags | **P0** |
+| `tags.json` | All item tags (used in mods + base_items) | **P0** |
+| `item_classes.json` | Item class definitions + influence types | **P1** |
+| `cluster_jewels.json` | Cluster jewel generation rules | **P1** |
+| `cluster_jewel_notables.json` | All cluster notable passives | **P1** |
+| `active_skill_types.json` | Skill type categories for gem compatibility | **P1** |
+| `gem_tags.json` | Gem tag ID → name translations | **P1** |
+| `cost_types.json` | Resource cost definitions | **P2** |
+| `npc_master.json` | Master signature mods | **P2** |
+| `uniques.json` | Unique item names + art files | **P2** |
+| `flavour.json` | Flavor text (for UI only) | **P2** |
+
+### How We Use Each File
+
+```
+Calculator needs:
+  stats.json        → know which stats are local vs global
+  mods.json          → mod tier boundaries for scoring
+  gems.json          → gem scaling per level for DPS calc
+  characters.json    → base stats to start calculation from
+  default_monster_stats.json → enemy HP/res for combat sim
+
+Crafting Advisor needs:
+  mods.json          → spawn weights for probability calc
+  fossils.json       → tag multipliers for fossil craft sim
+  essences.json      → guaranteed mods per essence
+  crafting_bench_options.json → available benchcrafts
+  mod_types.json     → which tags each mod has (for fossil interaction)
+
+Item Analysis needs:
+  base_items.json    → validate base type + requirements
+  stat_translations.json → display mod text correctly
+  tags.json          → item tag validation
+  item_classes.json  → categorize items correctly
+```
+
+---
+
 ## 1. PATH OF BUILDING (PoB XML)
 
 ### What We Parse (pob-parser.js)
@@ -231,3 +289,67 @@ Expected runs: ~30 Tower maps for 1 Nurse drop
 13. Vendor recipe database
 14. Atlas passive tree data + suggestions
 15. Div card drop location tracking
+
+---
+
+## 5. MISSING DATA SOURCES (Identified in review)
+
+### Map Layout Ratings
+**Problem:** Our "Favorite Map Suggestions" feature needs layout quality data
+(linear, open, tight, backtrack-heavy) but NO public data source exists.
+
+**Solution options:**
+- **Option A:** Community-maintained JSON (we create + maintain, community contributes)
+- **Option B:** Scrape from PoE community tier lists (Reddit, Maxroll)
+- **Option C:** Hardcode ratings for top 50 maps (good enough for MVP)
+
+**Recommended:** Option C for MVP → Option A post-launch.
+
+```json
+// game-data/maps/layout-ratings.json (manually curated)
+{
+  "Strand": { "layout": "linear", "rating": 5, "backtrack": false, "boss_difficulty": 2 },
+  "Dunes": { "layout": "open", "rating": 4, "backtrack": false, "boss_difficulty": 3 },
+  "Crimson Temple": { "layout": "tight", "rating": 2, "backtrack": true, "boss_difficulty": 4 },
+  // ~50 maps for MVP
+}
+```
+
+### Anointment Oil Costs
+**Problem:** Our "Anoint Planner" needs to show oil combinations + costs per notable.
+
+**Source:** PoB has this data internally (NotableAnointments table in Lua).
+Also available on poewiki: `poewiki.net/wiki/List_of_anointments`
+
+**Data structure:**
+```json
+// game-data/crafting/anointments.json
+{
+  "Whispers of Doom": {
+    "oils": ["Golden", "Golden", "Silver"],
+    "oil_cost_chaos": 850,   // from poe.ninja oil prices
+    "notable_stats": ["+1 to maximum number of Curses"]
+  },
+  "Breath of Flames": {
+    "oils": ["Amber", "Crimson", "Black"],
+    "oil_cost_chaos": 120,
+    "notable_stats": ["+20% Fire Damage over Time Multiplier"]
+  }
+}
+```
+
+### Atlas Passive Tree Data
+**Problem:** Our "Atlas Strategy Advisor" needs atlas node data.
+
+**Source:** PoB has atlas tree data. Also extractable from PoE's game files via PyPoE.
+
+**Note:** Atlas tree changes every league. Must be updated per league launch.
+
+### Passive Tree Position Data (for Tree Viewer)
+**Problem:** Our "Full Passive Tree Visualization" needs node X/Y positions.
+
+**Source:** PoB's tree data includes positions. Also available from:
+- GGG's official passive tree JSON: `pathofexile.com/passive-skill-tree` (returns JSON)
+- RePoE may not include positions — need to verify
+
+**Action:** Download from GGG's official endpoint, bundle as `game-data/tree/passive-tree-positions.json`

@@ -5,6 +5,11 @@
 Testing is organized in 4 layers: unit, integration, E2E, and performance benchmarks.
 Total coverage target: **80%+ for core business logic, 60%+ for UI, 100% CI pass on every PR.**
 
+Related docs:
+- [ENGINE-DESIGN.md](ENGINE-DESIGN.md) — Calculator engine architecture (what we're testing)
+- [ARCHITECTURE.md](ARCHITECTURE.md) — Module structure (where tests go)
+- [DATA-SOURCES.md](DATA-SOURCES.md) — Game data that feeds the calculator
+
 ---
 
 ## 1. TEST INFRASTRUCTURE

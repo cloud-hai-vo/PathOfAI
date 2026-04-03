@@ -42,9 +42,9 @@
 
       /* Damage types (PoE exact from horadric-helper) */
       --fire: #960000;           /* dark blood red */
-      --fire-bright: #960000;    /* brighter for text on dark bg */
+      --fire-bright: #cf3c18;    /* brighter for text on dark bg */
       --cold: #366492;           /* steel blue */
-      --lightning: gold;         /* CSS gold = #ffd700 */
+      --lightning: #ffd700;
       --chaos: #d02090;          /* magenta-pink, NOT purple */
       --physical: #c4a882;
 
@@ -53,7 +53,7 @@
       --es: #366492;
       --mana: #2060a0;
       --success: #4ae63a;        /* PoE quest green */
-      --warning: gold;
+      --warning: #ffd700;
       --danger: #d20000;         /* PoE corrupted red */
       --info: #88f;              /* PoE magic blue */
 
@@ -206,18 +206,18 @@
       flex:1; display:flex; overflow:hidden; min-height:0;
     }
 
-    /* LEFT SIDEBAR */
+    /* LEFT SIDEBAR — wider, better spacing */
     .sidebar-left {
-      width:130px; min-width:130px;
-      background: linear-gradient(180deg, #141210, #0c0a08);
+      width:150px; min-width:150px;
+      background: linear-gradient(180deg, #141210, #0c0b0a);
       border-right:1px solid var(--border);
-      padding:10px 8px;
+      padding:12px 10px;
       overflow-y:auto;
-      display:flex; flex-direction:column; gap:6px;
+      display:flex; flex-direction:column; gap:8px;
     }
     .stat-row {
-      text-align:center; padding:6px 4px; border-radius:2px;
-      background: linear-gradient(180deg,#1a1712,#161410);
+      text-align:center; padding:10px 6px; border-radius:3px;
+      background: linear-gradient(180deg,#1e1b16,#171411);
       border:1px solid var(--border);
       position:relative; overflow:hidden;
     }
@@ -228,18 +228,18 @@
     .stat-row.es-row::before { background:linear-gradient(90deg,transparent,var(--es),transparent); }
     .stat-row.armour-row::before { background:linear-gradient(90deg,transparent,var(--physical),transparent); }
     .stat-row.dps-row::before { background:linear-gradient(90deg,transparent,var(--fire),transparent); }
-    .stat-row .s-icon { font-size:14px; }
+    .stat-row .s-icon { font-size:16px; margin-bottom:2px; }
     .stat-row .s-val {
-      font-size:18px; font-weight:700; font-family:'JetBrains Mono',monospace;
-      line-height:1.1; text-shadow:0 0 8px currentColor;
+      font-size:22px; font-weight:800; font-family:'JetBrains Mono',monospace;
+      line-height:1.1; text-shadow:0 0 12px currentColor;
       animation:subtlePulse 4s ease-in-out infinite, countUp 0.5s ease-out;
     }
-    .stat-row .s-label { font-size:8px; color:var(--text-muted); text-transform:uppercase; letter-spacing:1px; }
+    .stat-row .s-label { font-size:9px; color:var(--text-bright); text-transform:uppercase; letter-spacing:1.5px; font-family:'Cinzel',serif; }
 
-    .resist-mini { padding:4px; border-radius:2px; display:flex; align-items:center; gap:5px; }
+    .resist-mini { padding:6px; border-radius:3px; display:flex; align-items:center; gap:8px; background:rgba(0,0,0,0.15); margin-bottom:2px; }
     .resist-mini .r-orb {
-      width:24px;height:24px;border-radius:50%; display:flex;align-items:center;justify-content:center;
-      font-size:11px; border:2px solid var(--border); position:relative; flex-shrink:0;
+      width:30px;height:30px;border-radius:50%; display:flex;align-items:center;justify-content:center;
+      font-size:13px; border:2px solid var(--border); position:relative; flex-shrink:0;
     }
     .resist-mini .r-orb::after {
       content:''; position:absolute; top:2px;left:4px; width:6px;height:4px;
@@ -250,10 +250,10 @@
     .resist-mini .r-orb.lightning { background:radial-gradient(circle at 35% 30%,#5a4820,#3a3010,#1a1408); border-color:var(--lightning); box-shadow:0 0 6px rgba(232,198,37,0.3); }
     .resist-mini .r-orb.chaos { background:radial-gradient(circle at 35% 30%,#3a2050,#2a1a3a,#0a0410); border-color:var(--chaos); box-shadow:0 0 6px rgba(168,85,247,0.3); }
     .resist-mini .r-info { flex:1; text-align:left; }
-    .resist-mini .r-val { font-size:12px; font-weight:700; font-family:'JetBrains Mono',monospace; }
+    .resist-mini .r-val { font-size:14px; font-weight:800; font-family:'JetBrains Mono',monospace; text-shadow:0 0 6px currentColor; }
     .resist-mini .r-val.capped { color:var(--success); }
     .resist-mini .r-val.uncapped { color:var(--danger); }
-    .resist-mini .r-oc { font-size:8px; color:var(--text-dim); }
+    .resist-mini .r-oc { font-size:9px; color:var(--text-muted); }
 
     /* CENTER PANEL */
     .center-panel {
@@ -268,17 +268,17 @@
       gap:5px; max-width:360px; margin:0 auto; width:100%;
     }
     .equip-slot {
-      background:linear-gradient(180deg,#1c1810,#0c0a06);
-      border:1px solid var(--border); border-radius:2px;
-      padding:6px 4px; text-align:center; cursor:pointer;
+      background:linear-gradient(180deg,#1e1b16,#141210);
+      border:1px solid var(--border); border-radius:3px;
+      padding:8px 6px; text-align:center; cursor:pointer;
       transition:all 0.15s; position:relative;
-      box-shadow:inset 0 1px 0 rgba(255,255,255,0.03);
-      min-height:62px; display:flex; flex-direction:column; align-items:center; justify-content:center;
+      box-shadow:inset 0 1px 0 rgba(255,255,255,0.04), inset 0 0 8px rgba(0,0,0,0.3);
+      min-height:68px; display:flex; flex-direction:column; align-items:center; justify-content:center;
     }
-    .equip-slot:hover { border-color:var(--border-gold); box-shadow:inset 0 1px 0 rgba(255,255,255,0.03),0 0 8px var(--gold-glow); }
-    .equip-slot.active { border-color:var(--gold); box-shadow:0 0 12px var(--gold-glow); }
-    .equip-slot .slot-icon { font-size:20px; }
-    .equip-slot .slot-name { font-size:8px; font-weight:600; white-space:nowrap; overflow:hidden; text-overflow:ellipsis; max-width:100%; }
+    .equip-slot:hover { border-color:var(--border-gold); box-shadow:inset 0 1px 0 rgba(255,255,255,0.04),0 0 10px var(--gold-glow); }
+    .equip-slot.active { border-color:var(--gold); box-shadow:0 0 14px var(--gold-glow); }
+    .equip-slot .slot-icon { font-size:24px; margin-bottom:2px; }
+    .equip-slot .slot-name { font-size:9px; font-weight:600; white-space:nowrap; overflow:hidden; text-overflow:ellipsis; max-width:100%; color:var(--text); }
     .equip-slot .slot-score {
       position:absolute; top:1px; right:3px; font-size:9px; font-weight:800;
       font-family:'JetBrains Mono',monospace; text-shadow:0 0 4px currentColor;
@@ -286,17 +286,18 @@
 
     /* CHARACTER EQUIPMENT SLOTS (positioned on body) */
     .char-slot {
-      border:1px solid #8c7a3040;
-      border-radius:3px;
-      background:rgba(19,15,24,0.6);
+      border:2px solid #8c7a3050;
+      border-radius:4px;
+      background:rgba(30,27,22,0.7);
       cursor:pointer;
       transition:all 0.2s;
       animation: slotPulse 3s ease-in-out infinite;
       display:flex;
       align-items:center;
       justify-content:center;
-      font-size:16px;
+      font-size:22px;
       backdrop-filter:blur(2px);
+      box-shadow:inset 0 0 8px rgba(0,0,0,0.4);
     }
     .char-slot:hover {
       border-color:var(--gold);
@@ -329,8 +330,8 @@
 
     /* BUFF ICONS */
     .buff-icon {
-      width:26px;
-      height:26px;
+      width:32px;
+      height:32px;
       border-radius:3px;
       border:1px solid color-mix(in srgb, var(--buff-color) 50%, transparent);
       background:radial-gradient(circle at 40% 40%, color-mix(in srgb, var(--buff-color) 15%, #1c1914), #0c0a08);
@@ -347,7 +348,7 @@
     .buff-icon:nth-child(4) { animation-delay:0.9s; }
     .buff-icon:nth-child(5) { animation-delay:1.2s; }
     .buff-icon:nth-child(6) { animation-delay:1.5s; }
-    .buff-inner { font-size:13px; filter:brightness(1.2); }
+    .buff-inner { font-size:16px; filter:brightness(1.3); }
     .buff-icon:hover {
       box-shadow:0 0 12px color-mix(in srgb, var(--buff-color) 40%, transparent);
       border-color:var(--buff-color);
@@ -445,11 +446,16 @@
       background:#3a3028;
       border:1px solid #3e333080;
     }
+    .passive-node.notable {
+      background:#c4a830;
+      border-radius:1px;
+      box-shadow:0 0 5px #c4a83060;
+    }
     .passive-node.keystone {
       border-radius:2px;
-      border:1px solid var(--gold);
-      background:#8c7a3040;
-      box-shadow:0 0 6px var(--gold-glow);
+      border:2px solid var(--gold);
+      background:#c4a83080;
+      box-shadow:0 0 8px var(--gold-glow);
     }
     .passive-link {
       position:absolute;
@@ -476,7 +482,7 @@
       font-size:16px; font-weight:800; font-family:'JetBrains Mono',monospace; line-height:1;
       text-shadow:0 0 8px currentColor; animation:countUp 0.6s ease-out;
     }
-    .score-ring-sm .sr-label { font-size:7px; color:var(--text-muted); text-transform:uppercase; letter-spacing:1px; }
+    .score-ring-sm .sr-label { font-size:9px; color:var(--text-muted); text-transform:uppercase; letter-spacing:1.5px; font-family:'Cinzel',serif; }
 
     /* Harbinger warnings */
     .harbinger-compact {
@@ -484,28 +490,28 @@
       display:flex; align-items:center; gap:6px;
       font-size:11px; animation:cardFadeIn 0.3s ease-out both;
     }
-    .harbinger-compact.warning { background:linear-gradient(135deg,gold10,gold06); border:1px solid gold25; border-left:3px solid var(--warning); }
+    .harbinger-compact.warning { background:linear-gradient(135deg,rgba(255,215,0,0.06),rgba(255,215,0,0.03)); border:1px solid rgba(255,215,0,0.15); border-left:3px solid var(--warning); }
     .harbinger-compact .h-icon { font-size:12px; flex-shrink:0; }
     .harbinger-compact .h-text { color:var(--warning); font-weight:600; flex:1; }
 
     /* RIGHT PANEL */
     .sidebar-right {
-      width:280px; min-width:280px;
-      background: linear-gradient(180deg, #141210, #0c0a08);
+      width:300px; min-width:300px;
+      background: linear-gradient(180deg, #171411, #0c0b0a);
       border-left:1px solid var(--border);
       display:flex; flex-direction:column;
       overflow:hidden;
     }
     .rp-header {
-      padding:8px 12px; border-bottom:1px solid var(--border);
+      padding:10px 14px; border-bottom:2px solid var(--border-blood);
       display:flex; align-items:center; justify-content:space-between;
-      background:linear-gradient(180deg,#181614,#141210);
-      min-height:36px;
+      background:linear-gradient(180deg,#1e1b16,#171411);
+      min-height:42px;
     }
     .rp-title {
-      font-family:'Cinzel',serif; font-size:11px; font-weight:700;
-      color:var(--blood-bright); text-transform:uppercase; letter-spacing:1px;
-      text-shadow:0 0 6px rgba(196,43,43,0.3);
+      font-family:'Cinzel',serif; font-size:13px; font-weight:800;
+      color:var(--blood-bright); text-transform:uppercase; letter-spacing:2px;
+      text-shadow:0 0 8px rgba(196,43,43,0.4);
     }
     .rp-close {
       width:22px;height:22px; border-radius:2px; border:1px solid var(--border);
@@ -515,16 +521,18 @@
     }
     .rp-close:hover { border-color:var(--blood-bright); color:var(--blood-bright); }
     .rp-content {
-      flex:1; overflow-y:auto; padding:10px 12px;
+      flex:1; overflow-y:auto; padding:12px 14px;
+      font-size:13px;
+      line-height:1.6;
     }
 
     /* ========== BOTTOM HUD BAR ========== */
     .hud-bar {
-      height:56px; min-height:56px;
-      background: linear-gradient(180deg, #120e16 0%, #0a080c 100%);
+      height:64px; min-height:64px;
+      background: linear-gradient(180deg, #1a1712 0%, #0c0b0a 100%);
       border-top:2px solid var(--border-blood);
       display:flex; align-items:center;
-      padding:0 12px; gap:12px;
+      padding:0 16px; gap:10px;
       position:relative; z-index:10;
     }
     .hud-bar::before {
@@ -535,7 +543,7 @@
 
     /* Life/Mana orbs */
     .orb-life {
-      width:44px; height:44px; border-radius:50%;
+      width:52px; height:52px; border-radius:50%;
       background: radial-gradient(circle at 40% 35%, #d20000, #8b1a1a 50%, #4a0e0e 85%, #2a0808);
       border:2px solid #5a1a1a;
       display:flex;align-items:center;justify-content:center;
@@ -543,7 +551,7 @@
       animation:orbPulse 3s ease-in-out infinite;
     }
     .orb-life .orb-val {
-      font-size:11px; font-weight:800; color:#fff;
+      font-size:13px; font-weight:800; color:#fff;
       font-family:'JetBrains Mono',monospace; text-shadow:0 1px 3px #000;
     }
     .orb-life::after {
@@ -552,7 +560,7 @@
       border-radius:50%;
     }
     .orb-mana {
-      width:36px; height:36px; border-radius:50%;
+      width:44px; height:44px; border-radius:50%;
       background: radial-gradient(circle at 40% 35%, #366492, #1e4a8a 50%, #0e2a5a 85%, #081830);
       border:2px solid #1e3a6a;
       display:flex;align-items:center;justify-content:center;
@@ -560,7 +568,7 @@
       animation:orbPulseMana 3.5s ease-in-out infinite;
     }
     .orb-mana .orb-val {
-      font-size:9px; font-weight:800; color:#fff;
+      font-size:11px; font-weight:800; color:#fff;
       font-family:'JetBrains Mono',monospace; text-shadow:0 1px 3px #000;
     }
     .orb-mana::after {
@@ -576,40 +584,42 @@
     }
 
     /* Gem buttons */
-    .gem-btns { display:flex; gap:5px; flex-wrap:nowrap; overflow-x:auto; flex:1; align-items:center; }
+    .gem-btns { display:flex; gap:6px; flex-wrap:nowrap; overflow-x:auto; flex:1; align-items:center; }
     .gem-btn {
-      width:36px; height:36px; border-radius:50%;
+      width:42px; height:42px; border-radius:50%;
       border:2px solid var(--border);
       display:flex;align-items:center;justify-content:center;
-      font-size:14px; cursor:pointer;
+      font-size:18px; cursor:pointer;
       flex-shrink:0; transition:all 0.15s;
       background:radial-gradient(circle at 35% 35%, rgba(255,255,255,0.08), transparent);
       position:relative;
+      box-shadow:inset 0 0 6px rgba(0,0,0,0.4);
     }
     .gem-btn:hover {
       border-color:var(--gold);
-      box-shadow:0 0 10px var(--gold-glow);
-      transform:scale(1.1);
+      box-shadow:0 0 14px var(--gold-glow), inset 0 0 8px rgba(255,255,255,0.06);
+      transform:scale(1.12);
     }
     .gem-btn.active {
       border-color:var(--blood-bright);
-      box-shadow:0 0 14px rgba(196,43,43,0.5);
+      box-shadow:0 0 18px rgba(196,43,43,0.5), inset 0 0 8px rgba(196,43,43,0.2);
       animation:gemBtnGlow 2s ease-in-out infinite;
     }
     .gem-btn .gem-tip {
-      display:none; position:absolute; bottom:42px; left:50%; transform:translateX(-50%);
-      background:#1a1410; border:1px solid var(--border-gold); border-radius:2px;
-      padding:2px 8px; font-size:9px; color:var(--gold);
+      display:none; position:absolute; bottom:48px; left:50%; transform:translateX(-50%);
+      background:var(--bg-card); border:1px solid var(--border-gold); border-radius:3px;
+      padding:3px 10px; font-size:10px; color:var(--gold);
       font-family:'Cinzel',serif; white-space:nowrap; pointer-events:none; z-index:100;
+      box-shadow:0 4px 12px rgba(0,0,0,0.6);
     }
     .gem-btn:hover .gem-tip { display:block; }
 
     /* ========== PANEL CONTENT STYLES ========== */
     .section-label {
-      font-size:10px; color:var(--text-dim); text-transform:uppercase;
-      letter-spacing:2px; margin-bottom:8px; font-family:'Cinzel',serif;
-      display:flex; align-items:center; gap:6px;
-      text-shadow:0 0 6px rgba(62,51,48,0.5);
+      font-size:11px; color:var(--text-muted); text-transform:uppercase;
+      letter-spacing:2px; margin-bottom:10px; font-family:'Cinzel',serif;
+      display:flex; align-items:center; gap:8px;
+      text-shadow:0 0 4px rgba(127,127,127,0.3);
     }
     .section-label::after { content:''; flex:1; height:1px; background:linear-gradient(90deg,var(--border),transparent); }
 
@@ -625,7 +635,7 @@
       font-family:'JetBrains Mono',monospace;
     }
     .suggestion-prio.high { color:var(--danger); background:#d2000018; border:1px solid #d2000030; }
-    .suggestion-prio.medium { color:var(--warning); background:gold18; border:1px solid gold30; }
+    .suggestion-prio.medium { color:var(--warning); background:rgba(255,215,0,0.09); border:1px solid rgba(255,215,0,0.19); }
     .suggestion-prio.low { color:var(--info); background:#36649218; border:1px solid #36649230; }
 
     .issue-card {
@@ -634,11 +644,11 @@
       animation:cardFadeIn 0.3s ease-out both;
     }
     .issue-card.critical { background:linear-gradient(135deg,#d2000012,#d2000008); border:1px solid #d2000030; border-left:3px solid var(--danger); }
-    .issue-card.warning { background:linear-gradient(135deg,gold12,gold08); border:1px solid gold30; border-left:3px solid var(--warning); }
+    .issue-card.warning { background:linear-gradient(135deg,rgba(255,215,0,0.07),rgba(255,215,0,0.03)); border:1px solid rgba(255,215,0,0.19); border-left:3px solid var(--warning); }
     .issue-card.info { background:linear-gradient(135deg,#36649212,#36649208); border:1px solid #36649230; border-left:3px solid var(--info); }
     .issue-icon { width:20px;height:20px;border-radius:50%;flex-shrink:0;display:flex;align-items:center;justify-content:center;font-size:10px; }
     .issue-card.critical .issue-icon { background:#d2000025; }
-    .issue-card.warning .issue-icon { background:gold25; }
+    .issue-card.warning .issue-icon { background:rgba(255,215,0,0.15); }
     .issue-card.info .issue-icon { background:#36649225; }
 
     .market-btn {
@@ -697,7 +707,7 @@
     .boss-row:last-child { border-bottom:none; }
     .boss-status { font-size:9px; padding:2px 6px; border-radius:2px; font-weight:700; font-family:'JetBrains Mono',monospace; }
     .boss-status.ready { color:var(--success); background:#4ae63a15; }
-    .boss-status.risky { color:var(--warning); background:gold15; }
+    .boss-status.risky { color:var(--warning); background:rgba(255,215,0,0.08); }
     .boss-status.not-ready { color:var(--danger); background:#d2000015; }
 
     /* Combat card */
@@ -940,46 +950,48 @@
           </ellipse>
 
           <!-- Character silhouette (Templar/Inquisitor build) -->
-          <g filter="url(#bodyGlow)" opacity="0.85">
+          <g filter="url(#bodyGlow)" opacity="0.95">
             <!-- Head -->
-            <circle cx="180" cy="95" r="18" fill="#201c14" stroke="#3d2e1f" stroke-width="1.5"/>
+            <circle cx="180" cy="95" r="18" fill="#2a2520" stroke="#5a4a3a" stroke-width="2"/>
             <!-- Neck -->
-            <rect x="175" y="113" width="10" height="10" fill="#201c14" stroke="none"/>
+            <rect x="175" y="113" width="10" height="10" fill="#2a2520" stroke="none"/>
             <!-- Shoulders -->
-            <path d="M145 125 Q160 118 180 123 Q200 118 215 125 L215 140 L145 140 Z" fill="#201c14" stroke="#3d2e1f" stroke-width="1"/>
+            <path d="M145 125 Q160 118 180 123 Q200 118 215 125 L215 140 L145 140 Z" fill="#2a2520" stroke="#5a4a3a" stroke-width="1.5"/>
             <!-- Torso -->
-            <path d="M150 140 L150 220 Q150 235 165 240 L195 240 Q210 235 210 220 L210 140 Z" fill="#201c14" stroke="#3d2e1f" stroke-width="1"/>
+            <path d="M150 140 L150 220 Q150 235 165 240 L195 240 Q210 235 210 220 L210 140 Z" fill="#2a2520" stroke="#5a4a3a" stroke-width="1.5"/>
             <!-- Left arm -->
-            <path d="M145 130 L125 140 L115 180 L120 220 L130 220 L135 185 L145 150 Z" fill="#201c14" stroke="#3d2e1f" stroke-width="1"/>
+            <path d="M145 130 L125 140 L115 180 L120 220 L130 220 L135 185 L145 150 Z" fill="#2a2520" stroke="#5a4a3a" stroke-width="1.5"/>
             <!-- Right arm -->
-            <path d="M215 130 L235 140 L245 180 L240 220 L230 220 L225 185 L215 150 Z" fill="#201c14" stroke="#3d2e1f" stroke-width="1"/>
+            <path d="M215 130 L235 140 L245 180 L240 220 L230 220 L225 185 L215 150 Z" fill="#2a2520" stroke="#5a4a3a" stroke-width="1.5"/>
             <!-- Left leg -->
-            <path d="M155 240 L150 290 L148 340 L162 340 L165 290 L170 245 Z" fill="#201c14" stroke="#3d2e1f" stroke-width="1"/>
+            <path d="M155 240 L150 290 L148 340 L162 340 L165 290 L170 245 Z" fill="#2a2520" stroke="#5a4a3a" stroke-width="1.5"/>
             <!-- Right leg -->
-            <path d="M190 245 L195 290 L198 340 L212 340 L210 290 L205 240 Z" fill="#201c14" stroke="#3d2e1f" stroke-width="1"/>
+            <path d="M190 245 L195 290 L198 340 L212 340 L210 290 L205 240 Z" fill="#2a2520" stroke="#5a4a3a" stroke-width="1.5"/>
           </g>
         </svg>
 
         <!-- Equipment slots positioned ON the character -->
         <div id="char-equip" style="position:absolute;top:0;left:0;width:100%;height:100%;z-index:3;">
+          <!-- Weapon — left hand (sceptre for RF) -->
+          <div class="char-slot" data-slot="Weapon 1" style="position:absolute;top:130px;left:30px;width:50px;height:70px;" onclick="showItemDetail('Weapon 1')"></div>
           <!-- Helmet — on head -->
-          <div class="char-slot" data-slot="Helmet" style="position:absolute;top:52px;left:50%;transform:translateX(-50%);width:52px;height:52px;" onclick="showItemDetail('Helmet')"></div>
+          <div class="char-slot" data-slot="Helmet" style="position:absolute;top:42px;left:50%;transform:translateX(-50%);width:60px;height:60px;" onclick="showItemDetail('Helmet')"></div>
           <!-- Body Armour — on torso -->
-          <div class="char-slot" data-slot="Body Armour" style="position:absolute;top:135px;left:50%;transform:translateX(-50%);width:60px;height:80px;" onclick="showItemDetail('Body Armour')"></div>
+          <div class="char-slot" data-slot="Body Armour" style="position:absolute;top:128px;left:50%;transform:translateX(-50%);width:68px;height:88px;" onclick="showItemDetail('Body Armour')"></div>
           <!-- Gloves — left hand -->
-          <div class="char-slot" data-slot="Gloves" style="position:absolute;top:175px;left:60px;width:46px;height:46px;" onclick="showItemDetail('Gloves')"></div>
+          <div class="char-slot" data-slot="Gloves" style="position:absolute;top:180px;left:50px;width:52px;height:52px;" onclick="showItemDetail('Gloves')"></div>
           <!-- Shield — right hand -->
-          <div class="char-slot" data-slot="Shield" style="position:absolute;top:155px;right:58px;width:50px;height:56px;" onclick="showItemDetail('Shield')"></div>
+          <div class="char-slot" data-slot="Shield" style="position:absolute;top:130px;right:30px;width:50px;height:66px;" onclick="showItemDetail('Shield')"></div>
           <!-- Boots — on feet -->
-          <div class="char-slot" data-slot="Boots" style="position:absolute;bottom:18px;left:50%;transform:translateX(-50%);width:64px;height:40px;" onclick="showItemDetail('Boots')"></div>
-          <!-- Ring 1 — left hand ring finger -->
-          <div class="char-slot char-slot-sm" data-slot="Ring 1" style="position:absolute;top:215px;left:80px;width:30px;height:30px;" onclick="showItemDetail('Ring 1')"></div>
-          <!-- Ring 2 — right hand ring finger -->
-          <div class="char-slot char-slot-sm" data-slot="Ring 2" style="position:absolute;top:215px;right:80px;width:30px;height:30px;" onclick="showItemDetail('Ring 2')"></div>
+          <div class="char-slot" data-slot="Boots" style="position:absolute;bottom:14px;left:50%;transform:translateX(-50%);width:68px;height:44px;" onclick="showItemDetail('Boots')"></div>
+          <!-- Ring 1 — left hand -->
+          <div class="char-slot char-slot-sm" data-slot="Ring 1" style="position:absolute;top:230px;left:68px;width:34px;height:34px;" onclick="showItemDetail('Ring 1')"></div>
+          <!-- Ring 2 — right hand -->
+          <div class="char-slot char-slot-sm" data-slot="Ring 2" style="position:absolute;top:230px;right:68px;width:34px;height:34px;" onclick="showItemDetail('Ring 2')"></div>
           <!-- Amulet — neck -->
-          <div class="char-slot char-slot-sm" data-slot="Amulet" style="position:absolute;top:115px;left:50%;transform:translateX(-50%);width:30px;height:30px;" onclick="showItemDetail('Amulet')"></div>
+          <div class="char-slot char-slot-sm" data-slot="Amulet" style="position:absolute;top:108px;left:50%;transform:translateX(-50%);width:34px;height:34px;" onclick="showItemDetail('Amulet')"></div>
           <!-- Belt — waist -->
-          <div class="char-slot" data-slot="Belt" style="position:absolute;top:235px;left:50%;transform:translateX(-50%);width:60px;height:26px;" onclick="showItemDetail('Belt')"></div>
+          <div class="char-slot" data-slot="Belt" style="position:absolute;top:240px;left:50%;transform:translateX(-50%);width:68px;height:30px;" onclick="showItemDetail('Belt')"></div>
         </div>
 
         <!-- Buff bar (above character head) -->
@@ -1217,16 +1229,24 @@
       slots.forEach(el => {
         const slotName = el.dataset.slot;
         const item = BUILD.items.find(i => i.slot === slotName);
+        const isSm = el.classList.contains('char-slot-sm');
         if (item) {
           const rc = rarityBorders[item.rarity] || '#c8c8c8';
           const sc = scoreColor(item.score);
-          el.style.borderColor = rc + '60';
-          el.style.background = `radial-gradient(circle at 40% 40%, ${rc}12, rgba(19,15,24,0.7))`;
-          el.innerHTML = `<span style="font-size:${el.classList.contains('char-slot-sm')?'12px':'18px'};">${item.icon}</span>
-            <span class="slot-label">${item.name} (${item.score})</span>`;
-          el.title = `${item.name} — ${item.base} — Score: ${item.score}`;
+          el.style.borderColor = rc + '80';
+          el.style.background = `radial-gradient(circle at 40% 40%, ${rc}18, rgba(30,27,22,0.8))`;
+          el.style.boxShadow = `inset 0 0 10px rgba(0,0,0,0.5), 0 0 6px ${rc}20`;
+          el.innerHTML = `
+            <span style="font-size:${isSm?'14px':'22px'};filter:drop-shadow(0 0 3px ${rc}40);">${item.icon}</span>
+            <span style="position:absolute;bottom:${isSm?'-12px':'2px'};left:50%;transform:translateX(-50%);font-size:${isSm?'7px':'8px'};color:${rc};font-family:'JetBrains Mono',monospace;white-space:nowrap;text-shadow:0 1px 3px #000;pointer-events:none;opacity:0.9;">${isSm?item.score:item.name.substring(0,10)}</span>
+            <span style="position:absolute;top:1px;right:2px;font-size:8px;font-weight:800;color:${sc};font-family:'JetBrains Mono',monospace;text-shadow:0 0 4px ${sc};">${item.score}</span>
+          `;
+          el.title = `${item.name} — ${item.base}\nScore: ${item.score}/100\nClick for details`;
         } else {
-          el.innerHTML = `<span style="opacity:0.2;font-size:12px;">+</span><span class="slot-label">${slotName}</span>`;
+          el.style.borderStyle = 'dashed';
+          el.style.opacity = '0.4';
+          el.innerHTML = `<span style="font-size:14px;opacity:0.5;">+</span>
+            <span style="position:absolute;bottom:2px;font-size:7px;color:var(--text-dim);white-space:nowrap;">${slotName}</span>`;
         }
       });
     }
@@ -1701,7 +1721,7 @@
               const cls = gem.maxed ? 'color:var(--success);' : '';
               const lcls = gem.level >= 20 ? 'color:var(--success);' : 'color:var(--warning);';
               let badge = '';
-              if (!gem.maxed && gem.level >= 20) badge = '<span style="font-size:7px;padding:1px 4px;border-radius:2px;background:gold18;color:var(--warning);border:1px solid gold30;font-family:\'JetBrains Mono\',monospace;">Corrupt?</span>';
+              if (!gem.maxed && gem.level >= 20) badge = '<span style="font-size:7px;padding:1px 4px;border-radius:2px;background:rgba(255,215,0,0.09);color:var(--warning);border:1px solid rgba(255,215,0,0.19);font-family:\'JetBrains Mono\',monospace;">Corrupt?</span>';
               else if (gem.level < 20) badge = '<span style="font-size:7px;padding:1px 4px;border-radius:2px;background:#d2000018;color:var(--danger);border:1px solid #d2000030;font-family:\'JetBrains Mono\',monospace;">Level up</span>';
               return `<div style="display:flex;justify-content:space-between;align-items:center;padding:3px 0;border-bottom:1px solid #201c14;font-size:10px;">
                 <span style="${cls}display:flex;align-items:center;gap:4px;"><span style="display:inline-block;width:5px;height:5px;border-radius:50%;background:${dotC};box-shadow:0 0 2px ${dotC};"></span>${gem.name}</span>
@@ -1747,19 +1767,21 @@
       // In production this would parse actual tree data from PoB
       const nodes = [];
       const links = [];
-      // Simulate a passive tree branch pattern (Templar start area)
-      const centerX = 180, centerY = 60;
-      // Core cluster around start
-      for (let ring = 0; ring < 4; ring++) {
-        const count = ring === 0 ? 1 : ring * 6;
-        const radius = ring * 22;
+      // Simulate a passive tree pattern — multiple clusters like PoE's tree
+      const centerX = 180, centerY = 55;
+      // Core cluster (Templar start)
+      for (let ring = 0; ring < 5; ring++) {
+        const count = ring === 0 ? 1 : ring * 5;
+        const radius = ring * 20;
         for (let i = 0; i < count; i++) {
-          const angle = (i / count) * Math.PI * 2 + ring * 0.3;
-          const x = centerX + Math.cos(angle) * radius + (Math.random() - 0.5) * 8;
-          const y = centerY + Math.sin(angle) * radius + (Math.random() - 0.5) * 8;
-          const allocated = ring < 3 || Math.random() > 0.3;
-          const isKeystone = ring === 3 && Math.random() > 0.7;
-          nodes.push({ x, y, allocated, isKeystone, size: isKeystone ? 5 : ring === 0 ? 4 : 3 });
+          const angle = (i / count) * Math.PI * 2 + ring * 0.4;
+          const x = centerX + Math.cos(angle) * radius + (Math.random() - 0.5) * 6;
+          const y = centerY + Math.sin(angle) * radius * 0.9 + (Math.random() - 0.5) * 6;
+          const allocated = ring < 4 || Math.random() > 0.4;
+          const isKeystone = ring === 4 && Math.random() > 0.6;
+          const isNotable = ring >= 2 && !isKeystone && Math.random() > 0.7;
+          const size = isKeystone ? 8 : isNotable ? 6 : ring === 0 ? 5 : 4;
+          nodes.push({ x, y, allocated, isKeystone, isNotable, size });
           // Link to previous ring node
           if (ring > 0 && nodes.length > 1) {
             const prevIdx = Math.max(0, nodes.length - count - 1 + Math.floor(i / 2));
@@ -1775,12 +1797,35 @@
         const dx = to.x - from.x, dy = to.y - from.y;
         const len = Math.sqrt(dx*dx + dy*dy);
         const angle = Math.atan2(dy, dx) * 180 / Math.PI;
-        html += `<div class="passive-link" style="left:${from.x}px;top:${from.y}px;width:${len}px;height:1px;transform:rotate(${angle}deg);opacity:${l.allocated?0.4:0.1};background:${l.allocated?'var(--gold)':'#3a3028'};"></div>`;
+        html += `<div class="passive-link" style="left:${from.x}px;top:${from.y}px;width:${len}px;height:${l.allocated?'2px':'1px'};transform:rotate(${angle}deg);opacity:${l.allocated?0.6:0.15};background:${l.allocated?'var(--gold)':'#5a5040'};"></div>`;
       });
+      // Add outer branch clusters (simulate reaching towards other class areas)
+      const branches = [
+        {cx:80, cy:40, count:8, label:'Witch'},
+        {cx:280, cy:40, count:8, label:'Marauder'},
+        {cx:60, cy:90, count:6, label:'Shadow'},
+        {cx:300, cy:90, count:6, label:'Duelist'},
+      ];
+      branches.forEach(br => {
+        for (let i = 0; i < br.count; i++) {
+          const angle = (i / br.count) * Math.PI * 2;
+          const r = 12 + Math.random() * 15;
+          nodes.push({
+            x: br.cx + Math.cos(angle) * r,
+            y: br.cy + Math.sin(angle) * r,
+            allocated: Math.random() > 0.6,
+            isKeystone: false,
+            isNotable: Math.random() > 0.8,
+            size: Math.random() > 0.8 ? 5 : 3,
+          });
+        }
+      });
+
       // Render nodes
       nodes.forEach(n => {
-        const cls = n.isKeystone ? 'passive-node keystone' : n.allocated ? 'passive-node allocated' : 'passive-node unallocated';
-        html += `<div class="${cls}" style="left:${n.x - n.size/2}px;top:${n.y - n.size/2}px;width:${n.size}px;height:${n.size}px;"></div>`;
+        const cls = n.isKeystone ? 'passive-node keystone' : n.isNotable ? 'passive-node notable' : n.allocated ? 'passive-node allocated' : 'passive-node unallocated';
+        const glow = n.allocated && !n.isKeystone ? `box-shadow:0 0 ${n.size}px #c4a83060;` : '';
+        html += `<div class="${cls}" style="left:${n.x - n.size/2}px;top:${n.y - n.size/2}px;width:${n.size}px;height:${n.size}px;${glow}"></div>`;
       });
       container.innerHTML = html;
     }

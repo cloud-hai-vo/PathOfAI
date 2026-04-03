@@ -44,10 +44,11 @@ path-of-ai/
 │   │   │
 │   │   ├── data/                     # Game data loading & versioning
 │   │   │   ├── mod.rs
-│   │   │   ├── loader.rs             # Load versioned JSON game data
-│   │   │   ├── mod_database.rs       # Mod tier lookups
-│   │   │   ├── gem_database.rs       # Gem info lookups
-│   │   │   ├── tree_database.rs      # Passive tree data
+│   │   │   ├── loader.rs             # Load versioned JSON (poe1/ or poe2/ subfolder)
+│   │   │   ├── mod_database.rs       # Mod tier lookups + spawn weights
+│   │   │   ├── gem_database.rs       # Gem info + transfigured variants
+│   │   │   ├── tree_database.rs      # Passive tree (PoE1 + PoE2 layouts)
+│   │   │   ├── unique_database.rs    # Searchable unique item database (~1200 items)
 │   │   │   └── updater.rs            # Auto-update data from GitHub Releases
 │   │   │
 │   │   ├── market/                   # Market intelligence
@@ -57,15 +58,38 @@ path-of-ai/
 │   │   │   ├── buy_advisor.rs        # Buy timing / trend analysis
 │   │   │   └── upgrade_finder.rs     # Find upgrades within budget
 │   │   │
-│   │   ├── seer/                     # Local AI engine
+│   │   ├── calculator/               # OUR calculation engine (Rust — primary)
 │   │   │   ├── mod.rs
-│   │   │   ├── item_net.rs           # Item scoring neural network
-│   │   │   ├── build_net.rs          # Build classification network
-│   │   │   ├── tree_net.rs           # Passive tree optimization
-│   │   │   ├── query_net.rs          # NLU / query understanding
-│   │   │   ├── embed_net.rs          # RAG embedding + vector search
-│   │   │   ├── response_gen.rs       # Template-based response generator
-│   │   │   └── onnx_runtime.rs       # ONNX model loading & inference
+│   │   │   ├── mod_aggregator.rs     # Aggregate modifiers from tree + items + gems
+│   │   │   ├── offense_calc.rs       # DPS: base × increased × more × dot × speed
+│   │   │   ├── defense_calc.rs       # Life, ES, armour, evasion, block, resists, EHP
+│   │   │   ├── formulas.rs           # PoE game formulas (armour, evasion, crit, etc.)
+│   │   │   ├── what_if.rs            # "What if I change X?" → recalc → diff
+│   │   │   ├── fast_estimate.rs      # Quick estimation path (<10ms)
+│   │   │   └── validator.rs          # Validate suggestions (no resist uncap, etc.)
+│   │   │
+│   │   ├── pob_verify/              # PoB Lua calc engine (OPTIONAL verification)
+│   │   │   ├── mod.rs
+│   │   │   ├── lua_bridge.rs         # LuaJIT FFI — loads PoB calc modules
+│   │   │   └── comparator.rs         # Compare our results vs PoB, report diffs
+│   │   │
+│   │   ├── seer/                     # The Seer — query routing + response generation
+│   │   │   ├── mod.rs
+│   │   │   ├── query_router.rs       # Intent classifier (rule-based, not ML)
+│   │   │   ├── response_gen.rs       # Template response generator
+│   │   │   ├── craft_advisor.rs      # Crafting probability from mod weights
+│   │   │   ├── item_import.rs        # Parse PoE clipboard format (Ctrl+C items)
+│   │   │   ├── item_editor.rs        # Item crafting simulator (add/remove mods)
+│   │   │   ├── build_share.rs        # Generate/parse build share codes
+│   │   │   ├── party_analyzer.rs     # Party composition + aura overlap analysis
+│   │   │   └── cloud_api.rs          # Optional: Claude/GPT for creative queries
+│   │   │
+│   │   ├── analytics/                # Session stats, wealth tracking, recipes
+│   │   │   ├── mod.rs
+│   │   │   ├── map_stats.rs          # Map run statistics (Client.txt parser)
+│   │   │   ├── wealth_tracker.rs     # Net worth history over time
+│   │   │   ├── recipe_detector.rs    # Chaos/regal recipe detection in stash
+│   │   │   └── session.rs            # Per-session currency/XP/death tracking
 │   │   │
 │   │   ├── services/                 # Long-running background services
 │   │   │   ├── mod.rs
@@ -89,23 +113,35 @@ path-of-ai/
 │       ├── crafting/
 │       └── meta/version.json
 │
-├── src/                              # Frontend (TypeScript + HTML/CSS)
-│   ├── index.html                    # Main HTML entry
+├── src/                              # Frontend (Vanilla TypeScript — NO framework)
+│   ├── index.html                    # Main HTML entry (game HUD layout)
 │   ├── main.ts                       # Frontend entry, Tauri IPC setup
 │   ├── styles/
-│   │   ├── theme.css                 # PoE theme variables, colors, fonts
+│   │   ├── theme.css                 # PoE-exact color variables + fonts
+│   │   ├── hud.css                   # Game HUD layout (3-column + bottom bar)
 │   │   ├── components.css            # Reusable component styles
-│   │   └── layout.css                # Grid, panels, tabs
-│   ├── components/                   # UI components (vanilla TS or framework)
-│   │   ├── overview-panel.ts
-│   │   ├── item-list.ts
-│   │   ├── resist-bar.ts
-│   │   ├── score-ring.ts
-│   │   ├── issue-card.ts
-│   │   ├── suggestion-card.ts
-│   │   ├── gem-table.ts
-│   │   ├── checklist.ts
-│   │   └── seer-chat.ts
+│   │   └── animations.css            # Aura rings, power-up effects, blood drip
+│   ├── components/                   # UI components (vanilla TS, NO React/Vue/Svelte)
+│   │   ├── character-viz.ts          # Character body + equipment slots + aura rings
+│   │   ├── equip-grid.ts             # Equipment grid (3x4 PoE layout)
+│   │   ├── stat-sidebar.ts           # Left sidebar stats + resist orbs
+│   │   ├── right-panel.ts            # Context-sensitive right panel
+│   │   ├── hud-bar.ts                # Bottom HUD with gem buttons + life/mana orbs
+│   │   ├── item-tooltip.ts           # PoE-style item tooltip
+│   │   ├── score-ring.ts             # Skill gem-style score rings
+│   │   ├── resist-orb.ts             # Element resist orb with glass effect
+│   │   ├── issue-card.ts             # Harbinger warning card
+│   │   ├── suggestion-card.ts        # Prophecy suggestion card
+│   │   ├── seer-chat.ts              # Grimoire chat panel
+│   │   ├── stash-grid.ts             # Stash inventory grid (12x12)
+│   │   ├── passive-tree.ts           # Passive tree mini-view
+│   │   ├── craft-forge.ts            # The Forge crafting advisor
+│   │   ├── item-import.ts            # Ctrl+C paste item panel
+│   │   ├── item-editor.ts            # Item crafting simulator (live mod editor)
+│   │   ├── unique-search.ts          # Searchable unique item database
+│   │   ├── calc-breakdown.ts         # DPS calculation breakdown ("Show The Math")
+│   │   ├── party-panel.ts            # Party composition analyzer
+│   │   └── build-share.ts            # Build share code generator/importer
 │   ├── services/
 │   │   ├── api.ts                    # Typed wrappers around Tauri invoke()
 │   │   ├── store.ts                  # Frontend state management
@@ -522,68 +558,95 @@ export const store = new Store();
 
 ---
 
-### 2.7 Facade Pattern (Seer Engine)
+### 2.7 Facade Pattern (The Seer — Three-Engine Architecture)
 
-The Seer Engine is complex internally (5 neural networks + RAG). Expose a simple facade.
+The Seer is NOT an AI model. It's a **calculation engine with natural language output**.
+Three engines work together: Calculator (85%), Knowledge Base (12%), Cloud AI (3%).
+See [ENGINE-DESIGN.md](ENGINE-DESIGN.md) for full details.
 
 ```rust
 // src-tauri/src/seer/mod.rs
 
-/// The Seer — single entry point for all AI queries.
-/// Hides the complexity of 5 neural networks + RAG + templates.
+/// The Seer — routes queries to the right engine.
+/// No neural networks. No custom models. Just math + data + templates.
 pub struct Seer {
-    item_net: ItemNet,
-    build_net: BuildNet,
-    tree_net: TreeNet,
-    query_net: QueryNet,
-    embed_net: EmbedNet,
-    response_gen: ResponseGenerator,
-    knowledge_base: KnowledgeBase,
+    calculator: PobCalculator,     // PoB Lua calc engine (LuaJIT)
+    knowledge: KnowledgeBase,      // Structured game data (JSON)
+    response_gen: ResponseGenerator, // Template-based NL output
+    cloud_api: Option<CloudApi>,   // Optional Claude/GPT for creative queries
 }
 
 impl Seer {
-    /// Load all models and knowledge base
-    pub fn load(model_dir: &Path, kb_dir: &Path) -> Result<Self, SeerError> {
+    pub fn new(data_dir: &Path) -> Result<Self, SeerError> {
         Ok(Self {
-            item_net: ItemNet::load(model_dir.join("item_net.onnx"))?,
-            build_net: BuildNet::load(model_dir.join("build_net.onnx"))?,
-            tree_net: TreeNet::load(model_dir.join("tree_net.onnx"))?,
-            query_net: QueryNet::load(model_dir.join("query_net.gguf"))?,
-            embed_net: EmbedNet::load(model_dir.join("minilm.onnx"))?,
+            calculator: PobCalculator::new(data_dir)?,
+            knowledge: KnowledgeBase::load(data_dir)?,
             response_gen: ResponseGenerator::new(),
-            knowledge_base: KnowledgeBase::load(kb_dir)?,
+            cloud_api: None, // enabled when user provides API key
         })
     }
 
-    /// Simple API: ask a question, get an answer
+    /// Main entry point: ask a question, get a verified answer.
     pub fn ask(&self, question: &str, build: &BuildData) -> SeerResponse {
-        // 1. Understand the question
-        let intent = self.query_net.classify(question);
-        let entities = self.query_net.extract_entities(question);
+        let intent = self.classify_intent(question); // rule-based, NOT ML
 
-        // 2. Retrieve relevant knowledge
-        let context = self.embed_net.search(&self.knowledge_base, question, 5);
+        match intent {
+            // ENGINE 1: Calculator — 85% of queries (100% accurate)
+            Intent::DpsCheck | Intent::ItemCompare | Intent::GemSwap
+            | Intent::UpgradeRank | Intent::ResistCheck | Intent::EhpCalc => {
+                let result = self.calculator.calculate(build, &intent);
+                self.response_gen.format_calculation(result)
+            }
 
-        // 3. Route to appropriate network
-        let data = match intent {
-            Intent::ItemScore    => self.item_net.score_items(build, &entities),
-            Intent::BuildIssue   => self.build_net.detect_issues(build),
-            Intent::TreeAdvice   => self.tree_net.suggest_changes(build),
-            Intent::General      => self.response_gen.from_context(&context, build),
-        };
+            // ENGINE 2: Knowledge Base — 12% of queries (99% accurate)
+            Intent::CraftAdvice | Intent::BossMechanic | Intent::ModExplain
+            | Intent::MapMod | Intent::GemInteraction => {
+                let data = self.knowledge.lookup(&intent, build);
+                self.response_gen.format_knowledge(data)
+            }
 
-        // 4. Generate natural language response
-        self.response_gen.generate(intent, data, &context)
+            // ENGINE 3: Cloud AI — 3% of queries (optional)
+            Intent::BuildDesign | Intent::WhyQuestion | Intent::OpenEnded => {
+                if let Some(api) = &self.cloud_api {
+                    let context = self.knowledge.build_context(build);
+                    api.query_with_context(question, &context)
+                } else {
+                    SeerResponse::needs_cloud("The Seer cannot divine this alone. Connect a cloud provider in Settings.")
+                }
+            }
+        }
     }
 
-    /// Score a specific item (direct API, no NLU needed)
+    /// Score an item — pure math, no AI needed.
     pub fn score_item(&self, item: &Item, build: &BuildData) -> ItemScore {
-        self.item_net.score(item, build)
+        let weights = self.knowledge.stat_weights(build.archetype);
+        item.mods.iter()
+            .map(|m| m.value * weights.get(m.stat_type))
+            .sum::<f64>()
+            / self.knowledge.expected_score(item.slot, build.level)
     }
 
-    /// Get upgrade priority for all slots
-    pub fn upgrade_priorities(&self, build: &BuildData) -> Vec<UpgradePriority> {
-        self.item_net.rank_slots(build)
+    /// "What if I swap this item?" — PoB Lua calc, 100% accurate.
+    pub fn what_if(&self, build: &BuildData, change: &Change) -> ValidatedDiff {
+        let old = self.calculator.run(build);
+        let new_build = build.apply(change);
+        let new = self.calculator.run(&new_build);
+        ValidatedDiff::compare(old, new) // exact DPS/life/resist diff
+    }
+
+    /// Intent classification — 50 regex rules, no ML needed.
+    fn classify_intent(&self, query: &str) -> Intent {
+        let q = query.to_lowercase();
+        if q.contains("dps") || q.contains("damage") { return Intent::DpsCheck; }
+        if q.contains("upgrade") || q.contains("replace") { return Intent::UpgradeRank; }
+        if q.contains("craft") || q.contains("fossil") || q.contains("essence") { return Intent::CraftAdvice; }
+        if q.contains("resist") || q.contains("cap") { return Intent::ResistCheck; }
+        if q.contains("boss") || q.contains("shaper") || q.contains("maven") { return Intent::BossMechanic; }
+        if q.contains("gem") || q.contains("support") || q.contains("link") { return Intent::GemSwap; }
+        if q.contains("why") || q.contains("explain") { return Intent::WhyQuestion; }
+        if q.contains("design") || q.contains("build me") || q.contains("create") { return Intent::BuildDesign; }
+        if q.contains("map") || q.contains("mod") { return Intent::MapMod; }
+        Intent::OpenEnded
     }
 }
 ```
@@ -628,25 +691,401 @@ impl PobParser {
 
 ---
 
-## 3. KEY DESIGN PRINCIPLES
+### 2.9 Circuit Breaker Pattern (External APIs)
 
-### 3.1 Clean Boundary: Rust Core Has No Tauri Dependency
+External APIs (poe.ninja, Cloud AI) can fail. Use circuit breaker to degrade gracefully.
+
+```rust
+pub struct CircuitBreaker {
+    failures: AtomicU32,
+    last_failure: Mutex<Instant>,
+    threshold: u32,        // open circuit after N failures
+    cooldown: Duration,    // try again after this duration
+}
+
+impl CircuitBreaker {
+    pub fn is_open(&self) -> bool {
+        self.failures.load(Ordering::Relaxed) >= self.threshold
+    }
+
+    pub async fn call<F, T, E>(&self, f: F) -> Result<T, E>
+    where F: Future<Output = Result<T, E>> {
+        if self.is_open() {
+            // Check if cooldown elapsed → try one request (half-open)
+            if self.last_failure.lock().unwrap().elapsed() < self.cooldown {
+                return Err(/* circuit open error */);
+            }
+        }
+        match f.await {
+            Ok(v) => { self.failures.store(0, Ordering::Relaxed); Ok(v) }
+            Err(e) => { self.failures.fetch_add(1, Ordering::Relaxed); Err(e) }
+        }
+    }
+}
+```
+
+Fallback behavior per service:
+- **poe.ninja down** → serve stale cached prices (show "prices from X hours ago")
+- **Cloud AI down** → "The Seer cannot reach the void. Rephrase for local engine."
+- **GitHub update server down** → keep current data, retry in 1 hour
+
+### 2.10 Cache Pattern
+
+```rust
+pub struct TtlCache<V> {
+    data: HashMap<String, (V, Instant)>,
+    ttl: Duration,
+}
+
+impl<V: Clone> TtlCache<V> {
+    pub fn get(&self, key: &str) -> Option<&V> {
+        self.data.get(key).and_then(|(v, ts)| {
+            if ts.elapsed() < self.ttl { Some(v) } else { None }
+        })
+    }
+    pub fn get_stale(&self, key: &str) -> Option<&V> {
+        // Return even if expired — for circuit breaker fallback
+        self.data.get(key).map(|(v, _)| v)
+    }
+}
+```
+
+Cache TTLs:
+- Price data: 5 min (poe.ninja refreshes every 5 min)
+- Build analysis: until build file changes
+- Seer responses: 10 min per (question_hash + build_hash)
+- Game data: until app restart or manual refresh
+
+### 2.11 Portable Storage Pattern
+
+Data stored next to the executable, NOT in AppData. User can change in Settings.
+
+```rust
+pub struct StorageConfig {
+    pub data_dir: PathBuf,  // default: ./PathOfAI_Data/
+}
+
+impl StorageConfig {
+    pub fn default() -> Self {
+        // Get directory where exe is running
+        let exe_dir = std::env::current_exe()
+            .ok()
+            .and_then(|p| p.parent().map(|p| p.to_path_buf()))
+            .unwrap_or_else(|| PathBuf::from("."));
+
+        Self { data_dir: exe_dir.join("PathOfAI_Data") }
+    }
+
+    pub fn from_settings(settings_path: &Path) -> Self {
+        // User can override via settings.json
+        // If user chose custom folder, use that
+        // Otherwise default to exe directory
+    }
+}
+```
+
+Directory structure (all portable, copy folder = full backup):
+```
+PathOfAI.exe
+PathOfAI_Data/
+  settings.json              # user preferences, API keys (encrypted)
+  game-data/                 # bundled + updated game data JSONs
+    mods/ gems/ tree/ items/ crafting/ bosses/
+  cache/
+    prices/                  # poe.ninja price cache
+    images/                  # item art cache from PoE CDN
+    builds/                  # analyzed build cache
+  backups/                   # PoB XML backups before writes
+  history/                   # build snapshots for undo/redo
+  logs/                      # app logs for bug reports
+```
+
+Benefits:
+- Put on USB → works on any PC
+- No registry, no AppData, no roaming profile issues
+- Easy backup (zip the folder)
+- Easy uninstall (delete the folder)
+- User can choose custom folder in Settings → Paths
+
+### 2.12 Undo/Redo Pattern
+
+```rust
+pub struct UndoStack {
+    history: Vec<BuildSnapshot>,
+    position: usize,
+    max_history: usize,  // default 50
+}
+
+impl UndoStack {
+    pub fn push(&mut self, snapshot: BuildSnapshot) {
+        // Truncate any redo history
+        self.history.truncate(self.position + 1);
+        self.history.push(snapshot);
+        if self.history.len() > self.max_history {
+            self.history.remove(0);
+        }
+        self.position = self.history.len() - 1;
+    }
+
+    pub fn undo(&mut self) -> Option<&BuildSnapshot> {
+        if self.position > 0 { self.position -= 1; }
+        self.history.get(self.position)
+    }
+
+    pub fn redo(&mut self) -> Option<&BuildSnapshot> {
+        if self.position < self.history.len() - 1 { self.position += 1; }
+        self.history.get(self.position)
+    }
+}
+```
+
+---
+
+## 3. WHY VANILLA TYPESCRIPT (No React/Vue/Svelte)
+
+### The Decision
+
+The frontend uses **vanilla TypeScript** — no UI framework.
+
+### Why
+
+| Factor | Vanilla TS | React/Vue/Svelte |
+|--------|-----------|-----------------|
+| Bundle size | ~0KB framework overhead | 40-130KB gzipped |
+| Startup time | Instant (no hydration) | 100-300ms framework init |
+| Learning curve | Just HTML + TS | Framework-specific patterns |
+| Game-like UI | Direct DOM control = easy animations | Virtual DOM = fight for control |
+| Tauri integration | Simple invoke() + event listeners | Need framework-specific bindings |
+| Long-term maintenance | No framework version upgrades | React 18→19→20 migration pain |
+| Custom rendering | Canvas/SVG for character viz = native | Canvas in React = awkward |
+| AI-assisted development | Claude writes vanilla TS perfectly | Framework-specific patterns vary |
+
+### Our Component Pattern (No Framework Needed)
+
+```typescript
+// src/components/stat-sidebar.ts
+
+export class StatSidebar {
+  private el: HTMLElement;
+
+  constructor(container: HTMLElement) {
+    this.el = container;
+  }
+
+  render(stats: BuildStats) {
+    this.el.innerHTML = `
+      <div class="stat-row">
+        <span class="stat-icon">❤</span>
+        <span class="stat-value" style="color:var(--life);">${stats.life.toLocaleString()}</span>
+      </div>
+      <!-- ... -->
+    `;
+  }
+
+  update(stats: BuildStats) {
+    // Only update changed values (manual diff, very fast)
+    const lifeEl = this.el.querySelector('.stat-value');
+    if (lifeEl) lifeEl.textContent = stats.life.toLocaleString();
+  }
+}
+```
+
+### Why Not Web Components?
+
+Web Components (Custom Elements + Shadow DOM) are an option, but for a Tauri app
+where we control the entire page, they add complexity without benefit. Plain classes
+that own a DOM subtree are simpler and faster.
+
+### State Management (No Redux/Zustand Needed)
+
+```typescript
+// src/services/store.ts — ~30 lines, replaces any state library
+
+type Listener = () => void;
+
+class Store {
+  private state: AppState = { /* initial state */ };
+  private listeners = new Set<Listener>();
+
+  get() { return this.state; }
+
+  set(patch: Partial<AppState>) {
+    Object.assign(this.state, patch);
+    this.listeners.forEach(fn => fn());
+  }
+
+  subscribe(fn: Listener) {
+    this.listeners.add(fn);
+    return () => this.listeners.delete(fn);
+  }
+}
+
+export const store = new Store();
+```
+
+---
+
+## 4. KEY DESIGN PRINCIPLES
+
+### 4.1 Hexagonal Architecture (Ports & Adapters)
+
+The app follows hexagonal architecture: domain logic in the center, external
+concerns (Tauri, file system, APIs) as adapters behind trait boundaries.
 
 ```
-commands/       → depends on tauri + core    (thin glue layer)
-core/           → depends on models ONLY     (pure business logic)
-models/         → depends on serde ONLY      (data types)
-data/           → depends on models + serde  (data loading)
-services/       → depends on tauri + core    (background tasks)
-seer/           → depends on models + onnx   (AI inference)
+                    ┌──────────────────────────────────┐
+                    │      DOMAIN (Pure Rust)           │
+                    │                                   │
+ ┌──────────┐      │  ┌────────────────────────────┐   │      ┌──────────┐
+ │  Tauri   │      │  │  calculator/               │   │      │ poe.ninja│
+ │ Commands │◄────►│  │    offense_calc.rs          │   │◄────►│  API     │
+ │(adapter) │      │  │    defense_calc.rs          │   │      │(adapter) │
+ └──────────┘      │  │    formulas.rs              │   │      └──────────┘
+                    │  └────────────────────────────┘   │
+ ┌──────────┐      │  ┌────────────────────────────┐   │      ┌──────────┐
+ │   File   │      │  │  core/                     │   │      │  Claude  │
+ │  System  │◄────►│  │    build_analyzer.rs        │   │◄────►│   API    │
+ │(adapter) │      │  │    build_detector.rs        │   │      │(adapter) │
+ └──────────┘      │  └────────────────────────────┘   │      └──────────┘
+                    │  ┌────────────────────────────┐   │
+ ┌──────────┐      │  │  seer/                     │   │
+ │ SQLite   │◄────►│  │    query_router.rs          │   │
+ │(adapter) │      │  │    response_gen.rs          │   │
+ └──────────┘      │  └────────────────────────────┘   │
+                    └──────────────────────────────────┘
+
+PORTS (traits):              ADAPTERS (implementations):
+  trait PriceProvider          PoeNinjaAdapter (real API)
+  trait FileStorage            TauriFileAdapter (Tauri fs)
+  trait BuildRepository        SqliteBuildRepo (SQLite)
+  trait CloudAiProvider        ClaudeAdapter (Claude API)
 ```
 
-This means `core/` can be:
-- Unit tested without Tauri
-- Reused in a CLI tool
-- Compiled to WASM for web if needed
+**Key rule:** Domain code NEVER imports `tauri`, `reqwest`, `rusqlite`, or any
+external crate. It only uses its own traits. Adapters implement those traits.
 
-### 3.2 Serialization Boundary
+```rust
+// PORT — defined in domain, no external deps
+pub trait PriceProvider: Send + Sync {
+    async fn get_price(&self, item_name: &str) -> Result<f64, PriceError>;
+    async fn get_prices_batch(&self, items: &[&str]) -> Result<Vec<(String, f64)>, PriceError>;
+}
+
+// ADAPTER — implements port using real API
+pub struct PoeNinjaAdapter {
+    client: reqwest::Client,
+    cache: TtlCache<f64>,
+    circuit_breaker: CircuitBreaker,
+}
+
+impl PriceProvider for PoeNinjaAdapter {
+    async fn get_price(&self, item_name: &str) -> Result<f64, PriceError> {
+        // Check cache first
+        if let Some(cached) = self.cache.get(item_name) { return Ok(*cached); }
+        // Check circuit breaker
+        if self.circuit_breaker.is_open() { return self.cache.get_stale(item_name).ok_or(PriceError::Offline); }
+        // Fetch from API
+        let price = self.client.get(&format!("https://poe.ninja/api/...")).send().await?;
+        self.cache.set(item_name, price, Duration::from_secs(300));
+        Ok(price)
+    }
+}
+
+// MOCK — for testing, no network calls
+pub struct MockPriceProvider {
+    prices: HashMap<String, f64>,
+}
+impl PriceProvider for MockPriceProvider {
+    async fn get_price(&self, item_name: &str) -> Result<f64, PriceError> {
+        self.prices.get(item_name).copied().ok_or(PriceError::NotFound)
+    }
+}
+```
+
+**Why this matters:**
+- `calculator/` and `core/` compile and test WITHOUT Tauri
+- Can reuse domain logic in a CLI tool, web API, or WASM
+- Swap poe.ninja for a different price source by writing a new adapter
+- Test everything with mocks — no network, no file system, no database
+
+### 4.2 Dependency Graph (No Circular Dependencies)
+
+```
+commands/       → depends on tauri + domain ports  (thin adapter layer)
+core/           → depends on models + ports ONLY   (pure business logic)
+calculator/     → depends on models + data ports   (zero external deps)
+models/         → depends on serde ONLY            (data types)
+data/           → depends on models + ports         (implements data ports)
+market/         → depends on models + ports         (implements PriceProvider)
+seer/           → depends on calculator + core     (orchestrates domain)
+pob_verify/     → depends on mlua (optional)       (optional verification adapter)
+services/       → depends on tauri + domain ports  (background task adapters)
+```
+
+Domain code (`core/`, `calculator/`, `seer/`, `models/`) can be:
+- Unit tested without Tauri, without network, without file system
+- Reused in a CLI tool (`path-of-ai-cli`)
+- Compiled to WASM for web version
+- Tested in CI without any OS-specific setup
+
+### 4.3 Tauri 2 Security Boundaries
+
+```
+RULE 1: Never handle secrets in frontend
+  API keys → encrypted in OS keychain (via tauri-plugin-stronghold)
+  Never pass API keys via invoke() params
+  
+RULE 2: Validate all input from frontend
+  Every #[tauri::command] parameter → validate before domain logic
+  Parse to domain types immediately (ProjectName::new(&raw))
+  
+RULE 3: Never expose internal errors to frontend
+  Domain errors → user-friendly messages via From<DomainError> for InvokeError
+  Log internal details server-side, return generic message to UI
+
+RULE 4: Minimize IPC surface
+  Don't expose one command per function — group by feature
+  analyze_build, ask_seer, apply_upgrade, get_prices (not 50 tiny commands)
+```
+
+### 4.4 Error Handling Strategy
+
+Two-layer error system: domain errors (detailed) → transport errors (user-friendly).
+
+```rust
+// Domain errors — detailed, for logging + debugging
+#[derive(Debug, Error)]
+pub enum CalcError {
+    #[error("Mod '{0}' not found in database")]
+    ModNotFound(String),
+    #[error("Division by zero in {context}")]
+    DivisionByZero { context: String },
+    #[error("PoB XML parse error: {0}")]
+    ParseError(#[from] quick_xml::Error),
+}
+
+// Transport errors — user-friendly, for frontend
+impl From<CalcError> for tauri::InvokeError {
+    fn from(e: CalcError) -> Self {
+        match e {
+            CalcError::ModNotFound(m) => {
+                tracing::warn!("Unknown mod: {}", m);
+                tauri::InvokeError::from("Some item mods could not be analyzed. Results may be approximate.")
+            },
+            CalcError::DivisionByZero { context } => {
+                tracing::error!("DivByZero in {}", context);
+                tauri::InvokeError::from("Calculation error. Please report this build for investigation.")
+            },
+            CalcError::ParseError(e) => {
+                tracing::error!("Parse: {:?}", e);
+                tauri::InvokeError::from("Could not read PoB file. Is it a valid Path of Building export?")
+            },
+        }
+    }
+}
+```
+
+### 4.5 Serialization Boundary
 
 All data crossing the Rust ↔ TypeScript boundary must be `Serialize + Deserialize`:
 
@@ -701,7 +1140,9 @@ pub struct AppState {
     pub mod_db: ModDatabase,
     pub gem_db: GemDatabase,
     pub tree_db: TreeDatabase,
-    pub seer: Mutex<Option<Seer>>,
+    pub calculator: PathCalcEngine,       // OUR Rust calc engine (primary, always on)
+    pub pob_verify: Option<PobLuaEngine>, // PoB Lua engine (optional verification)
+    pub seer: Seer,                       // Query router + response generator
     pub price_cache: Mutex<PriceCache>,
 }
 
@@ -715,7 +1156,9 @@ fn main() {
         mod_db,
         gem_db,
         tree_db,
-        seer: Mutex::new(None),  // lazy-loaded on first AI query
+        calculator: PathCalcEngine::new(&data_dir).expect("Failed to load calc engine"),
+        pob_verify: PobLuaEngine::try_load(&data_dir).ok(), // optional, graceful if missing
+        seer: Seer::new(&data_dir).expect("Failed to init The Seer"),
         price_cache: Mutex::new(PriceCache::new()),
     };
 
@@ -776,7 +1219,7 @@ MUTABLE (changes during runtime, needs Mutex):
 
 ---
 
-## 4. COMMUNICATION PATTERNS
+## 5. COMMUNICATION PATTERNS
 
 ### 4.1 Frontend → Backend (Commands)
 
@@ -837,7 +1280,7 @@ pub async fn ask_seer(
 
 ---
 
-## 5. TESTING STRATEGY
+## 6. TESTING STRATEGY
 
 ### Unit Tests (Rust core/)
 ```rust
@@ -891,7 +1334,7 @@ mod integration_tests {
 
 ---
 
-## 6. CRATE DEPENDENCIES
+## 7. CRATE DEPENDENCIES
 
 ```toml
 # src-tauri/Cargo.toml
@@ -905,17 +1348,24 @@ notify = "7"                        # File system watcher
 reqwest = { version = "0.12", features = ["json"] }  # HTTP client (poe.ninja)
 tokio = { version = "1", features = ["full"] }        # Async runtime
 thiserror = "2"                     # Error types
-ort = "2"                           # ONNX Runtime (neural network inference)
-rusqlite = { version = "0.32", features = ["bundled"] }  # SQLite (vector search, cache)
+mlua = { version = "0.10", features = ["luajit", "vendored"], optional = true }  # Optional: PoB Lua verification
+rusqlite = { version = "0.32", features = ["bundled"] }          # SQLite (cache, build history)
+
+[features]
+default = []
+pob-verify = ["mlua"]  # Enable PoB Lua verification engine
 chrono = "0.4"                      # Date/time handling
 log = "0.4"                         # Logging
 env_logger = "0.11"                 # Log output
 sha2 = "0.10"                       # Checksum verification for updates
+regex = "1"                          # Intent classification (Seer query router)
+uuid = { version = "1", features = ["v4"] }  # Build share codes
+base64 = "0.22"                      # Item clipboard format parsing
 ```
 
 ---
 
-## 7. WHY THESE PATTERNS
+## 8. WHY THESE PATTERNS
 
 | Pattern | Where Used | Why |
 |---------|-----------|-----|
@@ -924,5 +1374,5 @@ sha2 = "0.10"                       # Checksum verification for updates
 | **Strategy** | Build analysis | Different build types need different scoring — open/closed principle |
 | **Observer** | File watcher + events | Decouples file detection from UI update, reactive data flow |
 | **Builder** | Complex structs (Item, Build) | Many optional fields in PoE data, readable test construction |
-| **Facade** | Seer Engine | Hides 5 neural networks behind one simple `ask()` API |
+| **Facade** | Seer Engine | Routes queries to Calculator/KB/Cloud behind one `ask()` API |
 | **State** | Tauri managed state | Thread-safe shared data between commands and services |

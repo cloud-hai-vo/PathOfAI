@@ -1,29 +1,48 @@
 # Path of AI — AI Model Training Guide
 
+> **STATUS UPDATE (April 2026):** After deep analysis, we determined that
+> **custom AI model training is NOT needed**. 97% of user queries are answered
+> by the Calculator (PoB Lua engine) + Knowledge Base (structured game data).
+> The remaining 3% uses existing cloud APIs (Claude/GPT).
+> See [ENGINE-DESIGN.md](ENGINE-DESIGN.md) for the full rationale.
+>
+> This document is preserved for reference — the free resources listed below
+> are still useful for building the Knowledge Base and game data extraction,
+> even though we no longer need to train neural networks.
+
 ## Overview
 
-This document covers the free/open community resources available for training The Seer Engine,
-and strategies to optimize training time and cost.
+~~The Seer Engine is a hybrid system of 5 specialized neural networks (~50-80MB total)
+that runs locally on the user's PC with <100ms inference, no GPU required.~~
 
-The Seer Engine is a hybrid system of 5 specialized neural networks (~50-80MB total)
-that runs locally on the user's PC with <100ms inference, no GPU required.
+**Updated architecture:** The Seer Engine is a three-engine system:
+1. **Calculator** — PoB's Lua calc engine embedded via LuaJIT (100% accurate, handles 85% of queries)
+2. **Knowledge Base** — structured game data from RePoE/poedb (99% accurate, handles 12% of queries)
+3. **Cloud API** — Claude/GPT for creative queries (optional, handles 3% of queries)
+
+No custom models. No training. No neural networks. Just math + data.
 
 ---
 
 ## 1. WHAT THE AI MODEL NEEDS
 
-### Training Data Requirements Per Network
+### ~~Training Data Requirements Per Network~~ (DEPRECATED)
 
-| Network | Size | Training Data Needed | Data Volume |
-|---------|------|---------------------|-------------|
-| ItemNet (scoring & comparison) | ~5MB | Item examples from poe.ninja/trade | 500K+ items |
-| BuildNet (classification & issues) | ~8MB | Synthetic build analysis pairs | 20K+ examples |
-| TreeNet (passive tree optimization) | ~6MB | Node data + pathing examples | ~1.5K nodes |
-| QueryNet (user query understanding) | ~15MB | Q&A pairs from forums/Reddit/guides | 10K-50K pairs |
-| EmbedNet (semantic search / RAG) | ~10MB | All PoE game data embeddings | Full game DB |
-| ResponseGen (NL generation) | rule-based | Template + rule definitions | No ML training |
+> **These neural networks are NO LONGER being built.** Each task is solved by
+> deterministic code instead. See [ENGINE-DESIGN.md §10](ENGINE-DESIGN.md) for details.
 
-**Total training data target:** ~50K-100K high-quality examples
+| Old Plan (Neural Network) | New Approach (No AI) |
+|---|---|
+| ItemNet → score items | **Weighted formula** using mod tiers × stat weights |
+| BuildNet → classify builds | **Rule engine** (20 if/else on gem tags + DPS stats) |
+| TreeNet → optimize tree | **PoB-style calc** — try each node, rank by DPS gain |
+| QueryNet → understand queries | **Regex intent classifier** (50 patterns, no ML) |
+| EmbedNet → search knowledge | **Direct JSON lookup** (typed queries, not vectors) |
+| ResponseGen → generate text | **Template engine** (kept — this was always rule-based) |
+
+**What we DO need from this document:** The free community resources (section 2)
+are still valuable for building the **Knowledge Base** (structured game data JSONs),
+even though we don't train any models.
 
 ---
 

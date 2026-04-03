@@ -19,9 +19,15 @@
 - Import from poe.ninja build pages
 - Import from forum guide threads (parse gear/tree/gem sections)
 - Import from YouTube video descriptions (detect PoB codes)
+- **In-game item import: Ctrl+C item in PoE → paste into Path of AI → instant analysis**
+  - Parse PoE's clipboard item format (same as PoB uses)
+  - Show: mod tiers, score, DPS impact vs current item, market value
+  - "Is this item an upgrade? YES — +8% DPS, +200 life over current Ring 2"
 - Export build summary as shareable image
 - Export build as Reddit/forum formatted post
 - Short URL generation for sharing builds
+- **Build share codes** — generate compact code that others can import
+- **Build notes** — user can write notes per build (leveling plans, goals, etc.)
 
 ### 2. Character Visualization ("The Exile")
 
@@ -63,7 +69,10 @@ Interactive character model displayed in the center of the app, showing:
 - Boss encounters show boss sprite next to character
 - Map clear shows rapid monster kills with currency drops
 
-### 3. DPS Calculation Engine (Hybrid — Fast Estimate + Exact)
+### 3. DPS Calculation Engine (Dual — Our Rust Calc + PoB Verification)
+
+> See [ENGINE-DESIGN.md](ENGINE-DESIGN.md) for the full dual calculator architecture.
+> Our Rust engine is PRIMARY. PoB Lua is OPTIONAL verification.
 
 #### Fast Estimation (instant, <50ms)
 Percentage-based approximation using mod impact database:
@@ -356,6 +365,34 @@ Every upgrade suggestion gets a "fight impact" metric:
 - "Your RF is 35% of DPS but 90% of clear"
 - Damage effectiveness comparison
 
+### Calculation Breakdown ("Show The Math")
+Users need to SEE how numbers are derived — not just final results.
+This is what makes PoB trusted. We must have the same transparency.
+```
+Righteous Fire DPS Breakdown:
+
+  Base Burning DPS:              1,245
+  × Increased Fire Damage (420%): ×5.20    = 6,474
+  × Burning Damage Support (59%): ×1.59    = 10,294
+  × Elemental Focus (34% more):  ×1.34    = 13,794
+  × Swift Affliction (29% more): ×1.29    = 17,794
+  × Efficacy (24% more):         ×1.24    = 22,065
+  × Lifetap (20% more):          ×1.20    = 26,478
+  × DoT Multiplier (180%):       ×2.80    = 74,138
+  × Enemy Fire Res (-23.5%):     ×1.235   = 91,560
+
+  Per-second DPS:                          91,560 (per RF instance)
+  × RF coverage (AoE hits all):  ×31 monsters avg = 2,838,360 clear DPS
+  
+  Single target: 91,560 → but with Fire Trap: +682,000 = 773,560 total
+  
+  [Click any line to see what items/passives contribute to it]
+```
+- Every line clickable → shows which items/passives/gems give that modifier
+- Change detection: "If you remove Burning Damage Support, DPS drops to X"
+- Color-coded: green = this line adds most value, red = least value
+- Toggle: show with/without specific buffs (flasks on/off, charges on/off)
+
 ### Gem Optimization
 - Support gem DPS comparison (swap X for Y = +Z% DPS via exact calc)
 - Gem level breakpoints ("21/20 RF = +18% more DPS than 20/20")
@@ -368,6 +405,31 @@ Every upgrade suggestion gets a "fight impact" metric:
 - "Best 6th link for your RF: Efficacy > Conc Effect > Inc AoE"
 - "Swapping to Conc Effect for bosses: +22% DPS, -30% AoE"
 - 21/23 corruption value per gem (is it worth the risk?)
+
+### Transfigured Gem Variants
+- Compare all transfigured versions of your main skill
+- Show DPS + mechanic differences for each variant
+- "RF of Arcane Devotion: -14% DPS BUT +30% spell damage + life as ES"
+- Highlight which variant is best for your specific build archetype
+- Factor in support gem compatibility changes between variants
+- Auto-detect if a transfigured version unlocks new build possibilities
+
+### Toggle-able Skills & Buffs
+- Enable/disable individual auras to see reservation + stat impact
+- Toggle flasks on/off for "realistic DPS" vs "tooltip DPS"
+- Toggle charges (frenzy/power/endurance) on/off per scenario
+- Toggle conditional buffs (Onslaught, Unholy Might, Tailwind, etc.)
+- "Map DPS" preset: all buffs on, charges on, flasks on
+- "Boss DPS" preset: conditional buffs off, on-kill effects off
+- Each toggle shows exact DPS/defense change in real-time
+- Auto-detect which buffs your build can realistically maintain
+
+### Automatic Socketed Gem Modifier Application
+- Detect "+X to level of socketed gems" on items
+- Auto-apply these to gems in that socket group
+- Show which items boost which gems: "Helmet +2 fire gems → RF 21→23"
+- "If you socket RF in this helmet, it gains +2 levels = +18% DPS"
+- Warn if moving gems between items loses socketed bonuses
 
 ### Skill Link Suggestions
 - Detect suboptimal support gems (using exact DPS calc for every possible swap)
@@ -500,6 +562,37 @@ Every upgrade suggestion gets a "fight impact" metric:
 - Level-by-level passive guide from current level to 100
 - Respec plan with point-by-point instructions
 - "Full respec costs 24 regret orbs — here's the optimal new tree"
+- Multiple respec PLANS (Tank vs DPS vs Balance) — user picks
+
+### Full Passive Tree Visualization
+
+Interactive passive tree viewer styled like PoE's in-game passive tree:
+
+#### Visual Design
+- Full tree rendered as SVG/Canvas with all ~1,300+ nodes
+- Nodes positioned using the official tree layout data (from PoB/RePoE)
+- Allocated nodes: bright gold/yellow with glow
+- Unallocated nodes: dim grey
+- Class start position highlighted
+- Ascendancy nodes shown in a sub-panel
+- Zoom + pan (mouse wheel + drag)
+- Minimap in corner showing full tree with viewport rectangle
+
+#### Interactive Features
+- Hover node → tooltip showing stats it gives
+- Click node → show DPS/life impact if allocated
+- "What if" mode: click nodes to simulate allocation without applying
+- Color-code nodes by value: green = high value, red = low value for YOUR build
+- Show recommended path highlighted (gold dotted line)
+- Show inefficient nodes highlighted (red border)
+- Compare to top poe.ninja builds (overlay their tree as ghost nodes)
+
+#### Integration with Calculator
+- Every node click → full recalc → exact stat diff shown
+- "Top 10 unallocated nodes for DPS" highlighted on tree
+- "Top 10 unallocated nodes for survivability" highlighted on tree
+- Keystone analysis: hover keystone → show full impact before taking it
+- Cluster jewel sockets: show what cluster setup would be optimal
 
 ### Anoint Planner
 - Rank all anoints by build impact (exact calc)
@@ -522,6 +615,83 @@ Every upgrade suggestion gets a "fight impact" metric:
 ---
 
 ## ITEM ANALYSIS
+
+### In-Game Item Import (Ctrl+C → Paste)
+The #1 most-used PoB feature. Player copies item from PoE game → pastes → instant analysis.
+```
+Player hovers item in PoE, presses Ctrl+C, then pastes into Path of AI:
+
+  ┌─────────────────────────────────────────────┐
+  │  📋 Paste Item (Ctrl+V)                     │
+  │                                             │
+  │  Parsed: Opal Ring (ilvl 84, Rare)          │
+  │                                             │
+  │  +92 to maximum Life          T1 ★          │
+  │  +18% to Fire DoT Multi      T2 ★          │
+  │  +38% to Fire Resistance     T2             │
+  │  +28% to Cold Resistance     T3             │
+  │  +12% to Lightning Res       T4             │
+  │  (crafted) 5% inc max Life   benchcraft     │
+  │                                             │
+  │  Score: 87/100                              │
+  │                                             │
+  │  ═══ vs Your Current Ring 2 (42/100) ═══    │
+  │  DPS:  +15.3% (2.84M → 3.28M)              │
+  │  Life: +350 (+92 vs +45)                    │
+  │  Resists: OK (still capped)                 │
+  │                                             │
+  │  VERDICT: ★ SIGNIFICANT UPGRADE             │
+  │  Market value: ~5 divine                    │
+  │                                             │
+  │  [Equip in PoB] [Search Similar] [Dismiss]  │
+  └─────────────────────────────────────────────┘
+```
+- Parse PoE clipboard format (same format PoB uses)
+- Auto-detect which slot the item goes in
+- Show mod tiers with color-coding
+- Compare vs currently equipped item (exact DPS/life diff)
+- Show market value from poe.ninja
+- One-click equip in PoB (write to XML)
+- Global hotkey: Ctrl+Shift+V to paste from anywhere while app runs in background
+
+### Searchable Unique Item Database
+- Search all ~1,200+ unique items by name, base type, or mod keywords
+- Filter by: slot, level requirement, price range, build relevance
+- Each unique shows: all mod rolls (min-max), DPS impact for YOUR build, current market price
+- "Search: fire damage shield" → Rise of Phoenix, Saffell's Frame, Aegis Aurora
+- Compare uniques: "Rise of Phoenix vs Aegis Aurora for your build"
+- Modifier roll selector: "Your Aegis Aurora has +18 max ES (range: 10-20)"
+- Show divination cards that award each unique + drop locations
+- Highlight league-specific and legacy variants
+
+### Item Crafting Simulator (Live Editor)
+Interactive item editor — add/remove mods like PoB's item creator.
+```
+  ┌──────────────────────────────────────────┐
+  │  CREATE ITEM — Opal Ring (ilvl 84)       │
+  │                                          │
+  │  Implicit: 25% inc Elemental Damage      │
+  │                                          │
+  │  Prefix 1: [+92 max Life        ▼] T1   │
+  │  Prefix 2: [+18% Fire DoT Multi ▼] T2   │
+  │  Prefix 3: [empty — click to add ▼]     │
+  │                                          │
+  │  Suffix 1: [+38% Fire Res       ▼] T2   │
+  │  Suffix 2: [+28% Cold Res       ▼] T3   │
+  │  Suffix 3: [crafted: 5% max life▼]      │
+  │                                          │
+  │  Score: 87/100                           │
+  │  DPS vs current: +15.3%                  │
+  │  Market price: ~5-8 divine               │
+  │                                          │
+  │  [Equip] [Search Trade] [Save Template]  │
+  └──────────────────────────────────────────┘
+```
+- Dropdown for each affix slot → browse all possible mods for this base+ilvl
+- Roll value slider (min to max of tier)
+- Auto-calc DPS impact as you change mods
+- Save item templates ("dream ring", "budget helmet")
+- "What would a PERFECT item look like?" auto-fill with T1 everything
 
 ### Mod Tier Detection
 - Identify tier of every mod (T1 life = +90-99, T2 = +80-89, etc.)
@@ -920,6 +1090,33 @@ Uber Sirus:  ❌ NOT READY (Die Beam is lethal)
 - "For Blight: your single target is fine, but need AoE — consider anoint"
 - "For Expedition: need logbook-specific defenses"
 
+### Current League Support: Mirage (3.28)
+Must support all mechanics from the current league at launch:
+
+- **Djinn encounter analysis**: is your build strong enough to clear Astral Realm maps?
+- **Wish selection advisor**: which of the 3 Djinn wishes is best for your build?
+  - Sand Djinn (Dex support coin) vs Fire Djinn (Str) vs Water Djinn (Int)
+  - Based on which support gem effect benefits your main skill most
+- **Djinn Coin usage advisor**: which support gem effect to imbue on your level 20 gem?
+  - Simulate each possible support imbue → rank by DPS impact
+  - "Imbue RF with Burning Damage effect: +12% DPS permanently"
+  - "Imbue RF with Elemental Focus effect: +9% DPS but lose ignite"
+- **Exceptional Support Gem tracking**: which of the 40+ new supports work for your build?
+  - Holy skill gems: Blessed Call, Excommunicate, Exemplar, Hallow
+  - Rank all Exceptional Support Gems by DPS/defense impact for your build
+- **Reliquarian Scion ascendancy**: new ascendancy support in build detector
+- **Atlas rework**: updated atlas passive tree data for 3.28
+- **T17 removal**: adjust boss farming strategies (T17 maps gone, bosses remain as Uber Pinnacles)
+
+### New Gem System Support (3.28+)
+- **Imbued gems**: gems with permanently imbued support effects (from Djinn Coins)
+  - Parser must handle imbued gem data from PoB XML
+  - Calculator must include imbued support effect in DPS chain
+  - UI shows imbued effect as a special modifier on the gem
+- **Exceptional Support Gems**: new support gem category
+  - Add to gem database, include in "best support gem" calculations
+  - Show DPS impact comparison: regular support vs exceptional support
+
 ### Specific Content Readiness
 ```
 Simulacrum:     ❌ Need 3M+ DPS for wave 25+ (you have 2.8M)
@@ -1075,6 +1272,26 @@ Chaos sextant re-roll cost: ~2 chaos average
 - League starter suggestions based on owned gear and currency
 - "With your 50div budget, top 3 new builds to try: ..."
 - Complementary build suggestions (mapper + bosser combo)
+
+### Party Play & Support Build Analysis
+- Analyze party composition: "Your party needs a curser"
+- Aura stacking compatibility check between 2+ builds
+  - "Your Determination overlaps with Party Member B's — one should swap"
+  - "Adding your Anger aura gives Party Member A +22% DPS"
+- DPS contribution per party member
+- Support build optimizer: which auras/curses benefit the party most
+- "Your RF + their Cold DoT = great elemental coverage"
+- Aurastacker analysis: diminishing returns detection
+- Party EHP: "Member C dies to Shaper slam — they need more life"
+- Party curse analysis: "You can apply 3 curses — optimal: Flammability, Elemental Weakness, Temp Chains"
+
+### Build Share Codes
+- Generate compact share code from any build (like PoB pastebin but shorter)
+- Share via: copy code, generate URL, QR code for mobile
+- Import code → auto-create local build
+- Version in code: "This build was shared on patch 3.24"
+- Share options: full build, tree only, items only, gems only
+- "Share your Ring 2 setup" → sends just that item + socket group
 
 ---
 
@@ -1507,9 +1724,289 @@ Sandbox mode for testing build ideas without modifying your actual build:
 - Import someone else's build and compare
 - "Import top #1 RF Inquisitor from poe.ninja → compare to yours"
 
-### PoE 2 Readiness
-- Detect PoE 2 passive tree format when released
-- Dual game support (PoE 1 + PoE 2 simultaneously)
-- Migration advisor: "Your PoE 1 RF build maps to this PoE 2 template"
-- Separate game data files per game version
-- UI toggle between PoE 1 and PoE 2 mode
+### PoE 2 Dual-Game Support
+
+PoE 2 has fundamental mechanic differences. We must support BOTH games.
+
+#### Key PoE 2 Differences Our Engine Must Handle
+- **Gem system**: gems socket INTO OTHER GEMS (not into items)
+  - Support gems link to skill gems directly
+  - No 6-link items — instead, skill gems have their own socket count
+  - Our gem UI needs a tree/hierarchy view, not a linear link view
+- **Passive tree**: different layout, different keystones, different ascendancies
+  - Separate tree data file per game version
+  - Tree viewer must load correct version
+- **Crafting**: different system (PoE 2 uses different currency/methods)
+  - Separate mod weight tables, crafting probability engine per game
+- **Items**: different base types, different mod pools
+  - Separate item database per game version
+- **Combat**: different dodge/block/armour formulas potentially
+  - Formula versioning per game (already in our engine design)
+
+#### Implementation
+```
+game-data/
+  poe1/                   # Path of Exile 1 data
+    mods/ gems/ tree/ items/ crafting/ bosses/
+  poe2/                   # Path of Exile 2 data
+    mods/ gems/ tree/ items/ crafting/ bosses/
+
+Settings → Game Version:
+  ◉ Path of Exile 1 (default)
+  ○ Path of Exile 2
+
+Calculator loads correct game-data/ subfolder based on selection.
+UI adapts: gem viewer changes from linear links → gem tree.
+```
+
+#### PoE 2-Specific Features
+- **Gem leveling planner**: which gems to level, gemcutting priority
+- **Dodge mechanics** (PoE 2 has dodge instead of spell block)
+- **Spirit resource** (PoE 2 uses Spirit for persistent skills, not mana reservation)
+- **Weapon swap builds** (PoE 2 has dual weapon sets with different skills per set)
+- **Cross-game build comparison**: "Your PoE 1 RF maps to PoE 2 Infernal Flame"
+
+#### Timeline
+- Phase 1: PoE 1 only (MVP)
+- Phase 2: Abstract game-data loading per version
+- Phase 3: PoE 2 data files when available
+- Phase 4: PoE 2-specific UI (gem tree viewer)
+
+---
+
+## MAP RUN STATISTICS (inspired by Mapwatch)
+
+### Client.txt Log Parser
+- Parse PoE's Client.txt log file for map entry/exit events
+- Track time per map run (enter zone → leave zone)
+- Track deaths per map (resurrection events)
+- Track boss kill timestamps
+- "Average Strand T16: 2:15 clear, 0.3 deaths/run"
+
+### Session Statistics
+```
+Current Session (2h 30m):
+  Maps run: 42
+  Average clear: 2:20
+  Deaths: 7 (0.17/map)
+  XP gained: 18% of level 95
+  Currency dropped: ~12 divine equivalent
+
+  Best map:  Strand T16 — 1:48 (personal best!)
+  Worst map: Crimson Temple T16 — 4:12 (layout issue)
+
+  Map tier breakdown:
+    T16: 38 maps (90%)
+    T15: 4 maps (10%)
+```
+
+### Historical Trends
+- Graph: maps/hour, deaths/hour, XP/hour over time
+- Compare sessions: "You're mapping 15% faster this week"
+- Identify bottlenecks: "Crimson Temple takes 80% longer than Strand — avoid it"
+- Currency/hour estimation based on map strategy
+
+### Integration with Build Advisor
+- "After upgrading Ring 2: maps/hour went from 18 → 22 (+22%)"
+- Link map performance to gear changes
+- Suggest map favorites based on clear speed data
+
+---
+
+## VENDOR RECIPE ADVISOR
+
+### Recipe Detection
+Based on stash contents, suggest profitable vendor recipes:
+```
+Available Recipes:
+  ✅ Chaos Recipe — 2 full sets ready (rings in Dump tab)
+     Turn in for: 2 chaos orbs
+  ✅ Chromatic — 87 RGB-linked items detected
+     Turn in for: 87 chromatic orbs
+  ⚠ Regal Recipe — 1 set ready, missing ilvl 75+ gloves
+     Need: any ilvl 75+ gloves
+
+Vendor Recipe Value: ~4 chaos if turned in now
+```
+
+### Smart Recipe Suggestions for SSF
+- Vendor recipe alternatives when trade is unavailable
+- "+1 gem level wand recipe: sell blue wand + alt quality gem + Orb of Augmentation"
+- "Resistance flask recipe: sell white flask + alt + resist ring"
+- Track which recipes player has discovered
+
+---
+
+## CHAOS/REGAL RECIPE ENHANCER
+
+### Auto-Detect Recipe Items in Stash
+- Scan all stash tabs for unidentified rare items
+- Highlight items that complete a Chaos Recipe set (ilvl 60-74)
+- Highlight items that complete a Regal Recipe set (ilvl 75+)
+- Show which slots are missing: "Need: belt, gloves for Chaos set #3"
+
+### Recipe Overlay
+```
+Chaos Recipe Status:
+  Full sets ready: 2
+  Partial sets: 3
+
+  Set #3 missing:  [Belt] [Gloves]
+  Set #4 missing:  [Boots] [Ring 2]
+  Set #5 missing:  [Helmet] [Body] [Belt] [Ring 1] [Ring 2]
+
+  Quick action: [Turn in 2 sets → 2 chaos] [Invoke]
+```
+
+### Auto-Price Check
+- Before vendoring: check if any recipe item is actually valuable
+- "Warning: this amulet has T1 life + fire DoT multi — worth 3 divine, don't vendor it!"
+- Only vendor truly worthless items
+
+---
+
+## MASS CRAFTING SIMULATOR (inspired by Craft of Exile)
+
+### Simulate 1000+ Crafts
+Run statistical simulation using real mod weights:
+```
+Simulate: Chaos spam on Opal Ring ilvl 84
+Target: +80 life AND +fire DoT multi
+Simulations: 10,000
+
+Results:
+  Hit target: 312 / 10,000 (3.1%)
+  Average attempts to hit: 32 chaos
+  Average cost: 32 chaos ≈ 0.4 divine
+
+  Best result found:
+    +95 Life (T1), +18% DoT Multi (T1), +42% Fire Res (T1)
+    → Score: 94/100 — this would be GG
+
+  Distribution:
+    T1 life + any DoT multi: 8.2% (122 attempts avg)
+    Any life + T1 DoT multi: 5.4% (185 attempts avg)
+    T1 life + T1 DoT multi:  0.4% (2500 attempts avg)
+```
+
+### Method Comparison
+Run same target with different crafting methods side by side:
+```
+Target: +80 life, +fire DoT multi on Opal Ring
+
+Method          | Success/try | Avg cost | Best case | Worst case
+Chaos spam      | 3.1%        | 0.4 div  | 0.01 div  | 3 div
+Essence Anger   | 12.8%       | 1.2 div  | 0.15 div  | 5 div
+Pristine fossil | 6.2%        | 1.8 div  | 0.3 div   | 8 div
+Alt + Regal     | 0.8%        | 2.1 div  | 0.05 div  | 15 div
+
+Recommendation: Essence of Anger (highest success rate)
+```
+
+---
+
+## WEALTH HISTORY TRACKER (inspired by Exilence Next)
+
+### Total Net Worth Over Time
+- Calculate total wealth: equipped gear + stash currency + stash items
+- Track daily snapshots
+- Graph: net worth over league timeline
+```
+League Week 1: 5 divine
+League Week 2: 23 divine
+League Week 3: 47 divine (current)
+
+Growth rate: +12 divine/week
+Projection: ~95 divine by week 7
+```
+
+### Investment Tracking
+- Track currency spent per upgrade
+- "You've invested 35 divine in this character"
+- ROI analysis: "Aegis Aurora (18d) gave biggest survivability boost per divine"
+- "Total spent vs total earned: +12 divine net profit"
+
+---
+
+## ZONE LAYOUT OVERLAY (inspired by PoE-Leveling-Guide)
+
+### Act Zone Layouts
+- Show zone layout diagrams during leveling
+- "Act 2 Chamber of Sins: go RIGHT at entrance"
+- Waypoint location indicators
+- Quest objective markers
+- Optimal pathing arrows
+
+### Map Layout Ratings
+```
+Your Favorited Maps (best for your build):
+  ★★★ Strand    — Linear, fast, no backtracking
+  ★★★ Dunes     — Open, good for RF AoE
+  ★★☆ Beach     — Linear but short
+  ★☆☆ Crimson Temple — Tight corridors, bad for RF
+```
+
+---
+
+## ENHANCED POB PARSER (Missing Fields)
+
+### P0 — Must Parse Now
+These PoB XML fields are currently ignored but essential:
+
+- **`<Calcs>` section** — free pre-calculated DPS/life/resists from PoB's own engine
+- **`{crafted}` mod flag** — know which mods are benchcrafted (replaceable for free)
+- **`<MasteryEffects>`** — which mastery effect chosen at each mastery node
+- **Jewel socket assignments** — `<Socket>` mapping jewel items to tree nodes
+- **Cluster jewel structure** — enchant type, notable assignments, `{variant:X}` tags
+
+### P1 — Important
+- **Notes section** — user build notes (useful context for AI)
+- **Spectre list** — `<Spectre>` entries for minion builds
+- **Timeless jewel seeds** — seed + keystone transformation
+- **Anointment data** — `Allocates X` enchantment on amulet/rings
+- **Eldritch implicit source** — Searing Exarch vs Eater of Worlds tags
+- **`{fractured}` mod flag** — fractured mods can't be changed
+- **Influence type tags** — `{shaper}`, `{elder}`, `{crusader}`, etc.
+- **Gem alternate quality** — qualityId: Anomalous/Divergent/Phantasmal
+
+---
+
+## POEDB DATA INTEGRATION
+
+### Mod Weight Tables
+- Import exact spawn weights for every mod per base type + ilvl + influence
+- Powers the Crafting Probability Calculator and The Forge
+- Source: poedb.tw data extraction
+
+### Fossil Weight Multipliers
+- Import fossil tag multiplier tables (e.g., Pristine: life ×10, ES ×0)
+- Powers fossil craft simulation and suggestions
+
+### Boss Attack Database
+- Import boss attack damage values, types, speeds, phase data
+- Powers Combat Simulator ("The Arena") with accurate fight modeling
+- Source: poewiki.net boss pages
+
+### Monster Scaling Data
+- HP/damage/resistance per area level
+- Powers accurate map monster kill time calculations
+
+---
+
+## POEWIKI DATA INTEGRATION
+
+### Game Mechanics Formulas
+- Complete armour, evasion, block, DoT, ailment, conversion formulas
+- Validates our Calculator engine against known correct math
+
+### Divination Card Drop Locations
+- Which maps/zones drop which cards
+- Powers Div Card Target Farming in Stash tab
+
+### Vendor Recipe Database
+- Complete recipe list with inputs/outputs
+- Powers Vendor Recipe Advisor
+
+### Damage Conversion Chains
+- Exact conversion order (phys → lightning → cold → fire → chaos)
+- Validates build analysis for conversion builds

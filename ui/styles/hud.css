@@ -1,0 +1,336 @@
+/*
+ * PATH OF AI — HUD LAYOUT (Production CSS)
+ * The 3-column game-like layout with bottom skill bar.
+ *
+ * Structure:
+ *   .hud-header    (top bar — title, class, sync status)
+ *   .hud-body      (3-column flex: left sidebar + center + right panel)
+ *     .sidebar-left   (stats + resists — fixed 150px)
+ *     .center-panel   (character viz + equipment + passive tree)
+ *     .sidebar-right  (context panel — prophecy/grimoire/etc)
+ *   .hud-bar       (bottom — life/mana orbs + gem buttons)
+ */
+
+
+/* ═══════ HEADER BAR ═══════ */
+
+.hud-header {
+  height: 48px;
+  min-height: 48px;
+  background: linear-gradient(180deg, #1a150e, #141210, var(--bg-dark));
+  border-bottom: 2px solid var(--border-blood);
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  padding: 0 16px;
+  position: relative;
+  z-index: 10;
+}
+/* Top gold trim */
+.hud-header::before {
+  content: '';
+  position: absolute;
+  top: 0; left: 0; right: 0;
+  height: 1px;
+  background: linear-gradient(90deg, transparent 10%, var(--border-gold) 30%, var(--gold) 50%, var(--border-gold) 70%, transparent 90%);
+}
+/* Bottom blood glow */
+.hud-header::after {
+  content: '';
+  position: absolute;
+  bottom: 0; left: 0; right: 0;
+  height: 2px;
+  background: linear-gradient(90deg, transparent 5%, var(--blood-bright) 30%, var(--blood) 50%, var(--blood-bright) 70%, transparent 95%);
+  box-shadow: 0 0 12px rgba(196,43,43,0.4);
+}
+
+.hdr-title {
+  font-family: var(--font-heading);
+  font-size: 20px;
+  font-weight: 900;
+  color: var(--blood-bright);
+  letter-spacing: 3px;
+  animation: flameTitleGlow 4s ease-in-out infinite;
+}
+.hdr-title span {
+  color: var(--text-muted);
+  font-size: 12px;
+  margin: 0 4px;
+}
+.hdr-class {
+  font-family: var(--font-heading);
+  font-size: 13px;
+  font-weight: 700;
+  color: var(--text);
+}
+
+
+/* ═══════ 3-COLUMN BODY ═══════ */
+
+.hud-body {
+  flex: 1;
+  display: flex;
+  overflow: hidden;
+  min-height: 0;
+}
+
+
+/* ═══════ LEFT SIDEBAR (stats + resists) ═══════ */
+
+.sidebar-left {
+  width: 150px;
+  min-width: 150px;
+  background: linear-gradient(180deg, var(--bg-panel), var(--bg-dark));
+  border-right: 1px solid var(--border);
+  padding: 12px 10px;
+  overflow-y: auto;
+  display: flex;
+  flex-direction: column;
+  gap: 8px;
+}
+
+.stat-row {
+  text-align: center;
+  padding: 10px 6px;
+  border-radius: 3px;
+  background: linear-gradient(180deg, var(--bg-card), var(--bg-panel));
+  border: 1px solid var(--border);
+  position: relative;
+  overflow: hidden;
+}
+/* Color accent line at top of stat card */
+.stat-row::before {
+  content: '';
+  position: absolute;
+  top: 0; left: 0; right: 0;
+  height: 2px;
+}
+.stat-row.life::before    { background: linear-gradient(90deg, transparent, var(--life), transparent); }
+.stat-row.es::before      { background: linear-gradient(90deg, transparent, var(--es), transparent); }
+.stat-row.armour::before  { background: linear-gradient(90deg, transparent, var(--physical), transparent); }
+.stat-row.dps::before     { background: linear-gradient(90deg, transparent, var(--fire-bright), transparent); }
+
+.stat-row .s-icon  { font-size: 16px; margin-bottom: 2px; }
+.stat-row .s-val   { font-size: 22px; font-weight: 800; font-family: var(--font-mono); line-height: 1.1; }
+.stat-row .s-label { font-size: 9px; font-family: var(--font-heading); color: var(--text-bright); text-transform: uppercase; letter-spacing: 1.5px; }
+
+/* Resist mini rows */
+.resist-mini {
+  padding: 6px;
+  border-radius: 3px;
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  background: rgba(0,0,0,0.15);
+  margin-bottom: 2px;
+}
+.resist-mini .r-val {
+  font-size: 14px;
+  font-weight: 800;
+  font-family: var(--font-mono);
+}
+.resist-mini .r-val.capped   { color: var(--success); }
+.resist-mini .r-val.uncapped { color: var(--danger); }
+.resist-mini .r-oc {
+  font-size: 9px;
+  color: var(--text-muted);
+}
+
+
+/* ═══════ CENTER PANEL ═══════ */
+
+.center-panel {
+  flex: 1;
+  overflow-y: auto;
+  padding: 12px;
+  background: var(--bg-dark);
+  display: flex;
+  flex-direction: column;
+  gap: 12px;
+}
+
+
+/* ═══════ RIGHT PANEL (context-sensitive) ═══════ */
+
+.sidebar-right {
+  width: 300px;
+  min-width: 300px;
+  background: linear-gradient(180deg, var(--bg-panel), var(--bg-dark));
+  border-left: 1px solid var(--border);
+  display: flex;
+  flex-direction: column;
+  overflow: hidden;
+}
+.rp-header {
+  padding: 10px 14px;
+  border-bottom: 2px solid var(--border-blood);
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  background: linear-gradient(180deg, var(--bg-card), var(--bg-panel));
+  min-height: 42px;
+}
+.rp-title {
+  font-family: var(--font-heading);
+  font-size: 13px;
+  font-weight: 800;
+  color: var(--blood-bright);
+  text-transform: uppercase;
+  letter-spacing: 2px;
+}
+.rp-content {
+  flex: 1;
+  overflow-y: auto;
+  padding: 12px 14px;
+  font-size: 13px;
+  line-height: 1.6;
+}
+
+
+/* ═══════ BOTTOM HUD BAR ═══════ */
+
+.hud-bar {
+  height: 64px;
+  min-height: 64px;
+  background: linear-gradient(180deg, #1a1712, var(--bg-dark));
+  border-top: 2px solid var(--border-blood);
+  display: flex;
+  align-items: center;
+  padding: 0 16px;
+  gap: 10px;
+  position: relative;
+  z-index: 10;
+}
+.hud-bar::before {
+  content: '';
+  position: absolute;
+  top: 0; left: 0; right: 0;
+  height: 1px;
+  background: linear-gradient(90deg, transparent 5%, var(--blood-bright) 30%, var(--blood) 50%, var(--blood-bright) 70%, transparent 95%);
+  box-shadow: 0 -2px 8px rgba(196,43,43,0.2);
+}
+
+/* Life orb */
+.orb-life {
+  width: 52px;
+  height: 52px;
+  border-radius: 50%;
+  background: radial-gradient(circle at 40% 35%, var(--orb-life-light), var(--orb-life-mid) 50%, var(--orb-life-dark) 85%, #2a0808);
+  border: 2px solid var(--orb-life-border);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  flex-shrink: 0;
+  position: relative;
+  animation: orbPulse 3s ease-in-out infinite;
+}
+.orb-life .orb-val {
+  font-size: 13px;
+  font-weight: 800;
+  color: #fff;
+  font-family: var(--font-mono);
+  text-shadow: 0 1px 3px #000;
+}
+/* Glass highlight */
+.orb-life::after {
+  content: '';
+  position: absolute;
+  top: 5px; left: 10px;
+  width: 16px; height: 10px;
+  background: radial-gradient(ellipse, rgba(255,255,255,0.25), transparent);
+  border-radius: 50%;
+}
+
+/* Mana orb */
+.orb-mana {
+  width: 44px;
+  height: 44px;
+  border-radius: 50%;
+  background: radial-gradient(circle at 40% 35%, var(--orb-mana-light), var(--orb-mana-mid) 50%, var(--orb-mana-dark) 85%, #081830);
+  border: 2px solid var(--orb-mana-border);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  flex-shrink: 0;
+  position: relative;
+  animation: orbPulseMana 3.5s ease-in-out infinite;
+}
+.orb-mana .orb-val {
+  font-size: 11px;
+  font-weight: 800;
+  color: #fff;
+  font-family: var(--font-mono);
+  text-shadow: 0 1px 3px #000;
+}
+
+/* Divider between orbs and gems */
+.hud-divider {
+  width: 1px;
+  height: 36px;
+  background: linear-gradient(180deg, transparent, var(--border-blood), transparent);
+  margin: 0 4px;
+}
+
+/* Gem buttons row */
+.gem-btns {
+  display: flex;
+  gap: 6px;
+  flex-wrap: nowrap;
+  overflow-x: auto;
+  flex: 1;
+  align-items: center;
+}
+
+.gem-btn {
+  width: 42px;
+  height: 42px;
+  border-radius: 50%;
+  border: 2px solid var(--border);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  font-size: 18px;
+  cursor: pointer;
+  flex-shrink: 0;
+  transition: all 0.15s;
+  position: relative;
+  box-shadow: inset 0 0 6px rgba(0,0,0,0.4);
+}
+.gem-btn:hover {
+  border-color: var(--gold);
+  box-shadow: 0 0 14px var(--gold-glow), inset 0 0 8px rgba(255,255,255,0.06);
+  transform: scale(1.12);
+}
+.gem-btn.active {
+  border-color: var(--blood-bright);
+  box-shadow: 0 0 18px rgba(196,43,43,0.5), inset 0 0 8px rgba(196,43,43,0.2);
+  animation: gemBtnGlow 2s ease-in-out infinite;
+}
+.gem-btn .gem-tip {
+  display: none;
+  position: absolute;
+  bottom: 48px;
+  left: 50%;
+  transform: translateX(-50%);
+  background: var(--bg-card);
+  border: 1px solid var(--border-gold);
+  border-radius: 3px;
+  padding: 3px 10px;
+  font-size: 10px;
+  color: var(--gold);
+  font-family: var(--font-heading);
+  white-space: nowrap;
+  pointer-events: none;
+  z-index: 100;
+  box-shadow: 0 4px 12px rgba(0,0,0,0.6);
+}
+.gem-btn:hover .gem-tip { display: block; }
+
+
+/* ═══════ RESPONSIVE ═══════ */
+
+@media (max-width: 900px) {
+  .sidebar-left { display: none; }
+  .sidebar-right { position: fixed; right: 0; top: 48px; bottom: 64px; z-index: 50; }
+  .center-panel { padding: 8px; }
+}
