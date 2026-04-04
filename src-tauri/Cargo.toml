@@ -66,6 +66,7 @@ rand = "0.8"
 hex = "0.4"
 urlencoding = "2"
 regex = "1"
+open = "5"
 
 [features]
 default = ["custom-protocol"]

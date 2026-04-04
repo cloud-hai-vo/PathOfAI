@@ -122,3 +122,31 @@
 .action-btn { display: flex; align-items: center; gap: 8px; width: 100%; padding: 8px 12px; background: var(--bg-card, #1a1712); border: 1px solid var(--border, #2a2018); color: var(--text, #bfb99a); cursor: pointer; border-radius: 2px; font-size: 11px; font-family: inherit; transition: border-color 0.15s; text-align: left; }
 .action-btn:hover { border-color: var(--gold, #c4a830); color: var(--text-bright, #fff); }
 .action-btn.primary { border-color: var(--gold, #c4a830); color: var(--gold, #c4a830); }
+
+/* The Forge panel */
+.forge-card { background: var(--bg-card, #1a1712); border: 1px solid var(--border, #2a2018); border-radius: 2px; padding: 8px 10px; margin-bottom: 6px; }
+.forge-card-header { display: flex; justify-content: space-between; align-items: center; margin-bottom: 4px; }
+.forge-method { font-size: 11px; font-weight: 600; color: var(--text-bright, #fff); }
+.forge-verdict { font-size: 10px; font-weight: 600; }
+.forge-target { font-size: 10px; color: var(--text-muted, #7f7f7f); margin-bottom: 6px; }
+.forge-stats { display: flex; flex-wrap: wrap; gap: 6px 12px; font-size: 9px; color: var(--text-dim, #4a4a3a); }
+.forge-stats b { color: var(--text, #bfb99a); font-family: 'JetBrains Mono', monospace; }
+
+/* Craft vs Buy */
+.craft-vs-buy-list { display: flex; flex-direction: column; gap: 4px; }
+.craft-vs-buy-row { display: flex; align-items: center; gap: 8px; font-size: 10px; padding: 4px 6px; background: var(--bg-card, #1a1712); border: 1px solid var(--border, #2a2018); border-radius: 2px; flex-wrap: wrap; }
+.cvb-btn { background: var(--bg-deep, #0c0b0a); border: 1px solid var(--border, #2a2018); color: var(--gold, #c4a830); padding: 3px 8px; font-size: 9px; cursor: pointer; border-radius: 2px; font-family: inherit; }
+.cvb-btn:hover { border-color: var(--gold, #c4a830); }
+.cvb-result { font-size: 9px; flex: 1; color: var(--text-muted, #7f7f7f); }
+
+/* Character picker */
+.char-list { display: flex; flex-direction: column; gap: 4px; margin-top: 4px; }
+.char-card { padding: 8px 10px; background: var(--bg-card, #1a1712); border: 1px solid var(--border, #2a2018); border-radius: 2px; cursor: pointer; transition: border-color 0.15s; }
+.char-card:hover { border-color: var(--gold, #c4a830); }
+.char-name { font-size: 12px; font-weight: 600; color: var(--text-bright, #fff); }
+.char-meta { font-size: 10px; color: var(--text-muted, #7f7f7f); margin-top: 2px; }
+
+/* Suggestion trade button */
+.suggestion-trade-btn { background: var(--border-gold, #5a4820); border: 1px solid var(--gold, #c4a830); color: var(--gold, #c4a830); padding: 3px 8px; font-size: 9px; cursor: pointer; border-radius: 2px; font-family: 'Cinzel', serif; white-space: nowrap; }
+.suggestion-trade-btn:hover { background: var(--gold, #c4a830); color: var(--bg-deep, #0c0b0a); }
+

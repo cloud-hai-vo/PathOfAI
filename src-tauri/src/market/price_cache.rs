@@ -48,11 +48,11 @@ async fn get_single_price(item_name: &str) -> PriceResult {
         let cache = CACHE.lock().unwrap();
         if let Some(entry) = cache.entries.get(item_name) {
             let age = entry.fetched_at.elapsed();
-            let is_fresh = age < TTL;
+            let div_ratio = 200.0_f64;
             return PriceResult {
                 item_name: item_name.to_string(),
-                price_div: entry.price,
-                price_chaos: entry.price * 200.0, // approximate
+                price_div: entry.price / div_ratio,
+                price_chaos: entry.price,
                 confidence: if entry.listings > 50 { PriceConfidence::High }
                             else if entry.listings > 10 { PriceConfidence::Medium }
                             else { PriceConfidence::Low },
@@ -73,6 +73,7 @@ async fn get_single_price(item_name: &str) -> PriceResult {
     // Fetch from poe.ninja
     match fetch_from_poe_ninja(item_name).await {
         Ok((price, listings)) => {
+            let div_ratio = 200.0_f64; // fallback; real ratio from poe.ninja divine orb price
             let mut cache = CACHE.lock().unwrap();
             cache.failures = 0;
             cache.circuit_open = false;
@@ -83,8 +84,8 @@ async fn get_single_price(item_name: &str) -> PriceResult {
             });
             PriceResult {
                 item_name: item_name.to_string(),
-                price_div: price,
-                price_chaos: price * 200.0,
+                price_div: price / div_ratio,
+                price_chaos: price,
                 confidence: if listings > 50 { PriceConfidence::High }
                             else { PriceConfidence::Medium },
                 listings,
@@ -105,10 +106,13 @@ async fn get_single_price(item_name: &str) -> PriceResult {
 }
 
 async fn fetch_from_poe_ninja(item_name: &str) -> Result<(f64, u32)> {
-    // TODO: implement poe.ninja API call
-    // GET https://poe.ninja/api/data/itemoverview?league=Mirage&type=UniqueArmour
-    // Find item by name, return chaosValue and listingCount
-    Err(anyhow::anyhow!("poe.ninja client not yet implemented"))
+    let league = get_current_league();
+    let (chaos, _div, listings) = super::poe_ninja_client::get_item_price(item_name, &league).await?;
+    Ok((chaos, listings))
+}
+
+fn get_current_league() -> String {
+    std::env::var("POE_LEAGUE").unwrap_or_else(|_| "Settlers".to_string())
 }
 
 fn not_found(item_name: &str) -> PriceResult {

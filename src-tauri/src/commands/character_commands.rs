@@ -1,7 +1,8 @@
 use tauri::State;
 use crate::AppState;
 use crate::models::AnalysisResult;
-use crate::core::characters;
+use crate::core::{characters, oauth};
+use crate::db::BuildSummary;
 use super::build_commands::analyze_build_data;
 
 /// Load and analyze a character directly from PoE account (OAuth primary path).
@@ -41,3 +42,32 @@ pub async fn switch_character(
 ) -> Result<AnalysisResult, String> {
     load_character(character_name, state).await
 }
+
+/// Start the PoE OAuth PKCE flow — opens browser, waits for redirect, saves token.
+#[tauri::command]
+pub async fn start_oauth(
+    state: State<'_, AppState>,
+) -> Result<String, String> {
+    let token = oauth::start_oauth_flow()
+        .await
+        .map_err(|e| format!("OAuth failed: {e}"))?;
+
+    state.db.save_oauth_token(&token)
+        .map_err(|e| format!("Failed to save token: {e}"))?;
+
+    Ok(format!("Connected! Scope: {}", token.scope))
+}
+
+/// Check whether the user has a valid OAuth token stored.
+#[tauri::command]
+pub fn get_auth_status(state: State<'_, AppState>) -> bool {
+    state.db.has_oauth_token()
+}
+
+/// List all saved builds (for history panel).
+#[tauri::command]
+pub fn list_builds(state: State<'_, AppState>) -> Result<Vec<BuildSummary>, String> {
+    state.db.list_builds()
+        .map_err(|e| format!("Failed to list builds: {e}"))
+}
+

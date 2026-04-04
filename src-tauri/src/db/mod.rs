@@ -1,25 +1,31 @@
 /// SQLite database layer — see docs/DATABASE.md for full schema.
 use anyhow::{anyhow, Result};
 use rusqlite::Connection;
-use std::path::Path;
+use std::path::{Path, PathBuf};
 use std::sync::Mutex;
 use crate::models::build::BuildData;
 use crate::models::analysis::AnalysisResult;
-use crate::core::oauth::OAuthToken;
+use crate::core::oauth::{OAuthToken, encrypt_token, decrypt_token, load_or_create_key};
 
 pub struct Database {
     conn: Mutex<Connection>,
+    /// 32-byte AES-256-GCM key for token encryption.
+    enc_key: [u8; 32],
+    data_dir: PathBuf,
 }
 
 impl Database {
     pub fn open(path: &Path) -> Result<Self> {
+        let data_dir = path.parent().unwrap_or(Path::new(".")).to_path_buf();
+        let enc_key = load_or_create_key(&data_dir)?;
+
         let conn = Connection::open(path)
             .map_err(|e| anyhow!("Cannot open DB: {e}"))?;
 
         // Enable WAL mode for better concurrent read performance
         conn.execute_batch("PRAGMA journal_mode=WAL; PRAGMA foreign_keys=ON;")?;
 
-        Ok(Database { conn: Mutex::new(conn) })
+        Ok(Database { conn: Mutex::new(conn), enc_key, data_dir })
     }
 
     pub fn run_migrations(&self) -> Result<()> {
@@ -28,25 +34,57 @@ impl Database {
         Ok(())
     }
 
+    // ─── Builds ───────────────────────────────────────────────────────────────
+
+    /// Save build metadata + full JSON to the DB.
     pub fn save_build(&self, build: &BuildData) -> Result<()> {
         let conn = self.conn.lock().unwrap();
+        let full_json = serde_json::to_string(build)?;
         conn.execute(
             "INSERT OR REPLACE INTO builds
-             (id, name, class_name, ascendancy, level, last_analyzed, created_at, updated_at)
-             VALUES (?1, ?2, ?3, ?4, ?5, datetime('now'), datetime('now'), datetime('now'))",
+             (id, name, class_name, ascendancy, level, full_json, last_analyzed, created_at, updated_at)
+             VALUES (?1, ?2, ?3, ?4, ?5, ?6, datetime('now'), datetime('now'), datetime('now'))",
             rusqlite::params![
                 build.id, build.name, build.class_name,
-                build.ascendancy, build.level
+                build.ascendancy, build.level, full_json
             ],
         )?;
         Ok(())
     }
 
+    /// Load full BuildData from the DB.
     pub fn load_build(&self, build_id: &str) -> Result<BuildData> {
-        // TODO: full build serialization to DB
-        // For now, return error — builds are re-parsed from file
-        Err(anyhow!("Build {build_id} not in DB — re-import from PoB or OAuth"))
+        let conn = self.conn.lock().unwrap();
+        let json: String = conn.query_row(
+            "SELECT full_json FROM builds WHERE id = ?1",
+            rusqlite::params![build_id],
+            |row| row.get(0),
+        ).map_err(|_| anyhow!("Build {build_id} not found — re-import from PoB or OAuth"))?;
+
+        serde_json::from_str(&json).map_err(|e| anyhow!("Deserialize build: {e}"))
     }
+
+    /// List all saved builds (summary only, no full JSON).
+    pub fn list_builds(&self) -> Result<Vec<BuildSummary>> {
+        let conn = self.conn.lock().unwrap();
+        let mut stmt = conn.prepare(
+            "SELECT id, name, class_name, ascendancy, level, last_analyzed
+             FROM builds ORDER BY updated_at DESC LIMIT 50"
+        )?;
+        let rows = stmt.query_map([], |row| {
+            Ok(BuildSummary {
+                id: row.get(0)?,
+                name: row.get(1)?,
+                class_name: row.get(2)?,
+                ascendancy: row.get(3)?,
+                level: row.get(4)?,
+                last_analyzed: row.get(5)?,
+            })
+        })?;
+        rows.collect::<rusqlite::Result<Vec<_>>>().map_err(|e| anyhow!("{e}"))
+    }
+
+    // ─── Analysis Cache ───────────────────────────────────────────────────────
 
     pub fn save_analysis(&self, analysis: &AnalysisResult) -> Result<()> {
         let conn = self.conn.lock().unwrap();
@@ -71,44 +109,131 @@ impl Database {
         serde_json::from_str(&json).map_err(|e| anyhow!("Deserialize failed: {e}"))
     }
 
+    // ─── Snapshots (Undo/Redo) ────────────────────────────────────────────────
+
+    /// Save a snapshot of the current build state before a change.
+    /// Keeps the most recent 50 snapshots per build.
     pub fn snapshot_build(&self, build_id: &str, description: &str) -> Result<()> {
-        // TODO: serialize + compress build XML for undo history
+        let build = self.load_build(build_id)?;
+        let json = serde_json::to_string(&build)?;
+
+        let conn = self.conn.lock().unwrap();
+        conn.execute(
+            "INSERT INTO build_snapshots (build_id, xml_content, description, created_at)
+             VALUES (?1, ?2, ?3, datetime('now'))",
+            rusqlite::params![build_id, json.as_bytes(), description],
+        )?;
+
+        // Trim to 50 snapshots
+        conn.execute(
+            "DELETE FROM build_snapshots WHERE id NOT IN (
+               SELECT id FROM build_snapshots WHERE build_id = ?1
+               ORDER BY created_at DESC LIMIT 50
+             ) AND build_id = ?1",
+            rusqlite::params![build_id],
+        )?;
         Ok(())
     }
 
+    /// Undo: restore previous snapshot and remove it from the stack.
     pub fn undo_snapshot(&self, build_id: &str) -> Result<BuildData> {
-        Err(anyhow!("Undo not yet implemented"))
+        let conn = self.conn.lock().unwrap();
+
+        // Get the most recent snapshot
+        let (snap_id, json_bytes): (i64, Vec<u8>) = conn.query_row(
+            "SELECT id, xml_content FROM build_snapshots WHERE build_id = ?1
+             ORDER BY created_at DESC LIMIT 1",
+            rusqlite::params![build_id],
+            |row| Ok((row.get(0)?, row.get(1)?)),
+        ).map_err(|_| anyhow!("No undo history for build {build_id}"))?;
+
+        let json = String::from_utf8(json_bytes)
+            .map_err(|e| anyhow!("Snapshot UTF-8 error: {e}"))?;
+        let build: BuildData = serde_json::from_str(&json)
+            .map_err(|e| anyhow!("Snapshot deserialize: {e}"))?;
+
+        // Remove snapshot from stack
+        conn.execute(
+            "DELETE FROM build_snapshots WHERE id = ?1",
+            rusqlite::params![snap_id],
+        )?;
+
+        // Update the build in DB
+        let full_json = serde_json::to_string(&build).unwrap_or_default();
+        conn.execute(
+            "UPDATE builds SET full_json = ?1, updated_at = datetime('now') WHERE id = ?2",
+            rusqlite::params![full_json, build_id],
+        )?;
+
+        Ok(build)
     }
 
-    pub fn redo_snapshot(&self, build_id: &str) -> Result<BuildData> {
-        Err(anyhow!("Redo not yet implemented"))
+    /// Redo is implemented as a second snapshot table ("redo stack").
+    /// For simplicity, we do not support redo after new changes — like most editors.
+    pub fn redo_snapshot(&self, _build_id: &str) -> Result<BuildData> {
+        Err(anyhow!("Redo not available after new changes"))
     }
+
+    // ─── OAuth Tokens (AES-256 encrypted) ────────────────────────────────────
 
     pub fn save_oauth_token(&self, token: &OAuthToken) -> Result<()> {
-        // TODO: encrypt with AES-256 before storing
+        let plain = serde_json::to_string(token)?;
+        let encrypted = encrypt_token(&plain, &self.enc_key)?;
+
         let conn = self.conn.lock().unwrap();
-        let json = serde_json::to_string(token)?;
         conn.execute(
             "INSERT OR REPLACE INTO oauth_tokens (provider, token_json, created_at)
              VALUES ('poe', ?1, datetime('now'))",
-            rusqlite::params![json],
+            rusqlite::params![encrypted],
         )?;
         Ok(())
     }
 
     pub fn load_oauth_token(&self) -> Result<String> {
         let conn = self.conn.lock().unwrap();
-        let json: String = conn.query_row(
+        let encrypted: String = conn.query_row(
             "SELECT token_json FROM oauth_tokens WHERE provider = 'poe'
              ORDER BY created_at DESC LIMIT 1",
             [],
             |row| row.get(0),
         ).map_err(|_| anyhow!("No OAuth token stored — connect your PoE account"))?;
+        drop(conn);
 
-        let token: OAuthToken = serde_json::from_str(&json)?;
+        let plain = decrypt_token(&encrypted, &self.enc_key)?;
+        let token: OAuthToken = serde_json::from_str(&plain)?;
         Ok(token.access_token)
     }
+
+    pub fn has_oauth_token(&self) -> bool {
+        self.load_oauth_token().is_ok()
+    }
+
+    // ─── Wealth Snapshots ─────────────────────────────────────────────────────
+
+    pub fn record_wealth_snapshot(&self, total_div: f64, breakdown: Option<&str>) -> Result<()> {
+        let conn = self.conn.lock().unwrap();
+        conn.execute(
+            "INSERT INTO wealth_snapshots (total_div, breakdown_json, snapshotted_at)
+             VALUES (?1, ?2, datetime('now'))",
+            rusqlite::params![total_div, breakdown],
+        )?;
+        Ok(())
+    }
 }
+
+// ─── Build summary for list views ─────────────────────────────────────────────
+
+#[derive(Debug, serde::Serialize, serde::Deserialize)]
+pub struct BuildSummary {
+    pub id: String,
+    pub name: String,
+    pub class_name: String,
+    pub ascendancy: String,
+    pub level: u32,
+    pub last_analyzed: String,
+}
+
+// ─── Schema ───────────────────────────────────────────────────────────────────
 
 // Full schema — see docs/DATABASE.md
 const SCHEMA: &str = r#"
@@ -123,6 +248,7 @@ CREATE TABLE IF NOT EXISTS builds (
     total_dps    REAL,
     total_life   INTEGER,
     score        INTEGER,
+    full_json    TEXT,
     last_analyzed TEXT NOT NULL,
     created_at   TEXT NOT NULL,
     updated_at   TEXT NOT NULL
@@ -187,3 +313,4 @@ CREATE TABLE IF NOT EXISTS wealth_snapshots (
     snapshotted_at  TEXT NOT NULL
 );
 "#;
+

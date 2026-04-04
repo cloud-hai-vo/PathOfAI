@@ -51,10 +51,14 @@ pub fn run() {
             commands::character_commands::load_character,
             commands::character_commands::list_characters,
             commands::character_commands::switch_character,
+            commands::character_commands::start_oauth,
+            commands::character_commands::get_auth_status,
+            commands::character_commands::list_builds,
             // Seer
             commands::seer_commands::ask_seer,
             commands::seer_commands::get_tree_analysis,
             commands::seer_commands::get_craft_suggestions,
+            commands::seer_commands::compare_craft_vs_buy,
             // Market
             commands::market_commands::get_prices,
             commands::market_commands::search_upgrades,

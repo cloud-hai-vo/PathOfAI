@@ -5,8 +5,8 @@
 import { listen } from '@tauri-apps/api/event';
 import { open } from '@tauri-apps/plugin-dialog';
 import { store } from './services/store.js';
-import { getAppInfo, analyzeBuild, askSeer } from './services/bridge.js';
-import type { AnalysisResult, SeerResponse } from './types/index.js';
+import { getAppInfo, analyzeBuild, askSeer, startOAuth, listCharacters, loadCharacter, getCraftSuggestions, getAuthStatus } from './services/bridge.js';
+import type { AnalysisResult, SeerResponse, CraftSuggestion } from './types/index.js';
 
 // ─── Boot sequence ────────────────────────────────────────────────────────────
 
@@ -194,6 +194,25 @@ function renderHUD() {
     if (vEl) vEl.textContent = `v${state.appInfo.version}`;
   }
 
+  // Global keyboard shortcuts
+  document.addEventListener('keydown', async (e) => {
+    const analysis = store.get().analysis;
+    if (!analysis) return;
+    if ((e.ctrlKey || e.metaKey) && e.key === 'z' && !e.shiftKey) {
+      e.preventDefault();
+      try {
+        const { undoLastChange } = await import('./services/bridge.js');
+        const result = await undoLastChange(analysis.build_id);
+        store.set({ analysis: result });
+        showNotification('↩ Undo applied');
+      } catch { showNotification('Nothing to undo'); }
+    }
+    if ((e.ctrlKey || e.metaKey) && (e.key === 'y' || (e.shiftKey && e.key === 'z'))) {
+      e.preventDefault();
+      showNotification('Redo not available after new changes');
+    }
+  });
+
   // Build panel nav
   renderPanelNav();
 
@@ -267,9 +286,13 @@ function renderActivePanel(panelId: string) {
     case 'dps':
       content.innerHTML = renderDPSPanel(analysis);
       break;
+    case 'forge':
+      content.innerHTML = renderForgePanelLoading();
+      loadForgePanel(analysis).then(html => { content.innerHTML = html; wireForgePanel(analysis); });
+      break;
     default:
       content.innerHTML = `<div class="panel-placeholder">
-        ${panelId} panel — coming in next session
+        ${panelId} panel — coming soon
       </div>`;
   }
 }
@@ -447,6 +470,105 @@ function renderDPSPanel(analysis: AnalysisResult | null): string {
   `;
 }
 
+function renderForgePanelLoading(): string {
+  return `<div class="panel-placeholder">🔨 Loading craft suggestions…</div>`;
+}
+
+async function loadForgePanel(analysis: AnalysisResult | null): Promise<string> {
+  if (!analysis) return `<div class="panel-placeholder">Load a build first</div>`;
+
+  let suggestions: CraftSuggestion[] = [];
+  try {
+    suggestions = await getCraftSuggestions(analysis.build_id, '{}');
+  } catch {
+    suggestions = [];
+  }
+
+  return renderForgePanel(analysis, suggestions);
+}
+
+function renderForgePanel(analysis: AnalysisResult | null, suggestions: CraftSuggestion[]): string {
+  if (!analysis) return `<div class="panel-placeholder">Load a build first</div>`;
+
+  const methodIcon = (m: string) => ({
+    BenchCraft: '⚒', Essence: '💠', Chaos: '🌀', Fossil: '🦴', Harvest: '🌿', Recombinator: '⚗'
+  }[m] ?? '🔨');
+
+  const verdictStyle = (v: string) => ({
+    BestOption: 'color:var(--success)',
+    SafeOption: 'color:var(--warning)',
+    HighRisk:   'color:var(--danger)',
+    NotWorthIt: 'color:var(--text-muted)',
+  }[v] ?? '');
+
+  const verdictLabel = (v: string) => ({
+    BestOption: '✓ Best Option',
+    SafeOption: '~ Safe',
+    HighRisk:   '⚠ High Risk',
+    NotWorthIt: '✗ Not Worth It',
+  }[v] ?? v);
+
+  const cardsHTML = suggestions.map(s => `
+    <div class="forge-card">
+      <div class="forge-card-header">
+        <span class="forge-method">${methodIcon(s.method)} ${s.method}</span>
+        <span class="forge-verdict" style="${verdictStyle(s.verdict)}">${verdictLabel(s.verdict)}</span>
+      </div>
+      <div class="forge-target">${s.target_mod}</div>
+      <div class="forge-stats">
+        <span>Hit chance: <b>${(s.probability * 100).toFixed(1)}%</b></span>
+        <span>For 99%: <b>${s.attempts_99pct}× attempts</b></span>
+        <span>Expected: <b>${s.expected_cost_chaos.toFixed(0)}c</b></span>
+        ${s.dps_gain > 0 ? `<span>DPS gain: <b>+${(s.dps_gain / 1_000_000).toFixed(2)}M</b></span>` : ''}
+      </div>
+    </div>
+  `).join('');
+
+  // Craft vs Buy comparison rows for each low-scored slot
+  const lowSlots = analysis.item_scores
+    .filter(s => s.score < 60)
+    .slice(0, 3)
+    .map(s => `
+      <div class="craft-vs-buy-row" data-slot="${s.slot}">
+        <span>${s.slot}: ${s.item_name}</span>
+        <button class="cvb-btn" data-slot="${s.slot}">Craft vs Buy</button>
+        <span class="cvb-result" id="cvb-${s.slot.replace(/\s/g, '_')}"></span>
+      </div>
+    `).join('');
+
+  return `
+    <div class="section-label">🔨 Craft Suggestions</div>
+    ${cardsHTML || '<div class="panel-placeholder">No craft suggestions — all items look good!</div>'}
+    ${lowSlots ? `
+      <div class="section-label" style="margin-top:12px;">Craft vs Buy</div>
+      <div class="craft-vs-buy-list">${lowSlots}</div>
+    ` : ''}
+  `;
+}
+
+function wireForgePanel(analysis: AnalysisResult | null) {
+  if (!analysis) return;
+  document.querySelectorAll('.cvb-btn').forEach(btn => {
+    btn.addEventListener('click', async () => {
+      const slot = (btn as HTMLElement).dataset.slot ?? '';
+      const resultEl = document.getElementById(`cvb-${slot.replace(/\s/g, '_')}`);
+      if (!resultEl) return;
+      resultEl.textContent = '…';
+      try {
+        const { compareCraftVsBuy } = await import('./services/bridge.js');
+        const result = await compareCraftVsBuy(analysis!.build_id, slot, 0);
+        resultEl.textContent = result.recommendation;
+        resultEl.style.color = {
+          BestOption: 'var(--success)', SafeOption: 'var(--warning)',
+          HighRisk: 'var(--danger)', NotWorthIt: 'var(--text-muted)'
+        }[result.verdict] ?? '';
+      } catch (err) {
+        resultEl.textContent = `Error: ${err}`;
+      }
+    });
+  });
+}
+
 // ─── Actions ──────────────────────────────────────────────────────────────────
 
 async function importFromPoB() {
@@ -473,7 +595,54 @@ async function importFromPoB() {
 }
 
 async function connectPoE() {
-  showNotification('OAuth flow — coming in Session 8!');
+  try {
+    showNotification('Opening browser for PoE login…');
+    const msg = await startOAuth();
+    showNotification(`✓ ${msg}`);
+
+    // Try to list characters now that we're connected
+    const chars = await listCharacters().catch(() => []);
+    if (chars.length > 0) {
+      showCharacterPicker(chars);
+    }
+  } catch (err) {
+    showNotification(`⚠ OAuth failed: ${err}`);
+  }
+}
+
+function showCharacterPicker(chars: Array<{name: string; class: string; level: number; league: string}>) {
+  const content = document.getElementById('panel-content');
+  if (!content) return;
+
+  // Switch to a character picker view
+  store.set({ activePanel: 'connect' });
+
+  content.innerHTML = `
+    <div class="section-label">⚡ Select Character</div>
+    <div class="char-list">
+      ${chars.map(c => `
+        <div class="char-card" data-name="${c.name}">
+          <div class="char-name">${c.name}</div>
+          <div class="char-meta">${c.class} · Lv${c.level} · ${c.league}</div>
+        </div>
+      `).join('')}
+    </div>
+  `;
+
+  content.querySelectorAll('.char-card').forEach(card => {
+    card.addEventListener('click', async () => {
+      const name = (card as HTMLElement).dataset.name ?? '';
+      showNotification(`Fetching ${name}…`);
+      try {
+        const result = await loadCharacter(name);
+        store.set({ analysis: result, isLoading: false });
+        showNotification(`✓ ${result.build_name} loaded — Score ${result.overall_score}/100`);
+        renderActivePanel('prophecy');
+      } catch (err) {
+        showNotification(`⚠ Failed to load character: ${err}`);
+      }
+    });
+  });
 }
 
 async function submitSeerQuestion() {

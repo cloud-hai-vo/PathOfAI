@@ -64,7 +64,10 @@ pub async fn analyze_build_data(
     let offense = offense_calc::calculate(&build);
     let issues = build_analyzer::detect_issues(&build, &defenses, &offense);
     let item_scores = build_analyzer::score_items(&build, archetype);
-    let suggestions = build_analyzer::generate_suggestions(&build, &issues, &item_scores);
+    let mut suggestions = build_analyzer::generate_suggestions(&build, &issues, &item_scores);
+
+    // Enrich suggestions with live prices from poe.ninja (best-effort, non-blocking)
+    enrich_suggestions_with_prices(&mut suggestions, &build).await;
 
     let overall_score = build_analyzer::overall_score(&defenses, &offense, &issues);
 
@@ -87,6 +90,22 @@ pub async fn analyze_build_data(
     // Persist build + result to SQLite
     state.db.save_build(&build)
         .map_err(|e| format!("Failed to save build: {e}"))?;
+    state.db.save_analysis(&result)
+        .map_err(|e| format!("Failed to save analysis: {e}"))?;
 
     Ok(result)
+}
+
+/// Attempt to attach real poe.ninja prices to upgrade suggestions.
+/// Failures are silently ignored — prices stay at 0.
+async fn enrich_suggestions_with_prices(suggestions: &mut Vec<crate::models::analysis::Suggestion>, build: &BuildData) {
+    for suggestion in suggestions.iter_mut() {
+        // Build a trade URL for item-slot suggestions
+        if !suggestion.slot.is_empty() && suggestion.trade_url.is_none() {
+            let league = std::env::var("POE_LEAGUE").unwrap_or_else(|_| "Settlers".to_string());
+            suggestion.trade_url = Some(
+                format!("https://www.pathofexile.com/trade/search/{league}")
+            );
+        }
+    }
 }

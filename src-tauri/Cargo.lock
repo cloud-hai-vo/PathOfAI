@@ -2658,6 +2658,7 @@ dependencies = [
  "hex",
  "log",
  "notify",
+ "open",
  "quick-xml 0.36.2",
  "rand 0.8.5",
  "regex",

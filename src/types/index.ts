@@ -228,3 +228,31 @@ export interface AppInfo {
   poe_version: string;
   league: string;
 }
+
+export interface CraftSuggestion {
+  method: 'BenchCraft' | 'Essence' | 'Chaos' | 'Fossil' | 'Harvest' | 'Recombinator';
+  target_mod: string;
+  probability: number;
+  attempts_99pct: number;
+  expected_cost_chaos: number;
+  dps_gain: number;
+  verdict: 'BestOption' | 'SafeOption' | 'HighRisk' | 'NotWorthIt';
+}
+
+export interface CraftVsBuyResult {
+  slot: string;
+  current_item: string;
+  craft_cost_div: number;
+  buy_cost_div: number;
+  verdict: 'BestOption' | 'SafeOption' | 'HighRisk' | 'NotWorthIt';
+  recommendation: string;
+}
+
+export interface BuildSummary {
+  id: string;
+  name: string;
+  class_name: string;
+  ascendancy: string;
+  level: number;
+  last_analyzed: string;
+}

@@ -2,8 +2,8 @@ use tauri::State;
 use crate::AppState;
 use crate::models::seer::{SeerResponse, TreeAnalysis};
 use crate::models::market::CraftSuggestion;
+use crate::core::{craft_advisor::CraftVsBuyResult, build_analyzer};
 use crate::seer::router;
-use crate::core::build_analyzer;
 
 /// Ask The Seer a free-form question about the current build.
 #[tauri::command]
@@ -15,7 +15,6 @@ pub async fn ask_seer(
     let build = state.db.load_build(&build_id)
         .map_err(|e| format!("Build not found: {e}"))?;
 
-    // Analysis is cached in DB — reload or re-run
     let analysis = state.db.load_analysis(&build_id)
         .map_err(|e| format!("Analysis not found: {e}"))?;
 
@@ -41,7 +40,7 @@ pub async fn get_tree_analysis(
 #[tauri::command]
 pub async fn get_craft_suggestions(
     build_id: String,
-    currency_json: String,           // JSON-encoded CurrencyInventory
+    currency_json: String,
     state: State<'_, AppState>,
 ) -> Result<Vec<CraftSuggestion>, String> {
     let build = state.db.load_build(&build_id)
@@ -53,3 +52,18 @@ pub async fn get_craft_suggestions(
     crate::core::craft_advisor::get_suggestions(&build, &currency)
         .map_err(|e| format!("Craft suggestion failed: {e}"))
 }
+
+/// Compare crafting a slot vs buying from trade.
+#[tauri::command]
+pub async fn compare_craft_vs_buy(
+    build_id: String,
+    slot: String,
+    buy_price_div: f64,
+    state: State<'_, AppState>,
+) -> Result<CraftVsBuyResult, String> {
+    let build = state.db.load_build(&build_id)
+        .map_err(|e| format!("Build not found: {e}"))?;
+
+    Ok(crate::core::craft_advisor::compare_craft_vs_buy(&slot, &build, buy_price_div))
+}
+

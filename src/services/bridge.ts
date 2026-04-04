@@ -5,7 +5,7 @@
 import { invoke } from '@tauri-apps/api/core';
 import type {
   AnalysisResult, SeerResponse, PriceResult, AppInfo,
-  Item, ItemScore
+  Item, CraftSuggestion, BuildSummary, CraftVsBuyResult,
 } from '../types/index.js';
 
 // --- Info ---
@@ -30,6 +30,9 @@ export const undoLastChange = (buildId: string): Promise<AnalysisResult> =>
 export const redoChange = (buildId: string): Promise<AnalysisResult> =>
   invoke('redo_change', { buildId });
 
+export const listBuilds = (): Promise<BuildSummary[]> =>
+  invoke('list_builds');
+
 // --- Character (OAuth) ---
 
 export const loadCharacter = (characterName: string): Promise<AnalysisResult> =>
@@ -38,15 +41,30 @@ export const loadCharacter = (characterName: string): Promise<AnalysisResult> =>
 export const listCharacters = (): Promise<Array<{name: string; class: string; level: number; league: string}>> =>
   invoke('list_characters');
 
+export const startOAuth = (): Promise<string> =>
+  invoke('start_oauth');
+
+export const getAuthStatus = (): Promise<boolean> =>
+  invoke('get_auth_status');
+
 // --- Seer ---
 
 export const askSeer = (question: string, buildId: string): Promise<SeerResponse> =>
   invoke('ask_seer', { question, buildId });
 
+export const getCraftSuggestions = (buildId: string, currencyJson: string): Promise<CraftSuggestion[]> =>
+  invoke('get_craft_suggestions', { buildId, currencyJson });
+
+export const compareCraftVsBuy = (buildId: string, slot: string, buyPriceDiv: number): Promise<CraftVsBuyResult> =>
+  invoke('compare_craft_vs_buy', { buildId, slot, buyPriceDiv });
+
 // --- Market ---
 
 export const getPrices = (itemNames: string[]): Promise<PriceResult[]> =>
   invoke('get_prices', { itemNames });
+
+export const searchUpgrades = (slot: string, budgetDiv: number, buildId: string) =>
+  invoke('search_upgrades', { slot, budgetDiv, buildId });
 
 // --- Items ---
 
