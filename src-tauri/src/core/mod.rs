@@ -8,3 +8,8 @@ pub mod craft_advisor;
 pub mod characters;
 pub mod oauth;
 pub mod pob_writer;
+pub mod passive_tree;
+pub mod stash;
+pub mod map_tracker;
+pub mod alert_manager;
+pub mod build_comparator;
