@@ -1,0 +1,33 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 32 32" width="32" height="32">
+  <!-- Dark background -->
+  <rect width="32" height="32" fill="#0c0b0a" rx="4"/>
+
+  <!-- Eye shape -->
+  <ellipse cx="16" cy="13" rx="14" ry="8" fill="#100c06" stroke="#c4a830" stroke-width="1"/>
+
+  <!-- Iris -->
+  <ellipse cx="16" cy="13" rx="7" ry="7" fill="#8b1a1a" clip-path="url(#fc)"/>
+  <clipPath id="fc"><ellipse cx="16" cy="13" rx="14" ry="8"/></clipPath>
+  <ellipse cx="16" cy="13" rx="7" ry="7" fill="#8b1a1a"/>
+  <!-- clip iris to eye -->
+  <ellipse cx="16" cy="13" rx="14" ry="8" fill="none" stroke="#c4a830" stroke-width="1"/>
+
+  <!-- Slit pupil -->
+  <ellipse cx="16" cy="13" rx="2" ry="7" fill="#0a0706"/>
+  <!-- Center tick -->
+  <line x1="14" y1="13" x2="18" y2="13" stroke="#c4a830" stroke-width="0.6" opacity="0.9"/>
+  <line x1="16" y1="8"  x2="16" y2="18" stroke="#c4a830" stroke-width="0.5" opacity="0.6"/>
+
+  <!-- Wingtips -->
+  <path d="M 2 13 L 0 11 L 1.5 13 L 0 15 Z" fill="#c4a830"/>
+  <path d="M 30 13 L 32 11 L 30.5 13 L 32 15 Z" fill="#c4a830"/>
+
+  <!-- "AI" text below eye -->
+  <text x="16" y="28"
+        font-family="Cinzel, serif"
+        font-size="8"
+        font-weight="700"
+        fill="#c42b2b"
+        text-anchor="middle"
+        letter-spacing="2">AI</text>
+</svg>

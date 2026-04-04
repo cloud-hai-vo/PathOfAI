@@ -1,0 +1,70 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 256 256" width="256" height="256">
+  <defs>
+    <radialGradient id="bg" cx="50%" cy="50%" r="50%">
+      <stop offset="0%" stop-color="#1a1208"/>
+      <stop offset="100%" stop-color="#0c0b0a"/>
+    </radialGradient>
+    <radialGradient id="iris" cx="50%" cy="35%" r="65%">
+      <stop offset="0%" stop-color="#d44040"/>
+      <stop offset="55%" stop-color="#8b1a1a"/>
+      <stop offset="100%" stop-color="#3a0808"/>
+    </radialGradient>
+    <radialGradient id="pupil" cx="50%" cy="30%" r="60%">
+      <stop offset="0%" stop-color="#1e1510"/>
+      <stop offset="100%" stop-color="#080606"/>
+    </radialGradient>
+    <filter id="glow" x="-30%" y="-30%" width="160%" height="160%">
+      <feGaussianBlur stdDeviation="4" result="blur"/>
+      <feFlood flood-color="#c42b2b" flood-opacity="0.4" result="color"/>
+      <feComposite in="color" in2="blur" operator="in" result="g"/>
+      <feMerge>
+        <feMergeNode in="g"/>
+        <feMergeNode in="SourceGraphic"/>
+      </feMerge>
+    </filter>
+    <clipPath id="clip">
+      <ellipse cx="128" cy="128" rx="108" ry="65"/>
+    </clipPath>
+  </defs>
+
+  <!-- Background circle -->
+  <circle cx="128" cy="128" r="128" fill="url(#bg)"/>
+
+  <!-- Outer ring -->
+  <circle cx="128" cy="128" r="122" fill="none" stroke="#c4a830" stroke-width="1.5" opacity="0.35"/>
+
+  <!-- Eye ambient glow -->
+  <ellipse cx="128" cy="128" rx="116" ry="72" fill="#8b1a1a" opacity="0.10"/>
+
+  <!-- Eye white -->
+  <ellipse cx="128" cy="128" rx="108" ry="65" fill="#100c06" stroke="#c4a830" stroke-width="1.5"/>
+
+  <!-- Iris -->
+  <ellipse cx="128" cy="128" rx="58" ry="58" fill="url(#iris)" clip-path="url(#clip)"/>
+  <ellipse cx="128" cy="128" rx="58" ry="58" fill="none" stroke="#c42b2b" stroke-width="0.8" opacity="0.5" clip-path="url(#clip)"/>
+  <ellipse cx="128" cy="128" rx="45" ry="45" fill="none" stroke="#8b1a1a" stroke-width="0.5" opacity="0.35" clip-path="url(#clip)"/>
+
+  <!-- Slit pupil -->
+  <ellipse cx="128" cy="128" rx="11" ry="55" fill="url(#pupil)" clip-path="url(#clip)"/>
+  <ellipse cx="128" cy="128" rx="7"  ry="51" fill="#060404"  clip-path="url(#clip)"/>
+
+  <!-- Circuit traces -->
+  <line x1="128" y1="78"  x2="128" y2="178" stroke="#c4a830" stroke-width="1" opacity="0.7"/>
+  <line x1="122" y1="96"  x2="134" y2="96"  stroke="#c4a830" stroke-width="0.7" opacity="0.55"/>
+  <line x1="121" y1="114" x2="135" y2="114" stroke="#c4a830" stroke-width="0.7" opacity="0.55"/>
+  <line x1="121" y1="128" x2="135" y2="128" stroke="#c4a830" stroke-width="1"   opacity="0.8"/>
+  <line x1="121" y1="142" x2="135" y2="142" stroke="#c4a830" stroke-width="0.7" opacity="0.55"/>
+  <line x1="122" y1="160" x2="134" y2="160" stroke="#c4a830" stroke-width="0.7" opacity="0.55"/>
+  <!-- Node dots at center -->
+  <circle cx="121" cy="128" r="1.8" fill="#c4a830" opacity="0.8"/>
+  <circle cx="135" cy="128" r="1.8" fill="#c4a830" opacity="0.8"/>
+  <line x1="117" y1="128" x2="110" y2="128" stroke="#c4a830" stroke-width="0.7" opacity="0.45"/>
+  <line x1="139" y1="128" x2="146" y2="128" stroke="#c4a830" stroke-width="0.7" opacity="0.45"/>
+
+  <!-- Specular highlight -->
+  <ellipse cx="108" cy="112" rx="10" ry="6" fill="white" opacity="0.08"/>
+
+  <!-- Wingtips -->
+  <path d="M 20 128 L  4 118 L 14 128 L  4 138 Z" fill="#c4a830" opacity="0.75" filter="url(#glow)"/>
+  <path d="M 236 128 L 252 118 L 242 128 L 252 138 Z" fill="#c4a830" opacity="0.75" filter="url(#glow)"/>
+</svg>

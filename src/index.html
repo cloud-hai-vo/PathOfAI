@@ -1,0 +1,37 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>Path of AI</title>
+  <link rel="icon" type="image/svg+xml" href="assets/favicon.svg" />
+  <link rel="stylesheet" href="styles/theme.css" />
+  <link rel="stylesheet" href="styles/hud.css" />
+  <link rel="stylesheet" href="styles/animations.css" />
+  <link rel="stylesheet" href="styles/app.css" />
+  <link rel="preconnect" href="https://fonts.googleapis.com" />
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
+  <link href="https://fonts.googleapis.com/css2?family=Cinzel:wght@400;600;700;800&family=JetBrains+Mono:wght@400;600;700;800&display=swap" rel="stylesheet" />
+</head>
+<body>
+  <!-- Loading screen — shown while Rust backend initializes -->
+  <div id="loading-screen">
+    <div class="loading-inner">
+      <img src="assets/logo.svg" width="160" height="160" alt="Path of AI" class="loading-logo" />
+      <div class="loading-title">PATH OF AI</div>
+      <div class="loading-subtitle">Consulting the Seer…</div>
+      <div class="loading-bar-wrap">
+        <div class="loading-bar" id="loading-bar"></div>
+      </div>
+      <div class="loading-version" id="loading-version">v0.1.0</div>
+    </div>
+  </div>
+
+  <!-- Main HUD — hidden until build is loaded -->
+  <div id="app" style="display:none;">
+    <!-- Populated by main.ts once backend is ready -->
+  </div>
+
+  <script type="module" src="main.ts"></script>
+</body>
+</html>

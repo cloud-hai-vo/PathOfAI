@@ -1,0 +1,42 @@
+# ── Rust / Cargo ───────────────────────────────────────────────────────────────
+/src-tauri/target/
+
+# ── Node / npm ─────────────────────────────────────────────────────────────────
+node_modules/
+dist/
+.env
+.env.*
+!.env.example
+
+# ── Tauri build output ─────────────────────────────────────────────────────────
+/src-tauri/gen/
+
+# ── SQLite database (user data — not committed) ────────────────────────────────
+*.sqlite
+*.sqlite-shm
+*.sqlite-wal
+data/
+
+# ── Logs ───────────────────────────────────────────────────────────────────────
+*.log
+logs/
+
+# ── OS junk ────────────────────────────────────────────────────────────────────
+.DS_Store
+Thumbs.db
+desktop.ini
+
+# ── IDE ────────────────────────────────────────────────────────────────────────
+.idea/
+*.suo
+*.user
+.vscode/settings.json
+# keep .vscode/extensions.json and .vscode/launch.json if present
+
+# ── TypeScript build output ────────────────────────────────────────────────────
+src/**/*.js
+src/**/*.js.map
+!src/main.ts
+!src/types/
+!src/services/
+!src/styles/
