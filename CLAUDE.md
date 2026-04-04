@@ -5,6 +5,33 @@
 
 ---
 
+## ⚠️ PRIME DIRECTIVE — TDD: Tests First, Always
+
+> **This rule overrides everything else. There are no exceptions.**
+
+### The cycle is: RED → GREEN → REFACTOR
+
+| Step | What you do |
+|------|-------------|
+| 🔴 **RED** | Write a *failing* test that describes the behavior. Run it. Confirm it fails. |
+| 🟢 **GREEN** | Write the *minimum* implementation to make the test pass. Nothing more. |
+| 🔵 **REFACTOR** | Clean up. Tests must still pass. |
+
+**You must never write a function, module, or feature without a failing test already in place.**
+
+If you catch yourself writing implementation code before a test — stop, delete the implementation, write the test first, confirm it fails, then implement.
+
+### Commit Gate — every commit must pass:
+```
+cargo test        # Rust unit tests
+npm test          # Vitest frontend tests  
+npm run test:e2e  # Playwright smoke tests
+```
+
+**A commit with no test for new code is a broken commit.**
+
+---
+
 ## What This Project Is
 
 **Path of AI** is a Tauri 2 desktop app for Path of Exile build analysis.
@@ -222,14 +249,27 @@ listen('price-alert-triggered', handler) // price alert fired
 | Write tests for all calculator functions | Ship calculator code without tests |
 | Use the existing CSS variables | Hardcode colors |
 | Port prototype JS logic to Rust 1:1 | Re-invent algorithms the prototype already solved |
-| Follow TDD: tests first, then implement | Add features without test coverage |
-| Every commit must pass `cargo test && npm test` | Commit code with failing tests |
+| Follow TDD: write failing test first, then implement | Write any implementation before a failing test exists |
+| Every commit must pass all 3 test layers | Commit code with failing or missing tests |
 
 ---
 
-## Testing Approach (TDD)
+## Testing Approach (TDD) — MANDATORY
 
-**Rule:** every change must be covered by tests before the commit. Three layers required:
+> **CRITICAL RULE: Write the test first. Then write the minimum code to make it pass. Then refactor.**
+> This is non-negotiable. Never write implementation code before the test that drives it.
+> The TDD cycle is: 🔴 RED (write failing test) → 🟢 GREEN (write minimum code) → 🔵 REFACTOR.
+
+**Before writing any function, struct, or module:**
+1. Write the test file / test module first
+2. Run `cargo test` (or `npm test`) — confirm the test **fails** (RED)
+3. Write the minimum implementation to make it pass (GREEN)
+4. Clean up and refactor — tests must still pass (REFACTOR)
+5. Commit — all three layers must be green
+
+**Why this matters:** Tests written after implementation drift toward the implementation, not the contract. Tests written first define behavior precisely and catch design problems early.
+
+Three layers required:
 
 ### Layer 1 — Rust Unit Tests (`cargo test`)
 - Location: `#[cfg(test)] mod tests { ... }` inside each source file
@@ -283,6 +323,15 @@ cargo test          # all Rust unit tests pass
 npm test            # all Vitest tests pass
 npm run test:e2e    # Playwright smoke tests pass
 ```
+
+**If you find yourself writing implementation before a test, STOP. Write the test first.**
+
+| Do | Don't |
+|----|-------|
+| Write the test file before the implementation | Write any function without a failing test first |
+| Run `cargo test` to confirm RED before coding | Add tests retroactively after the code is working |
+| Write the minimum code to make the test green | Over-engineer to pass hypothetical future tests |
+| Commit only when all 3 test layers are green | Commit with failing or skipped tests |
 
 ### Test File Naming
 - Rust: inline `#[cfg(test)]` module in the same file
