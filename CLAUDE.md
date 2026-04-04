@@ -222,3 +222,69 @@ listen('price-alert-triggered', handler) // price alert fired
 | Write tests for all calculator functions | Ship calculator code without tests |
 | Use the existing CSS variables | Hardcode colors |
 | Port prototype JS logic to Rust 1:1 | Re-invent algorithms the prototype already solved |
+| Follow TDD: tests first, then implement | Add features without test coverage |
+| Every commit must pass `cargo test && npm test` | Commit code with failing tests |
+
+---
+
+## Testing Approach (TDD)
+
+**Rule:** every change must be covered by tests before the commit. Three layers required:
+
+### Layer 1 — Rust Unit Tests (`cargo test`)
+- Location: `#[cfg(test)] mod tests { ... }` inside each source file
+- Use `tempfile` for DB tests (never use real filesystem)
+- Use `#[tokio::test]` for async tests
+- Make private helpers `pub(crate)` when direct testing adds value
+- Target: every `core/` and `calculator/` function has at least one test
+
+```rust
+#[cfg(test)]
+mod tests {
+    use super::*;
+    use tempfile::tempdir;
+
+    #[test]
+    fn my_pure_function_returns_expected_value() {
+        assert_eq!(my_function(input), expected);
+    }
+
+    #[tokio::test]
+    async fn my_async_function_handles_error() {
+        let result = my_async_fn(bad_input).await;
+        assert!(result.is_err());
+    }
+}
+```
+
+### Layer 2 — Frontend Unit Tests (`npm test`)
+- Framework: **Vitest** + `jsdom`
+- Location: `src/**/__tests__/*.test.ts`
+- Mock Tauri `invoke()` via `vi.mock('@tauri-apps/api/core')`
+- Test store state transitions and bridge wrappers
+- Run: `npm test` (vitest run)
+
+```typescript
+import { describe, it, expect, vi } from 'vitest';
+vi.mock('@tauri-apps/api/core', () => ({ invoke: vi.fn() }));
+```
+
+### Layer 3 — E2E Tests (`npm run test:e2e`)
+- Framework: **Playwright** targeting Vite dev server
+- Location: `e2e/*.spec.ts`
+- Tests run against mocked Tauri backend (window.__TAURI__ stubbed)
+- Smoke tests: app renders, panels switch, loading states work
+- Run: `npm run test:e2e`
+
+### Commit Gate
+Every commit must satisfy:
+```
+cargo test          # all Rust unit tests pass
+npm test            # all Vitest tests pass
+npm run test:e2e    # Playwright smoke tests pass
+```
+
+### Test File Naming
+- Rust: inline `#[cfg(test)]` module in the same file
+- TS unit: `src/services/__tests__/bridge.test.ts`
+- E2E: `e2e/smoke.spec.ts`

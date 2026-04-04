@@ -71,7 +71,7 @@ pub async fn find_upgrades(
 }
 
 /// Return (item_name, mod_highlights, estimated_dps_gain_pct) tuples for a slot+archetype.
-fn upgrade_candidates_for_slot(
+pub(crate) fn upgrade_candidates_for_slot(
     slot: &str,
     archetype: &str,
 ) -> Vec<(String, Vec<String>, f64)> {
@@ -126,7 +126,7 @@ fn upgrade_candidates_for_slot(
     }
 }
 
-fn build_trade_url(slot: &str, archetype: &str, item_name: &str) -> String {
+fn build_trade_url(_slot: &str, _archetype: &str, item_name: &str) -> String {
     let league = std::env::var("POE_LEAGUE").unwrap_or_else(|_| "Settlers".to_string());
     if item_name.starts_with("Rare ") {
         // Generic trade search URL for rare items
@@ -137,5 +137,58 @@ fn build_trade_url(slot: &str, archetype: &str, item_name: &str) -> String {
             "https://www.pathofexile.com/trade/search/{league}?q={{\"query\":{{\"name\":\"{}\"}}}}",
             urlencoding::encode(item_name)
         )
+    }
+}
+
+// ─── Tests ────────────────────────────────────────────────────────────────────
+
+#[cfg(test)]
+mod tests {
+    use super::*;
+
+    #[test]
+    fn helmet_slot_returns_two_candidates() {
+        let candidates = upgrade_candidates_for_slot("Helmet", "Generic");
+        assert_eq!(candidates.len(), 2, "Helmet should have 2 upgrade candidates");
+        let names: Vec<&str> = candidates.iter().map(|(n, _, _)| n.as_str()).collect();
+        assert!(names.contains(&"Starkonja's Head"), "Should include Starkonja's Head");
+        assert!(names.contains(&"Rare Helmet"), "Should include Rare Helmet");
+    }
+
+    #[test]
+    fn body_armour_rf_archetype_includes_kaoms_heart() {
+        let candidates = upgrade_candidates_for_slot("BodyArmour", "RFInquisitor");
+        let names: Vec<&str> = candidates.iter().map(|(n, _, _)| n.as_str()).collect();
+        assert!(names.contains(&"Kaom's Heart"), "RF archetype should suggest Kaom's Heart");
+    }
+
+    #[test]
+    fn body_armour_non_rf_does_not_suggest_kaoms() {
+        let candidates = upgrade_candidates_for_slot("BodyArmour", "ColdDOT");
+        let names: Vec<&str> = candidates.iter().map(|(n, _, _)| n.as_str()).collect();
+        assert!(!names.contains(&"Kaom's Heart"), "Non-RF should not suggest Kaom's Heart");
+    }
+
+    #[test]
+    fn weapon_dot_archetype_suggests_sceptre() {
+        let candidates = upgrade_candidates_for_slot("Weapon", "FireDoT");
+        let names: Vec<&str> = candidates.iter().map(|(n, _, _)| n.as_str()).collect();
+        assert!(names.contains(&"Sceptre of RF"), "Fire DoT should suggest RF Sceptre");
+    }
+
+    #[test]
+    fn unknown_slot_returns_empty() {
+        let candidates = upgrade_candidates_for_slot("Flask", "Generic");
+        assert!(candidates.is_empty(), "Unknown slot should return no candidates");
+    }
+
+    #[test]
+    fn all_candidates_have_positive_dps_gain() {
+        for slot in &["Helmet", "Boots", "Gloves", "Amulet", "Belt"] {
+            let candidates = upgrade_candidates_for_slot(slot, "Generic");
+            for (name, _, dps_gain) in &candidates {
+                assert!(*dps_gain > 0.0, "Candidate '{name}' should have positive DPS gain");
+            }
+        }
     }
 }

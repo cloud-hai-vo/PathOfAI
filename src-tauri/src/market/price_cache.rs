@@ -126,3 +126,60 @@ fn not_found(item_name: &str) -> PriceResult {
         cache_age_secs: 0,
     }
 }
+
+/// Compute confidence tier based on listing count (testable helper).
+pub(crate) fn confidence_for_listings(listings: u32) -> PriceConfidence {
+    if listings > 50 { PriceConfidence::High }
+    else if listings > 10 { PriceConfidence::Medium }
+    else { PriceConfidence::Low }
+}
+
+// ─── Tests ────────────────────────────────────────────────────────────────────
+
+#[cfg(test)]
+mod tests {
+    use super::*;
+
+    #[test]
+    fn not_found_result_has_guess_confidence() {
+        let r = not_found("Kaom's Heart");
+        assert_eq!(r.item_name, "Kaom's Heart");
+        assert_eq!(r.price_chaos, 0.0);
+        assert_eq!(r.price_div, 0.0);
+        assert_eq!(r.listings, 0);
+        assert!(matches!(r.confidence, PriceConfidence::Guess));
+    }
+
+    #[test]
+    fn confidence_high_for_more_than_50_listings() {
+        assert!(matches!(confidence_for_listings(51), PriceConfidence::High));
+        assert!(matches!(confidence_for_listings(100), PriceConfidence::High));
+    }
+
+    #[test]
+    fn confidence_medium_for_11_to_50_listings() {
+        assert!(matches!(confidence_for_listings(11), PriceConfidence::Medium));
+        assert!(matches!(confidence_for_listings(50), PriceConfidence::Medium));
+    }
+
+    #[test]
+    fn confidence_low_for_10_or_fewer_listings() {
+        assert!(matches!(confidence_for_listings(0), PriceConfidence::Low));
+        assert!(matches!(confidence_for_listings(10), PriceConfidence::Low));
+    }
+
+    #[tokio::test]
+    async fn get_prices_empty_input_returns_empty_vec() {
+        let result = get_prices(&[]).await.unwrap();
+        assert!(result.is_empty(), "Empty input should return empty vec");
+    }
+
+    #[tokio::test]
+    async fn get_prices_returns_one_result_per_item() {
+        // With circuit breaker logic, unknown items get a not-found result rather than error
+        let names = vec!["ItemThatDoesNotExist_XYZ123".to_string()];
+        let result = get_prices(&names).await.unwrap();
+        assert_eq!(result.len(), 1);
+        assert_eq!(result[0].item_name, "ItemThatDoesNotExist_XYZ123");
+    }
+}

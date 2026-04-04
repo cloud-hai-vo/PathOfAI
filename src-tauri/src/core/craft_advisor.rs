@@ -97,7 +97,7 @@ fn should_suggest_essence(slot: &str) -> bool {
     matches!(slot, "Helmet" | "BodyArmour" | "Gloves" | "Boots" | "Weapon" | "Shield")
 }
 
-fn bench_craft_life() -> CraftSuggestion {
+pub(crate) fn bench_craft_life() -> CraftSuggestion {
     // Benchcraft life is deterministic — always succeeds on open prefix
     CraftSuggestion {
         method: CraftMethod::BenchCraft,
@@ -110,7 +110,7 @@ fn bench_craft_life() -> CraftSuggestion {
     }
 }
 
-fn essence_life() -> CraftSuggestion {
+pub(crate) fn essence_life() -> CraftSuggestion {
     // Essence of Greed — guarantees life mod, other mods random
     // ~1/10 chance to hit a useful second mod (conservative)
     let p = 0.10_f64;
@@ -146,7 +146,7 @@ fn essence_for_slot(slot: &str) -> CraftSuggestion {
     }
 }
 
-fn chaos_spam_example() -> CraftSuggestion {
+pub(crate) fn chaos_spam_example() -> CraftSuggestion {
     // Chaos orb: ~1/200 to hit a 6-mod rare with good mods on a 4-affix item
     let p = 0.005_f64;
     let attempts = geometric_99th_percentile(p);
@@ -197,7 +197,7 @@ pub fn compare_craft_vs_buy(
     }
 }
 
-fn estimate_craft_cost(slot: &str) -> f64 {
+pub(crate) fn estimate_craft_cost(slot: &str) -> f64 {
     // Expected chaos to reach a "good" rare via essence spam
     match slot {
         "Weapon" => 200.0,    // weapon crafts are expensive
@@ -210,3 +210,143 @@ fn estimate_craft_cost(slot: &str) -> f64 {
     }
 }
 
+// ─── Tests ────────────────────────────────────────────────────────────────────
+
+#[cfg(test)]
+mod tests {
+    use super::*;
+    use crate::calculator::formulas::geometric_99th_percentile;
+    use crate::models::build::BuildData;
+    use crate::models::market::{CraftMethod, CraftVerdict};
+
+    // ── bench_craft_life ──────────────────────────────────────────────────────
+
+    #[test]
+    fn bench_craft_life_is_deterministic_p1() {
+        let s = bench_craft_life();
+        assert_eq!(s.probability, 1.0, "BenchCraft must have p=1.0");
+        assert_eq!(s.attempts_99pct, 1, "p=1.0 deterministic means 1 attempt");
+        assert_eq!(s.expected_cost_chaos, 2.0, "Bench craft costs ~2c");
+        assert!(matches!(s.verdict, CraftVerdict::BestOption));
+        assert!(matches!(s.method, CraftMethod::BenchCraft));
+    }
+
+    // ── essence_life ──────────────────────────────────────────────────────────
+
+    #[test]
+    fn essence_life_probability_and_cost_match() {
+        let s = essence_life();
+        assert!((s.probability - 0.10).abs() < 0.001, "Essence should have p≈0.10");
+        let expected_cost = (1.0 / 0.10) * 5.0; // 1/p * cost_per_attempt
+        assert!((s.expected_cost_chaos - expected_cost).abs() < 0.01,
+            "Expected {expected_cost}c, got {}c", s.expected_cost_chaos);
+        assert!(matches!(s.verdict, CraftVerdict::SafeOption));
+    }
+
+    #[test]
+    fn essence_life_attempts_match_geometric_formula() {
+        let s = essence_life();
+        assert_eq!(s.attempts_99pct, geometric_99th_percentile(0.10),
+            "attempts_99pct should match geometric_99th_percentile(0.10)");
+    }
+
+    // ── chaos_spam ────────────────────────────────────────────────────────────
+
+    #[test]
+    fn chaos_spam_is_high_risk_with_many_attempts() {
+        let s = chaos_spam_example();
+        assert!(matches!(s.verdict, CraftVerdict::HighRisk));
+        assert!(s.probability < 0.01, "Chaos spam probability should be very low");
+        assert!(s.attempts_99pct > 100, "Chaos spam needs many attempts");
+        assert!(matches!(s.method, CraftMethod::Chaos));
+    }
+
+    // ── estimate_craft_cost ───────────────────────────────────────────────────
+
+    #[test]
+    fn weapon_craft_is_most_expensive() {
+        let weapon_cost = estimate_craft_cost("Weapon");
+        assert!(weapon_cost > estimate_craft_cost("Ring"), "Weapons cost more than rings");
+        assert!(weapon_cost > estimate_craft_cost("Boots"), "Weapons cost more than boots");
+        assert!(weapon_cost > estimate_craft_cost("Belt"), "Weapons cost more than belts");
+    }
+
+    #[test]
+    fn unknown_slot_has_default_cost() {
+        let cost = estimate_craft_cost("Unknown Slot");
+        assert_eq!(cost, 100.0, "Unknown slots should have 100c default cost");
+    }
+
+    // ── compare_craft_vs_buy ──────────────────────────────────────────────────
+
+    #[test]
+    fn compare_craft_wins_when_much_cheaper_than_buy() {
+        // Boots craft = 80c = 0.4 div; buy = 5 div → craft is >>30% cheaper
+        let build = BuildData::default();
+        let result = compare_craft_vs_buy("Boots", &build, 5.0);
+        assert!(matches!(result.verdict, CraftVerdict::BestOption),
+            "Crafting should win when craft costs 0.4div vs buy 5div");
+        assert!(result.recommendation.contains("craft"), "Recommendation should mention crafting");
+    }
+
+    #[test]
+    fn compare_buy_wins_when_much_cheaper_than_craft() {
+        // Weapon craft = 200c = 1 div; buy = 0.05 div → buy is >>30% cheaper
+        let build = BuildData::default();
+        let result = compare_craft_vs_buy("Weapon", &build, 0.05);
+        assert!(matches!(result.verdict, CraftVerdict::NotWorthIt),
+            "Buying should win when buy=0.05div vs craft=1div");
+        assert!(result.recommendation.contains("Buy"), "Recommendation should mention buying");
+    }
+
+    #[test]
+    fn compare_similar_cost_is_safe_option() {
+        // Belt craft = 60c = 0.3 div; buy = 0.3 div → within 30% margin
+        let build = BuildData::default();
+        let result = compare_craft_vs_buy("Belt", &build, 0.3);
+        assert!(matches!(result.verdict, CraftVerdict::SafeOption),
+            "Similar cost should give SafeOption verdict");
+    }
+
+    #[test]
+    fn compare_no_price_data_defaults_to_craft() {
+        let build = BuildData::default();
+        let result = compare_craft_vs_buy("Helmet", &build, 0.0);
+        assert!(matches!(result.verdict, CraftVerdict::BestOption),
+            "No market price → default to crafting");
+    }
+
+    // ── get_suggestions ───────────────────────────────────────────────────────
+
+    #[test]
+    fn get_suggestions_empty_build_returns_default_suggestions() {
+        let build = BuildData::default();
+        let currency = CurrencyInventory::default();
+        let result = get_suggestions(&build, &currency).unwrap();
+        assert!(!result.is_empty(), "Should return default suggestions for empty build");
+        assert!(result.iter().any(|s| matches!(s.method, CraftMethod::BenchCraft)),
+            "Default suggestions should include BenchCraft");
+    }
+
+    #[test]
+    fn get_suggestions_sorts_best_option_first() {
+        let build = BuildData::default();
+        let currency = CurrencyInventory::default();
+        let result = get_suggestions(&build, &currency).unwrap();
+        if result.len() > 1 {
+            let first_rank = match &result[0].verdict {
+                CraftVerdict::BestOption => 0,
+                CraftVerdict::SafeOption => 1,
+                CraftVerdict::HighRisk => 2,
+                CraftVerdict::NotWorthIt => 3,
+            };
+            let second_rank = match &result[1].verdict {
+                CraftVerdict::BestOption => 0,
+                CraftVerdict::SafeOption => 1,
+                CraftVerdict::HighRisk => 2,
+                CraftVerdict::NotWorthIt => 3,
+            };
+            assert!(first_rank <= second_rank, "Suggestions should be sorted best-first");
+        }
+    }
+}

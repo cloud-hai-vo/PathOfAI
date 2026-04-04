@@ -314,3 +314,179 @@ CREATE TABLE IF NOT EXISTS wealth_snapshots (
 );
 "#;
 
+// ─── Tests ────────────────────────────────────────────────────────────────────
+
+#[cfg(test)]
+mod tests {
+    use super::*;
+    use crate::models::build::BuildData;
+    use crate::core::oauth::{OAuthToken, encrypt_token, load_or_create_key};
+    use tempfile::tempdir;
+
+    fn make_test_build(id: &str, name: &str) -> BuildData {
+        BuildData {
+            id: id.to_string(),
+            name: name.to_string(),
+            class_name: "Templar".to_string(),
+            ascendancy: "Inquisitor".to_string(),
+            level: 90,
+            ..Default::default()
+        }
+    }
+
+    fn open_test_db() -> (Database, tempfile::TempDir) {
+        let dir = tempdir().expect("tempdir");
+        let db_path = dir.path().join("test.db");
+        let db = Database::open(&db_path).expect("open db");
+        db.run_migrations().expect("migrations");
+        (db, dir)
+    }
+
+    // ── save / load build ────────────────────────────────────────────────────
+
+    #[test]
+    fn save_and_load_build_roundtrip() {
+        let (db, _dir) = open_test_db();
+        let build = make_test_build("build-001", "RF Inquisitor");
+
+        db.save_build(&build).expect("save build");
+        let loaded = db.load_build("build-001").expect("load build");
+
+        assert_eq!(loaded.id, build.id);
+        assert_eq!(loaded.name, build.name);
+        assert_eq!(loaded.class_name, "Templar");
+        assert_eq!(loaded.level, 90);
+    }
+
+    #[test]
+    fn save_build_replace_updates_existing() {
+        let (db, _dir) = open_test_db();
+        let mut build = make_test_build("build-002", "Original Name");
+        db.save_build(&build).expect("save first");
+
+        build.name = "Updated Name".to_string();
+        db.save_build(&build).expect("save second");
+
+        let loaded = db.load_build("build-002").expect("load");
+        assert_eq!(loaded.name, "Updated Name", "Save should replace (upsert) existing build");
+    }
+
+    #[test]
+    fn load_build_returns_error_for_missing_id() {
+        let (db, _dir) = open_test_db();
+        let result = db.load_build("nonexistent-id");
+        assert!(result.is_err(), "Loading a missing build should return an error");
+    }
+
+    // ── list builds ─────────────────────────────────────────────────────────
+
+    #[test]
+    fn list_builds_returns_all_saved_builds() {
+        let (db, _dir) = open_test_db();
+        db.save_build(&make_test_build("a", "Build A")).unwrap();
+        db.save_build(&make_test_build("b", "Build B")).unwrap();
+        db.save_build(&make_test_build("c", "Build C")).unwrap();
+
+        let list = db.list_builds().expect("list builds");
+        assert_eq!(list.len(), 3, "Should list 3 saved builds");
+
+        let names: Vec<&str> = list.iter().map(|b| b.name.as_str()).collect();
+        assert!(names.contains(&"Build A"));
+        assert!(names.contains(&"Build B"));
+        assert!(names.contains(&"Build C"));
+    }
+
+    #[test]
+    fn list_builds_empty_when_no_builds() {
+        let (db, _dir) = open_test_db();
+        let list = db.list_builds().expect("list builds");
+        assert!(list.is_empty(), "Should return empty list when no builds saved");
+    }
+
+    // ── snapshots / undo ─────────────────────────────────────────────────────
+
+    #[test]
+    fn snapshot_then_undo_restores_original() {
+        let (db, _dir) = open_test_db();
+        let original = make_test_build("snap-001", "Pre-Change Build");
+        db.save_build(&original).expect("save original");
+
+        // Take snapshot before change
+        db.snapshot_build("snap-001", "before upgrade").expect("snapshot");
+
+        // Simulate change
+        let mut changed = original.clone();
+        changed.name = "Post-Change Build".to_string();
+        changed.level = 95;
+        db.save_build(&changed).expect("save changed");
+
+        // Verify change was applied
+        let after_change = db.load_build("snap-001").unwrap();
+        assert_eq!(after_change.name, "Post-Change Build");
+
+        // Undo
+        let restored = db.undo_snapshot("snap-001").expect("undo");
+        assert_eq!(restored.name, "Pre-Change Build", "Undo should restore original build name");
+        assert_eq!(restored.level, 90, "Undo should restore original level");
+    }
+
+    #[test]
+    fn undo_with_no_history_returns_error() {
+        let (db, _dir) = open_test_db();
+        db.save_build(&make_test_build("no-snap", "Build")).unwrap();
+
+        let result = db.undo_snapshot("no-snap");
+        assert!(result.is_err(), "Undo with no history should return error");
+    }
+
+    #[test]
+    fn redo_always_returns_error() {
+        let (db, _dir) = open_test_db();
+        let result = db.redo_snapshot("any-id");
+        assert!(result.is_err(), "Redo is not supported — should return error");
+    }
+
+    // ── wealth snapshots ─────────────────────────────────────────────────────
+
+    #[test]
+    fn record_wealth_snapshot_persists_to_db() {
+        let (db, _dir) = open_test_db();
+        db.record_wealth_snapshot(42.5, Some("{\"chaos\":1000}"))
+            .expect("record wealth snapshot");
+
+        // Verify via direct query
+        let conn = db.conn.lock().unwrap();
+        let total_div: f64 = conn.query_row(
+            "SELECT total_div FROM wealth_snapshots LIMIT 1",
+            [],
+            |row| row.get(0),
+        ).expect("query wealth snapshot");
+        assert!((total_div - 42.5).abs() < 0.001, "Wealth snapshot should persist 42.5 div");
+    }
+
+    // ── OAuth token ──────────────────────────────────────────────────────────
+
+    #[test]
+    fn has_oauth_token_false_when_no_token_stored() {
+        let (db, _dir) = open_test_db();
+        assert!(!db.has_oauth_token(), "New DB should have no OAuth token");
+    }
+
+    #[test]
+    fn save_and_load_oauth_token_roundtrip() {
+        let (db, _dir) = open_test_db();
+        let token = OAuthToken {
+            access_token: "test-access-token-123".to_string(),
+            token_type: "Bearer".to_string(),
+            expires_in: 3600,
+            scope: "account:profile".to_string(),
+        };
+
+        db.save_oauth_token(&token).expect("save token");
+        assert!(db.has_oauth_token(), "DB should report token present after save");
+
+        let loaded = db.load_oauth_token().expect("load token");
+        assert_eq!(loaded, "test-access-token-123", "Should return access_token string");
+    }
+}
+
