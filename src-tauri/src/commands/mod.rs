@@ -4,3 +4,4 @@ pub mod character_commands;
 pub mod seer_commands;
 pub mod market_commands;
 pub mod item_commands;
+pub mod simulation_commands;

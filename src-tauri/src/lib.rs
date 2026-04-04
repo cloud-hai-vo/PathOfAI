@@ -66,6 +66,13 @@ pub fn run() {
             commands::item_commands::parse_clipboard_item,
             commands::item_commands::score_item,
             commands::item_commands::apply_upgrade,
+            // Simulation & Analysis
+            commands::simulation_commands::run_simulation,
+            commands::simulation_commands::compare_builds_cmd,
+            commands::simulation_commands::tally_stash_wealth,
+            commands::simulation_commands::get_map_stats,
+            commands::simulation_commands::check_price_alerts,
+            commands::simulation_commands::deactivate_price_alert,
         ])
         .run(tauri::generate_context!())
         .expect("error while running Path of AI");

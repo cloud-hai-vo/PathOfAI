@@ -13,3 +13,5 @@ pub mod stash;
 pub mod map_tracker;
 pub mod alert_manager;
 pub mod build_comparator;
+pub mod combat_sim;
+pub mod data_loader;
