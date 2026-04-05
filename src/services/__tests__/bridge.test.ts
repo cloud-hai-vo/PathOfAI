@@ -323,4 +323,70 @@ describe('bridge.ts', () => {
     expect(mockInvoke).toHaveBeenCalledWith('switch_character', { characterName: 'MyInquisitor' });
     expect(result.build_id).toBe('char-1');
   });
+
+  // ── analyzeMapMods ──────────────────────────────────────────────────────────
+
+  it('analyzeMapMods serialises mods and analysis', async () => {
+    const mockResult = {
+      mods: [{ mod_text: 'No Regen', level: 'Critical', reason: 'RF requires regen' }],
+      worst: 'Critical',
+      verdict: 'Skip',
+      fatal_mods: ['No Regen'],
+      total_score: 100,
+    };
+    mockInvoke.mockResolvedValueOnce(mockResult);
+
+    const analysis = makeAnalysisResult();
+    const mods = ['Players cannot regenerate Life, Mana or Energy Shield'];
+    const result = await bridgeModule.analyzeMapMods(mods, analysis);
+
+    expect(mockInvoke).toHaveBeenCalledWith('analyze_map_mods', {
+      mapModsJson: JSON.stringify(mods),
+      analysisJson: JSON.stringify(analysis),
+    });
+    expect(result.verdict).toBe('Skip');
+    expect(result.fatal_mods).toHaveLength(1);
+  });
+
+  // ── setPriceAlert ───────────────────────────────────────────────────────────
+
+  it('setPriceAlert serialises alert to JSON', async () => {
+    mockInvoke.mockResolvedValueOnce(undefined);
+
+    const alert = {
+      id: 'a1',
+      item_name: "Watcher's Eye",
+      condition: { Below: 15.0 },
+      active: true,
+    };
+    await bridgeModule.setPriceAlert(alert as any);
+
+    expect(mockInvoke).toHaveBeenCalledWith('set_price_alert', {
+      alertJson: JSON.stringify(alert),
+    });
+  });
+
+  // ── listPriceAlerts ─────────────────────────────────────────────────────────
+
+  it('listPriceAlerts returns array from backend', async () => {
+    const mockAlerts = [
+      { id: '1', item_name: "Watcher's Eye", condition: { Below: 15.0 }, active: true },
+    ];
+    mockInvoke.mockResolvedValueOnce(mockAlerts);
+
+    const result = await bridgeModule.listPriceAlerts();
+
+    expect(mockInvoke).toHaveBeenCalledWith('list_price_alerts');
+    expect(result).toHaveLength(1);
+  });
+
+  // ── removePriceAlert ────────────────────────────────────────────────────────
+
+  it('removePriceAlert passes alert id string', async () => {
+    mockInvoke.mockResolvedValueOnce(undefined);
+
+    await bridgeModule.removePriceAlert('42');
+
+    expect(mockInvoke).toHaveBeenCalledWith('remove_price_alert', { alertId: '42' });
+  });
 });

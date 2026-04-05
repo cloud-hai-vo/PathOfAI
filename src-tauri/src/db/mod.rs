@@ -212,6 +212,61 @@ impl Database {
         self.load_oauth_token().is_ok()
     }
 
+    // ─── Price Alerts ─────────────────────────────────────────────────────────
+
+    /// Persist a PriceAlert. The condition is stored as JSON in the `comparison` column.
+    pub fn save_alert(&self, alert: &crate::core::alert_manager::PriceAlert) -> Result<()> {
+        let condition_json = serde_json::to_string(&alert.condition)?;
+        let conn = self.conn.lock().unwrap();
+        conn.execute(
+            "INSERT OR REPLACE INTO alerts
+             (id, item_name, threshold_div, comparison, notify_method, active, created_at)
+             VALUES (
+               (SELECT id FROM alerts WHERE item_name = ?1 AND comparison = ?2),
+               ?1, 0.0, ?2, 'in_app', ?3, datetime('now')
+             )",
+            rusqlite::params![alert.item_name, condition_json, alert.active as i32],
+        )?;
+        Ok(())
+    }
+
+    /// Load all price alerts.
+    pub fn list_alerts(&self) -> Result<Vec<crate::core::alert_manager::PriceAlert>> {
+        let conn = self.conn.lock().unwrap();
+        let mut stmt = conn.prepare(
+            "SELECT id, item_name, comparison, active FROM alerts ORDER BY created_at DESC"
+        )?;
+        let rows = stmt.query_map([], |row| {
+            let id: i64    = row.get(0)?;
+            let name: String = row.get(1)?;
+            let cond_json: String = row.get(2)?;
+            let active: i32 = row.get(3)?;
+            Ok((id, name, cond_json, active))
+        })?;
+
+        let mut alerts = Vec::new();
+        for row in rows {
+            let (id, name, cond_json, active) = row.map_err(|e| anyhow!("{e}"))?;
+            let condition: crate::core::alert_manager::AlertCondition =
+                serde_json::from_str(&cond_json)
+                    .map_err(|e| anyhow!("Alert condition parse: {e}"))?;
+            alerts.push(crate::core::alert_manager::PriceAlert {
+                id: id.to_string(),
+                item_name: name,
+                condition,
+                active: active != 0,
+            });
+        }
+        Ok(alerts)
+    }
+
+    /// Remove a price alert by its numeric DB id.
+    pub fn remove_alert(&self, alert_id: i64) -> Result<()> {
+        let conn = self.conn.lock().unwrap();
+        conn.execute("DELETE FROM alerts WHERE id = ?1", rusqlite::params![alert_id])?;
+        Ok(())
+    }
+
     // ─── Wealth Snapshots ─────────────────────────────────────────────────────
 
     pub fn record_wealth_snapshot(&self, total_div: f64, breakdown: Option<&str>) -> Result<()> {

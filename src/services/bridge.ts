@@ -7,7 +7,7 @@ import type {
   AnalysisResult, SeerResponse, PriceResult, AppInfo,
   Item, CraftSuggestion, BuildSummary, CraftVsBuyResult,
   SimResult, BuildComparison, BuildSnapshot, WealthSummary, StashItem,
-  MapRun, MapStats, PriceAlert, AlertFired,
+  MapRun, MapStats, PriceAlert, AlertFired, MapDangerResult,
 } from '../types/index.js';
 
 // --- Info ---
@@ -178,6 +178,24 @@ export const deactivatePriceAlert = (alerts: PriceAlert[], alertId: string): Pro
 
 export const switchCharacter = (characterName: string): Promise<AnalysisResult> =>
   invoke('switch_character', { characterName });
+
+export const analyzeMapMods = (
+  mapMods: string[],
+  analysis: AnalysisResult,
+): Promise<MapDangerResult> =>
+  invoke('analyze_map_mods', {
+    mapModsJson: JSON.stringify(mapMods),
+    analysisJson: JSON.stringify(analysis),
+  });
+
+export const setPriceAlert = (alert: PriceAlert): Promise<void> =>
+  invoke('set_price_alert', { alertJson: JSON.stringify(alert) });
+
+export const listPriceAlerts = (): Promise<PriceAlert[]> =>
+  invoke('list_price_alerts');
+
+export const removePriceAlert = (alertId: string): Promise<void> =>
+  invoke('remove_price_alert', { alertId });
 
 // --- Settings / Cloud AI ---
 

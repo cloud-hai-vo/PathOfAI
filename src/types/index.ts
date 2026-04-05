@@ -262,6 +262,24 @@ export interface BuildSummary {
   last_analyzed: string;
 }
 
+// --- Map Mod Analysis ---
+
+export type DangerLevel = 'Safe' | 'Minor' | 'Moderate' | 'Major' | 'Critical';
+
+export interface ModDanger {
+  mod_text: string;
+  level: DangerLevel;
+  reason: string;
+}
+
+export interface MapDangerResult {
+  mods: ModDanger[];
+  worst: DangerLevel;
+  verdict: string;        // "Run" | "Run carefully" | "Reroll" | "Skip"
+  fatal_mods: string[];
+  total_score: number;    // 0-100
+}
+
 // --- Combat Simulation ---
 
 export interface SimResult {

@@ -7,6 +7,8 @@ use crate::core::build_comparator::{compare_builds, BuildSnapshot, BuildComparis
 use crate::core::stash::{tally_currency, StashItem, WealthSummary};
 use crate::core::map_tracker::{accumulate_stats, MapRun, MapStats};
 use crate::core::alert_manager::{check_alerts, deactivate_alert, PriceAlert, AlertFired};
+use crate::core::map_mod_analyzer::{score_map_mods, MapDangerResult};
+use crate::models::analysis::AnalysisResult;
 use std::collections::HashMap;
 
 /// Run combat simulation for a build.
@@ -82,4 +84,46 @@ pub async fn deactivate_price_alert(
     let mut alerts: Vec<PriceAlert> = serde_json::from_str(&alerts_json).map_err(|e| e.to_string())?;
     deactivate_alert(&mut alerts, &alert_id);
     Ok(alerts)
+}
+
+/// Score a list of map mod texts against the current build's analysis.
+/// Returns per-mod danger ratings and an overall verdict.
+#[tauri::command]
+pub async fn analyze_map_mods(
+    map_mods_json:  String,   // Vec<String>
+    analysis_json:  String,   // AnalysisResult
+    _state: State<'_, AppState>,
+) -> Result<MapDangerResult, String> {
+    let mods: Vec<String>    = serde_json::from_str(&map_mods_json).map_err(|e| e.to_string())?;
+    let analysis: AnalysisResult = serde_json::from_str(&analysis_json).map_err(|e| e.to_string())?;
+    let mod_refs: Vec<&str>  = mods.iter().map(|s| s.as_str()).collect();
+    Ok(score_map_mods(&mod_refs, &analysis))
+}
+
+/// Persist a new price alert to the database.
+#[tauri::command]
+pub async fn set_price_alert(
+    alert_json: String,
+    state: State<'_, AppState>,
+) -> Result<(), String> {
+    let alert: PriceAlert = serde_json::from_str(&alert_json).map_err(|e| e.to_string())?;
+    state.db.save_alert(&alert).map_err(|e| e.to_string())
+}
+
+/// List all price alerts stored in the database.
+#[tauri::command]
+pub async fn list_price_alerts(
+    state: State<'_, AppState>,
+) -> Result<Vec<PriceAlert>, String> {
+    state.db.list_alerts().map_err(|e| e.to_string())
+}
+
+/// Remove a price alert from the database by its id.
+#[tauri::command]
+pub async fn remove_price_alert(
+    alert_id: String,
+    state: State<'_, AppState>,
+) -> Result<(), String> {
+    let id: i64 = alert_id.parse().map_err(|_| format!("Invalid alert id: {alert_id}"))?;
+    state.db.remove_alert(id).map_err(|e| e.to_string())
 }

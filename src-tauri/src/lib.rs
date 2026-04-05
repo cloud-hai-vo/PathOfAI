@@ -121,6 +121,10 @@ pub fn run() {
             commands::simulation_commands::get_map_stats,
             commands::simulation_commands::check_price_alerts,
             commands::simulation_commands::deactivate_price_alert,
+            commands::simulation_commands::analyze_map_mods,
+            commands::simulation_commands::set_price_alert,
+            commands::simulation_commands::list_price_alerts,
+            commands::simulation_commands::remove_price_alert,
             // Settings / AI providers
             commands::settings_commands::test_cloud_ai,
             commands::settings_commands::save_ai_key,
