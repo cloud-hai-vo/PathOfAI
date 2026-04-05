@@ -109,7 +109,7 @@ pub struct MultiplierStep {
     pub step_type: MultiplierType,
 }
 
-#[derive(Debug, Clone, Serialize, Deserialize)]
+#[derive(Debug, Clone, Serialize, Deserialize, PartialEq)]
 pub enum MultiplierType {
     Base,
     Increased,

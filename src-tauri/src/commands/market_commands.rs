@@ -7,7 +7,7 @@ use crate::core::buy_timing::{BuyRecommendation, PricePoint, LeaguePhase};
 #[tauri::command]
 pub async fn get_prices(
     item_names: Vec<String>,
-    state: State<'_, AppState>,
+    _state: State<'_, AppState>,
 ) -> Result<Vec<PriceResult>, String> {
     crate::market::price_cache::get_prices(&item_names)
         .await

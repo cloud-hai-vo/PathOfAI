@@ -7,12 +7,12 @@ use crate::models::market::TradeResult;
 /// Uses poe.ninja prices to estimate cost and scores DPS/life gain vs current item.
 pub async fn find_upgrades(
     slot: &str,
-    build: &BuildData,
+    _build: &BuildData,
     analysis: &AnalysisResult,
     budget_div: f64,
 ) -> Result<Vec<TradeResult>> {
     // Get current item score for the slot
-    let current_score = analysis.item_scores.iter()
+    let _current_score = analysis.item_scores.iter()
         .find(|s| s.slot.eq_ignore_ascii_case(slot))
         .map(|s| s.score)
         .unwrap_or(50);

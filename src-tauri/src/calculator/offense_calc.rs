@@ -117,7 +117,7 @@ fn parse_flat(text: &str) -> f64 {
 fn calculate_fire_dot_dps(build: &BuildData, setup: Option<&GemSetup>) -> f64 {
     // Aggregate fire dot multipliers from items
     let mut increased_fire_dot: f64 = 0.0;
-    let mut increased_burning: f64 = 0.0;
+    let increased_burning: f64 = 0.0;
     let more_multipliers: Vec<f64> = Vec::new(); // populated from gem supports below
 
     for item in &build.items {
@@ -241,22 +241,85 @@ fn build_dps_sources(
 }
 
 fn build_multiplier_chain(
-    _build: &BuildData,
-    _setup: Option<&GemSetup>,
+    build: &BuildData,
+    setup: Option<&GemSetup>,
 ) -> Vec<MultiplierStep> {
-    // TODO: populate from actual nodes + gems
-    vec![
-        MultiplierStep {
-            label: "Base Damage".to_string(),
-            multiplier: 1.0,
-            step_type: MultiplierType::Base,
-        },
-        MultiplierStep {
-            label: "Increased Damage".to_string(),
-            multiplier: 1.0, // calculated above
+    let mut steps = Vec::new();
+
+    // Base step
+    steps.push(MultiplierStep {
+        label: "Base Damage".to_string(),
+        multiplier: 1.0,
+        step_type: MultiplierType::Base,
+    });
+
+    // Aggregate all "increased" damage from items
+    let mut increased: f64 = 0.0;
+    for item in &build.items {
+        for mod_ in &item.mods {
+            let t = mod_.text.to_lowercase();
+            if t.contains("increased damage")
+                || t.contains("increased fire damage")
+                || t.contains("increased spell damage")
+                || t.contains("increased physical damage")
+                || t.contains("increased chaos damage")
+                || t.contains("increased elemental damage")
+                || t.contains("increased damage over time")
+                || t.contains("increased burning damage")
+            {
+                increased += parse_pct(&mod_.text);
+            }
+        }
+    }
+    if increased > 0.0 {
+        steps.push(MultiplierStep {
+            label: format!("{increased:.0}% Increased Damage"),
+            multiplier: 1.0 + increased / 100.0,
             step_type: MultiplierType::Increased,
-        },
-    ]
+        });
+    }
+
+    // "More" multipliers from support gems
+    if let Some(s) = setup {
+        for gem in &s.gems {
+            if !gem.is_support { continue; }
+            let name = gem.name.to_lowercase();
+            let (mult, label) = match name.as_str() {
+                "elemental focus support"      => (1.49, "Elemental Focus"),
+                "swift affliction support"     => (1.35, "Swift Affliction"),
+                "burning damage support"       => (1.44, "Burning Damage"),
+                "concentrated effect support"  => (1.54, "Concentrated Effect"),
+                "efficacy support"             => (1.35, "Efficacy"),
+                "void manipulation support"    => (1.49, "Void Manipulation"),
+                "controlled destruction support" => (1.44, "Controlled Destruction"),
+                "added fire damage support"    => (1.49, "Added Fire Damage"),
+                "brutality support"            => (1.40, "Brutality"),
+                "awakened burning damage support" => (1.52, "Awakened Burning Damage"),
+                "awakened swift affliction support" => (1.40, "Awakened Swift Affliction"),
+                _ => continue,
+            };
+            steps.push(MultiplierStep {
+                label: label.to_string(),
+                multiplier: mult,
+                step_type: MultiplierType::More,
+            });
+        }
+    }
+
+    // Crit multiplier step (only for hit builds with >5% crit chance)
+    let crit = crit_chance_increased_from_items(build);
+    if crit > 0.0 {
+        let crit_chance = (0.05 * (1.0 + crit / 100.0)).min(1.0);
+        let crit_multi = 1.5 + crit_multiplier_increased_from_items(build) / 100.0;
+        let avg_crit = 1.0 + crit_chance * (crit_multi - 1.0);
+        steps.push(MultiplierStep {
+            label: format!("Crit ({:.0}% chance × {:.0}% multi)", crit_chance * 100.0, crit_multi * 100.0),
+            multiplier: avg_crit,
+            step_type: MultiplierType::More,
+        });
+    }
+
+    steps
 }
 
 fn parse_pct(text: &str) -> f64 {
@@ -269,6 +332,13 @@ fn parse_pct(text: &str) -> f64 {
 mod tests {
     use super::*;
     use crate::models::build::{Item, ItemMod};
+
+    fn minimal_build() -> BuildData {
+        let mut b = BuildData::default();
+        b.class_name = "Templar".to_string();
+        b.level = 90;
+        b
+    }
 
     fn item_with_mod(text: &str) -> Item {
         let mut it = Item::default();
@@ -360,6 +430,43 @@ mod tests {
         // 5000 accuracy vs 6000 evasion — should be decent hit rate
         let hc = player_hit_chance(5_000.0, 6_000.0);
         assert!(hc > 0.50, "expected >50% hit chance, got {hc}");
+    }
+
+    #[test]
+    fn multiplier_chain_includes_base_step() {
+        let build = minimal_build();
+        let chain = build_multiplier_chain(&build, None);
+        assert!(!chain.is_empty());
+        assert_eq!(chain[0].step_type, MultiplierType::Base);
+    }
+
+    #[test]
+    fn multiplier_chain_includes_increased_from_items() {
+        let mut build = minimal_build();
+        build.items.push(item_with_mod("60% increased Damage"));
+        let chain = build_multiplier_chain(&build, None);
+        let has_increased = chain.iter().any(|s| matches!(s.step_type, MultiplierType::Increased));
+        assert!(has_increased, "chain should include Increased step with item mods");
+    }
+
+    #[test]
+    fn multiplier_chain_includes_support_gem_more() {
+        let build = minimal_build();
+        let setup = crate::models::build::GemSetup {
+            skill: "Righteous Fire".to_string(),
+            slot: "BodyArmour".to_string(),
+            socket_colors: "RRRR".to_string(),
+            gems: vec![crate::models::build::Gem {
+                name: "Swift Affliction Support".to_string(),
+                gem_id: "SupportSwiftAffliction".to_string(),
+                level: 20, quality: 20, is_support: true,
+                is_vaal: false, is_awakened: false, is_maxed: false,
+            }],
+            is_main_skill: true,
+        };
+        let chain = build_multiplier_chain(&build, Some(&setup));
+        let has_swift = chain.iter().any(|s| s.label.contains("Swift Affliction"));
+        assert!(has_swift, "chain should include Swift Affliction");
     }
 
     #[test]

@@ -44,12 +44,35 @@ pub fn calculate(build: &BuildData) -> DefenseStats {
     }
 }
 
+/// Per-class base life at level 1.
+/// Source: PoE wiki — Class#Base_stats
+pub(crate) fn class_base_life(class_name: &str) -> f64 {
+    match class_name.to_lowercase().as_str() {
+        "marauder"   => 63.0,
+        "duelist"    => 53.0,
+        "ranger"     => 53.0,
+        "shadow"     => 38.0,
+        "witch"      => 50.0,
+        "templar"    => 55.0,
+        "scion"      => 57.0,
+        // Ascendancies — inherit from base class
+        "juggernaut" | "berserker" | "chieftain" => 63.0,  // Marauder
+        "slayer" | "gladiator" | "champion"      => 53.0,  // Duelist
+        "deadeye" | "pathfinder" | "raider"      => 53.0,  // Ranger
+        "assassin" | "saboteur" | "trickster"    => 38.0,  // Shadow
+        "elementalist" | "occultist" | "necromancer" => 50.0, // Witch
+        "inquisitor" | "hierophant" | "guardian" => 55.0,  // Templar
+        "ascendant"  => 57.0,                               // Scion
+        _            => 50.0,   // unknown — use reasonable default
+    }
+}
+
 fn calculate_life(build: &BuildData) -> u32 {
-    let mut base: f64 = 38.0; // base life at level 1
+    let mut base: f64 = class_base_life(&build.class_name);
     let mut flat_life: f64 = 0.0;
     let mut pct_increased: f64 = 0.0;
 
-    // Base life scaling: +12 per level after 1
+    // Base life scaling: +12 per level after 1 (same for all classes)
     base += (build.level.saturating_sub(1) as f64) * 12.0;
 
     // Aggregate mods from all items
@@ -115,7 +138,7 @@ fn calculate_resistances(build: &BuildData) -> ResistanceProfile {
     let mut max_fire: i32 = 75;
     let mut max_cold: i32 = 75;
     let mut max_lightning: i32 = 75;
-    let mut max_chaos: i32 = 75;
+    let max_chaos: i32 = 75;
 
     for item in &build.items {
         for mod_ in &item.mods {
@@ -351,6 +374,46 @@ mod tests {
     #[test]
     fn parse_pct_res() {
         assert_eq!(parse_pct_value("30% to Fire Resistance"), 30.0);
+    }
+
+    #[test]
+    fn class_base_life_marauder_highest() {
+        assert_eq!(class_base_life("Marauder"), 63.0);
+    }
+
+    #[test]
+    fn class_base_life_shadow_lowest() {
+        assert_eq!(class_base_life("Shadow"), 38.0);
+    }
+
+    #[test]
+    fn class_base_life_ascendancy_inherits_from_base() {
+        assert_eq!(class_base_life("Inquisitor"), class_base_life("Templar"));
+        assert_eq!(class_base_life("Juggernaut"), class_base_life("Marauder"));
+        assert_eq!(class_base_life("Deadeye"),    class_base_life("Ranger"));
+    }
+
+    #[test]
+    fn class_base_life_case_insensitive() {
+        assert_eq!(class_base_life("TEMPLAR"), class_base_life("templar"));
+    }
+
+    #[test]
+    fn class_base_life_unknown_returns_default() {
+        assert!(class_base_life("Unknown") > 0.0);
+    }
+
+    #[test]
+    fn templar_at_90_has_more_base_life_than_shadow() {
+        let mut templar = BuildData::default();
+        templar.class_name = "Templar".to_string();
+        templar.level = 90;
+        let mut shadow = BuildData::default();
+        shadow.class_name = "Shadow".to_string();
+        shadow.level = 90;
+        let t_life = calculate_life(&templar);
+        let s_life = calculate_life(&shadow);
+        assert!(t_life > s_life, "Templar should have more base life than Shadow at 90");
     }
 
     #[test]

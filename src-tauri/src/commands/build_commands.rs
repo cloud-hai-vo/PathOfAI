@@ -99,7 +99,7 @@ pub async fn analyze_build_data(
 
 /// Attempt to attach real poe.ninja prices to upgrade suggestions.
 /// Failures are silently ignored — prices stay at 0.
-async fn enrich_suggestions_with_prices(suggestions: &mut Vec<crate::models::analysis::Suggestion>, build: &BuildData) {
+async fn enrich_suggestions_with_prices(suggestions: &mut Vec<crate::models::analysis::Suggestion>, _build: &BuildData) {
     for suggestion in suggestions.iter_mut() {
         // Build a trade URL for item-slot suggestions
         if !suggestion.slot.is_empty() && suggestion.trade_url.is_none() {

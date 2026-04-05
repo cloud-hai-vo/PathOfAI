@@ -205,16 +205,19 @@ async fn ensure_currency_cache(league: &str, cache_key: &str) -> Result<()> {
 // ─── Testable pure helpers ────────────────────────────────────────────────────
 
 /// Build item URL for a given category and league (testable helper).
+#[allow(dead_code)]
 pub(crate) fn build_item_url(category: &str, league: &str) -> String {
     format!("{BASE_URL}/itemoverview?league={}&type={category}", urlencoding::encode(league))
 }
 
 /// Build currency URL for a league (testable helper).
+#[allow(dead_code)]
 pub(crate) fn build_currency_url(league: &str) -> String {
     format!("{BASE_URL}/currencyoverview?league={}&type=Currency", urlencoding::encode(league))
 }
 
 /// Parse raw item data into a price map (name → (chaos, div, listings)).
+#[allow(dead_code)]
 pub(crate) fn build_price_map_from_items(
     items: &[(&str, f64, f64, u32)],
 ) -> HashMap<String, (f64, f64, u32)> {
@@ -224,6 +227,7 @@ pub(crate) fn build_price_map_from_items(
 }
 
 /// Parse currency data into a price map given the divine orb chaos price.
+#[allow(dead_code)]
 pub(crate) fn build_price_map_from_currency(
     currencies: &[(&str, f64)],
     divine_chaos: f64,

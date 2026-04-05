@@ -73,6 +73,7 @@ pub enum ModType {
     Implicit,
     Enchant,
     Corrupted,
+    Crafted,
 }
 
 /// A linked gem setup (main skill or utility).

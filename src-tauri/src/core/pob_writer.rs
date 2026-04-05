@@ -16,7 +16,7 @@ pub fn apply_suggestion(build: &BuildData, suggestion: &Suggestion) -> Result<Bu
     }
 }
 
-fn apply_to_pob_file(path: &str, build: &BuildData, suggestion: &Suggestion) -> Result<BuildData> {
+fn apply_to_pob_file(path: &str, _build: &BuildData, suggestion: &Suggestion) -> Result<BuildData> {
     // 1. Verify file exists
     let file_path = std::path::Path::new(path);
     if !file_path.exists() {

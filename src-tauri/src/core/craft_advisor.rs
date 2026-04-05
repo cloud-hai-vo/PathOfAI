@@ -27,7 +27,7 @@ pub struct CraftVsBuyResult {
 /// Get craft suggestions for the build based on archetype needs.
 pub fn get_suggestions(
     build: &BuildData,
-    currency: &CurrencyInventory,
+    _currency: &CurrencyInventory,
 ) -> Result<Vec<CraftSuggestion>> {
     let mut suggestions: Vec<CraftSuggestion> = Vec::new();
 
@@ -67,8 +67,8 @@ fn suggest_for_item(item: &Item, suggestions: &mut Vec<CraftSuggestion>) {
         let t = m.text.to_lowercase();
         t.contains("maximum life") || t.contains("to maximum life")
     });
-    let has_open_prefix = item.mods.iter().filter(|m| matches!(m.mod_type, crate::models::build::ModType::Prefix) && !m.text.is_empty()).count() < 3;
-    let has_open_suffix = item.mods.iter().filter(|m| matches!(m.mod_type, crate::models::build::ModType::Suffix) && !m.text.is_empty()).count() < 3;
+    let _has_open_prefix = item.mods.iter().filter(|m| matches!(m.mod_type, crate::models::build::ModType::Prefix) && !m.text.is_empty()).count() < 3;
+    let _has_open_suffix = item.mods.iter().filter(|m| matches!(m.mod_type, crate::models::build::ModType::Suffix) && !m.text.is_empty()).count() < 3;
 
     // Bench craft life if missing and slot supports it
     if !has_life && bench_craft_slots().contains(&slot) {

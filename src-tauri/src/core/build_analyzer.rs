@@ -187,7 +187,7 @@ fn find_item_issue(item: &crate::models::build::Item, _archetype: Archetype) -> 
 }
 
 pub fn generate_suggestions(
-    build: &BuildData,
+    _build: &BuildData,
     issues: &[Issue],
     item_scores: &[ItemScore],
 ) -> Vec<Suggestion> {

@@ -7,7 +7,7 @@ use anyhow::Result;
 /// Priority order:
 ///   1. PORTABLE_PATH env var (for development / testing)
 ///   2. PathOfAI_Data/ directory next to the executable
-pub fn init_storage(app: &tauri::AppHandle) -> Result<PathBuf> {
+pub fn init_storage(_app: &tauri::AppHandle) -> Result<PathBuf> {
     let data_dir = if let Ok(env_path) = std::env::var("PORTABLE_PATH") {
         PathBuf::from(env_path)
     } else {

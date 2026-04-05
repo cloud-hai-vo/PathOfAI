@@ -28,13 +28,11 @@ pub fn parse_xml(xml: &str) -> Result<BuildData> {
     };
 
     let mut buf = Vec::new();
-    let mut current_section = String::new();
 
     loop {
         match reader.read_event_into(&mut buf) {
             Ok(Event::Start(e)) => {
                 let tag = std::str::from_utf8(e.name().as_ref())?.to_string();
-                current_section = tag.clone();
 
                 match tag.as_str() {
                     "Build" => parse_build_tag(&e, &mut build)?,
@@ -304,7 +302,7 @@ fn parse_gem_tag(e: &quick_xml::events::BytesStart) -> Result<Gem> {
 }
 
 fn parse_tree_tag(
-    e: &quick_xml::events::BytesStart,
+    _e: &quick_xml::events::BytesStart,
     reader: &mut Reader<&[u8]>,
     tree: &mut PassiveTree,
 ) -> Result<()> {

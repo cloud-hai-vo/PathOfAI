@@ -3,7 +3,7 @@ use crate::models::build::BuildData;
 use crate::models::seer::SeerEngine;
 use super::intent_classifier::Intent;
 
-pub fn generate(intent: &Intent, build: &BuildData, analysis: &AnalysisResult) -> String {
+pub fn generate(intent: &Intent, _build: &BuildData, analysis: &AnalysisResult) -> String {
     match intent {
         Intent::DpsQuery => format!(
             "Your total DPS is **{}**.\n\n\

@@ -48,18 +48,20 @@ async fn get_single_price(item_name: &str) -> PriceResult {
         let cache = CACHE.lock().unwrap();
         if let Some(entry) = cache.entries.get(item_name) {
             let age = entry.fetched_at.elapsed();
-            let div_ratio = 200.0_f64;
-            return PriceResult {
-                item_name: item_name.to_string(),
-                price_div: entry.price / div_ratio,
-                price_chaos: entry.price,
-                confidence: if entry.listings > 50 { PriceConfidence::High }
-                            else if entry.listings > 10 { PriceConfidence::Medium }
-                            else { PriceConfidence::Low },
-                listings: entry.listings,
-                cached: true,
-                cache_age_secs: age.as_secs(),
-            };
+            if age < TTL {
+                let div_ratio = 200.0_f64;
+                return PriceResult {
+                    item_name: item_name.to_string(),
+                    price_div: entry.price / div_ratio,
+                    price_chaos: entry.price,
+                    confidence: if entry.listings > 50 { PriceConfidence::High }
+                                else if entry.listings > 10 { PriceConfidence::Medium }
+                                else { PriceConfidence::Low },
+                    listings: entry.listings,
+                    cached: true,
+                    cache_age_secs: age.as_secs(),
+                };
+            }
         }
 
         // Circuit breaker: if open, return guess
@@ -128,6 +130,7 @@ fn not_found(item_name: &str) -> PriceResult {
 }
 
 /// Compute confidence tier based on listing count (testable helper).
+#[allow(dead_code)]
 pub(crate) fn confidence_for_listings(listings: u32) -> PriceConfidence {
     if listings > 50 { PriceConfidence::High }
     else if listings > 10 { PriceConfidence::Medium }

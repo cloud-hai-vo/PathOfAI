@@ -257,3 +257,127 @@ export interface BuildSummary {
   level: number;
   last_analyzed: string;
 }
+
+// --- Combat Simulation ---
+
+export interface SimResult {
+  clear_time_ms: number;
+  kills: number;
+  deaths: number;
+  ticks: number;
+}
+
+// --- Build Comparator ---
+
+export type DeltaDir = 'Better' | 'Worse' | 'Same';
+
+export interface StatDelta {
+  key: string;
+  value_a: number;
+  value_b: number;
+  delta: number;
+  delta_pct: number;
+  direction: DeltaDir;
+  higher_is_better: boolean;
+}
+
+export interface BuildComparison {
+  build_a: string;
+  build_b: string;
+  stat_deltas: StatDelta[];
+  tree_overlap_pct: number;
+  shared_gems: string[];
+  unique_to_a: string[];
+  unique_to_b: string[];
+  summary_winner?: string;
+}
+
+export interface BuildSnapshot {
+  id: string;
+  name: string;
+  stats: Record<string, number>;
+  passives: number[];
+  gems: string[];
+}
+
+// --- Stash ---
+
+export interface StashItem {
+  id: string;
+  name: string;
+  type_line: string;
+  chaos_value: number;
+  stack_size: number;
+  tab_name: string;
+}
+
+export interface WealthSummary {
+  total_chaos: number;
+  total_divine: number;
+  currency_map: Record<string, number>;
+  total_items: number;
+}
+
+// --- Map Tracker ---
+
+export interface MapRun {
+  zone_name: string;
+  started_at: number;
+  ended_at: number;
+  duration_secs: number;
+  loot_chaos: number;
+}
+
+export interface MapStats {
+  total_runs: number;
+  total_time_secs: number;
+  avg_duration: number;
+  total_loot_chaos: number;
+  chaos_per_hour: number;
+  most_run_map: string;
+  by_zone: Record<string, number>;
+}
+
+// --- Price Alerts ---
+
+export type AlertCondition = 'Below' | 'Above' | 'ChangePercent';
+
+export interface PriceAlert {
+  id: string;
+  item_key: string;
+  condition: AlertCondition;
+  threshold: number;
+  active: boolean;
+  created_at: number;
+}
+
+export interface AlertFired {
+  alert_id: string;
+  item_key: string;
+  current_price: number;
+  threshold: number;
+  condition: AlertCondition;
+  message: string;
+}
+
+// --- Trade ---
+
+export interface TradeResult {
+  item_name: string;
+  base_type: string;
+  slot: string;
+  price_div: number;
+  dps_gain: number;
+  life_gain: number;
+  score: number;
+  trade_url: string;
+}
+
+// --- Characters ---
+
+export interface CharacterSummary {
+  name: string;
+  class: string;
+  level: number;
+  league: string;
+}
