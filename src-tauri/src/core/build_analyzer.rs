@@ -265,13 +265,62 @@ pub fn overall_score(defenses: &DefenseStats, offense: &OffenseStats, issues: &[
 }
 
 pub fn analyze_tree(build: &BuildData) -> Result<TreeAnalysis> {
+    let total_allocated = build.passive_tree.allocated_nodes.len() as u32;
+    let by_category = categorize_masteries(&build.passive_tree.masteries);
+
     Ok(TreeAnalysis {
-        total_allocated: build.passive_tree.allocated_nodes.len() as u32,
-        by_category: vec![],       // TODO: requires tree data
+        total_allocated,
+        by_category,
         top_recommendations: vec![],
         inefficient_nodes: vec![],
         next_keystone: None,
     })
+}
+
+/// Categorize mastery selections into named stat groups using keyword matching.
+fn categorize_masteries(masteries: &[crate::models::build::MasterySelection]) -> Vec<crate::models::seer::NodeCategory> {
+    use crate::models::seer::NodeCategory;
+    use std::collections::HashMap;
+
+    let mut counts: HashMap<&'static str, u32> = HashMap::new();
+
+    for m in masteries {
+        let text = m.effect_text.to_lowercase();
+        let category = if text.contains("life") || text.contains("life regenerat") {
+            "Life"
+        } else if text.contains("energy shield") {
+            "Energy Shield"
+        } else if text.contains("resistance") || text.contains("elemental") {
+            "Resistances"
+        } else if text.contains("fire damage") || text.contains("burning") || text.contains("ignite") {
+            "Fire Damage"
+        } else if text.contains("cold damage") || text.contains("freeze") || text.contains("chill") {
+            "Cold Damage"
+        } else if text.contains("lightning damage") || text.contains("shock") {
+            "Lightning Damage"
+        } else if text.contains("critical") || text.contains("crit") {
+            "Critical Strike"
+        } else if text.contains("attack speed") || text.contains("cast speed") {
+            "Speed"
+        } else if text.contains("armour") || text.contains("armor") || text.contains("evasion") {
+            "Defence"
+        } else if text.contains("mana") {
+            "Mana"
+        } else {
+            "Other"
+        };
+        *counts.entry(category).or_insert(0) += 1;
+    }
+
+    let mut categories: Vec<NodeCategory> = counts.into_iter()
+        .map(|(name, count)| NodeCategory {
+            name: name.to_string(),
+            count,
+            total_value: 0.0,
+        })
+        .collect();
+    categories.sort_by(|a, b| b.count.cmp(&a.count));
+    categories
 }
 
 impl std::cmp::Ord for Severity {
@@ -287,5 +336,72 @@ impl std::cmp::Ord for Severity {
 impl std::cmp::PartialOrd for Severity {
     fn partial_cmp(&self, other: &Self) -> Option<std::cmp::Ordering> {
         Some(self.cmp(other))
+    }
+}
+
+// ─── Tests ────────────────────────────────────────────────────────────────────
+
+#[cfg(test)]
+mod tests {
+    use super::*;
+    use crate::models::build::{PassiveTree, MasterySelection};
+
+    fn mastery(id: u32, effect: &str) -> MasterySelection {
+        MasterySelection { node_id: id, effect_id: id * 100, effect_text: effect.to_string() }
+    }
+
+    #[test]
+    fn analyze_tree_total_allocated_is_correct() {
+        let mut build = BuildData::default();
+        build.passive_tree.allocated_nodes = vec![1, 2, 3, 4, 5];
+        let result = analyze_tree(&build).unwrap();
+        assert_eq!(result.total_allocated, 5);
+    }
+
+    #[test]
+    fn analyze_tree_zero_nodes_returns_zero() {
+        let build = BuildData::default();
+        let result = analyze_tree(&build).unwrap();
+        assert_eq!(result.total_allocated, 0);
+    }
+
+    #[test]
+    fn analyze_tree_always_succeeds() {
+        let mut build = BuildData::default();
+        build.passive_tree.allocated_nodes = (1..=90).collect();
+        assert!(analyze_tree(&build).is_ok());
+    }
+
+    #[test]
+    fn analyze_tree_categorizes_life_masteries() {
+        let mut build = BuildData::default();
+        build.passive_tree.masteries = vec![
+            mastery(1, "10% increased maximum Life"),
+            mastery(2, "+25 to maximum Life"),
+        ];
+        let result = analyze_tree(&build).unwrap();
+        let life_cat = result.by_category.iter().find(|c| c.name == "Life");
+        assert!(life_cat.is_some(), "should have a Life category from masteries");
+        assert_eq!(life_cat.unwrap().count, 2);
+    }
+
+    #[test]
+    fn analyze_tree_categorizes_resistance_masteries() {
+        let mut build = BuildData::default();
+        build.passive_tree.masteries = vec![
+            mastery(1, "+10% to all Elemental Resistances"),
+            mastery(2, "Fire Resistance is Lucky"),
+        ];
+        let result = analyze_tree(&build).unwrap();
+        let cat = result.by_category.iter().find(|c| c.name == "Resistances");
+        assert!(cat.is_some(), "should have a Resistances category");
+    }
+
+    #[test]
+    fn analyze_tree_empty_masteries_returns_empty_categories() {
+        let build = BuildData::default();
+        let result = analyze_tree(&build).unwrap();
+        assert!(result.by_category.is_empty(),
+            "no masteries → no categories");
     }
 }

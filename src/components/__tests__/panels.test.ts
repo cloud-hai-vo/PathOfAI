@@ -50,6 +50,8 @@ function makeAnalysis(overrides: Partial<AnalysisResult> = {}): AnalysisResult {
         ignite: false,
         bleed: false,
         corrupted_blood: true, corrupted_blood_source: 'Corrupted Blood jewel',
+        poison: false,
+        stun: false,
         curse_immune: false,
       },
     },

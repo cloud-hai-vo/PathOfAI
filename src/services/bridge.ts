@@ -6,6 +6,8 @@ import { invoke } from '@tauri-apps/api/core';
 import type {
   AnalysisResult, SeerResponse, PriceResult, AppInfo,
   Item, CraftSuggestion, BuildSummary, CraftVsBuyResult,
+  SimResult, BuildComparison, BuildSnapshot, WealthSummary, StashItem,
+  MapRun, MapStats, PriceAlert, AlertFired,
 } from '../types/index.js';
 
 // --- Info ---
@@ -132,6 +134,50 @@ export const estimateItemSwap = (
     newItemJson:     JSON.stringify(newItemMods),
     currentItemJson: JSON.stringify(currentItemMods),
   });
+
+// --- Simulation & Analysis ---
+
+export const runSimulation = (
+  playerJson: string,
+  defenseJson: string,
+  offenseJson: string,
+  monstersJson: string,
+  flasksJson: string,
+): Promise<SimResult> =>
+  invoke('run_simulation', { playerJson, defenseJson, offenseJson, monstersJson, flasksJson });
+
+export const compareBuilds = (buildA: BuildSnapshot, buildB: BuildSnapshot): Promise<BuildComparison> =>
+  invoke('compare_builds_cmd', {
+    buildAJson: JSON.stringify(buildA),
+    buildBJson: JSON.stringify(buildB),
+  });
+
+export const tallyStashWealth = (items: StashItem[], divinePriceC: number): Promise<WealthSummary> =>
+  invoke('tally_stash_wealth', {
+    itemsJson: JSON.stringify(items),
+    divinePriceC,
+  });
+
+export const getMapStats = (runs: MapRun[]): Promise<MapStats> =>
+  invoke('get_map_stats', { runsJson: JSON.stringify(runs) });
+
+export const checkPriceAlerts = (
+  alerts: PriceAlert[],
+  prices: Record<string, number>,
+): Promise<AlertFired[]> =>
+  invoke('check_price_alerts', {
+    alertsJson: JSON.stringify(alerts),
+    pricesJson: JSON.stringify(prices),
+  });
+
+export const deactivatePriceAlert = (alerts: PriceAlert[], alertId: string): Promise<PriceAlert[]> =>
+  invoke('deactivate_price_alert', {
+    alertsJson: JSON.stringify(alerts),
+    alertId,
+  });
+
+export const switchCharacter = (characterName: string): Promise<AnalysisResult> =>
+  invoke('switch_character', { characterName });
 
 // --- Settings / Cloud AI ---
 

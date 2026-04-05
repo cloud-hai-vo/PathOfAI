@@ -3,7 +3,7 @@
  * Mocks the Tauri API so tests run in Node/jsdom without a Tauri process.
  */
 import { describe, it, expect, vi, beforeEach } from 'vitest';
-import type { AnalysisResult, PriceResult, BuildSummary } from '../../types/index.js';
+import type { AnalysisResult, PriceResult, BuildSummary, AlertCondition } from '../../types/index.js';
 
 // Mock the Tauri invoke before importing bridge
 const mockInvoke = vi.fn();
@@ -17,30 +17,47 @@ const bridgeModule = await import('../bridge.js');
 function makeAnalysisResult(overrides: Partial<AnalysisResult> = {}): AnalysisResult {
   return {
     build_id: 'test-build-1',
-    archetype: 'RFInquisitor',
-    issues: [],
-    suggestions: [],
-    item_scores: [],
-    defense: {
+    build_name: 'RF Inquisitor',
+    class_name: 'Templar',
+    ascendancy: 'Inquisitor',
+    level: 90,
+    archetype: 'fire_dot',
+    archetype_label: 'RF Inquisitor',
+    overall_score: 72,
+    defenses: {
       life: 5000,
       energy_shield: 0,
+      mana: 500,
+      life_regen_flat: 100,
+      life_regen_pct: 2.5,
+      resistances: { fire: 75, cold: 75, lightning: 75, chaos: -60, max_fire: 75, max_cold: 75, max_lightning: 75, max_chaos: 75, fire_overcap: 0, cold_overcap: 0, lightning_overcap: 0 },
       armour: 10000,
+      armour_phys_reduction: 0.5,
       evasion: 0,
-      effective_hp: 5000,
-      fire_res: 75,
-      cold_res: 75,
-      lightning_res: 75,
-      chaos_res: -60,
-      block: 0,
+      evasion_chance: 0,
+      block_chance: 0,
+      spell_block_chance: 0,
+      effective_hp: { vs_physical: 7500, vs_elemental: 10000, vs_chaos: 5000 },
+      ailment_immunity: { freeze: false, shock: false, ignite: false, bleed: false, corrupted_blood: false, poison: false, stun: false, curse_immune: false },
     },
     offense: {
       total_dps: 1_500_000,
+      dps_label: '1.50M',
+      main_skill: 'Righteous Fire',
       hit_dps: 0,
-      ailment_dps: 1_500_000,
-      skill_name: 'Righteous Fire',
-      skill_is_aoe: true,
+      dot_dps: 1_500_000,
+      crit_chance: 0.05,
+      crit_multiplier: 1.5,
+      attack_speed: 0,
+      cast_speed: 0,
+      hit_chance: 1.0,
+      sources: [],
+      multiplier_chain: [],
     },
-    score: 72,
+    issues: [],
+    suggestions: [],
+    item_scores: [],
+    gem_setups: [],
     ...overrides,
   };
 }
@@ -73,7 +90,7 @@ describe('bridge.ts', () => {
         confidence: 'High',
         listings: 150,
         cached: false,
-        cache_age_secs: 0,
+        cache_age_secs: 0,  // added field
       },
     ];
     mockInvoke.mockResolvedValueOnce(mockPrices);
@@ -207,5 +224,103 @@ describe('bridge.ts', () => {
       itemName: "Kaom's Heart",
     });
     expect(url).toContain('poecdn.com');
+  });
+
+  // ── compareBuilds ───────────────────────────────────────────────────────────
+
+  it('compareBuilds serialises both snapshots', async () => {
+    const mockCmp = { build_a: 'A', build_b: 'B', stat_deltas: [], tree_overlap_pct: 50, shared_gems: [], unique_to_a: [], unique_to_b: [], summary_winner: 'B' };
+    mockInvoke.mockResolvedValueOnce(mockCmp);
+
+    const a = { id: 'A', name: 'A', stats: { dps: 1000 }, passives: [1, 2], gems: ['RF'] };
+    const b = { id: 'B', name: 'B', stats: { dps: 2000 }, passives: [1, 3], gems: ['RF'] };
+    const result = await bridgeModule.compareBuilds(a, b);
+
+    expect(mockInvoke).toHaveBeenCalledWith('compare_builds_cmd', {
+      buildAJson: JSON.stringify(a),
+      buildBJson: JSON.stringify(b),
+    });
+    expect(result.summary_winner).toBe('B');
+  });
+
+  // ── tallyStashWealth ────────────────────────────────────────────────────────
+
+  it('tallyStashWealth passes items and divine price', async () => {
+    const mockWealth = { total_chaos: 400.0, total_divine: 2.0, currency_map: {}, total_items: 2 };
+    mockInvoke.mockResolvedValueOnce(mockWealth);
+
+    const items = [
+      { id: '1', name: 'Chaos Orb', type_line: 'Chaos Orb', chaos_value: 1.0, stack_size: 200, tab_name: 'Currency' },
+      { id: '2', name: 'Exalted Orb', type_line: 'Exalted Orb', chaos_value: 100.0, stack_size: 2, tab_name: 'Currency' },
+    ];
+    const result = await bridgeModule.tallyStashWealth(items, 200.0);
+
+    expect(mockInvoke).toHaveBeenCalledWith('tally_stash_wealth', {
+      itemsJson: JSON.stringify(items),
+      divinePriceC: 200.0,
+    });
+    expect(result.total_divine).toBe(2.0);
+  });
+
+  // ── getMapStats ─────────────────────────────────────────────────────────────
+
+  it('getMapStats serialises runs array', async () => {
+    const mockStats = { total_runs: 2, total_time_secs: 600, avg_duration: 300, total_loot_chaos: 200, chaos_per_hour: 1200, most_run_map: 'Lookout', by_zone: { Lookout: 2 } };
+    mockInvoke.mockResolvedValueOnce(mockStats);
+
+    const runs = [
+      { zone_name: 'Lookout', started_at: 0, ended_at: 300, duration_secs: 300, loot_chaos: 100 },
+      { zone_name: 'Lookout', started_at: 300, ended_at: 600, duration_secs: 300, loot_chaos: 100 },
+    ];
+    const result = await bridgeModule.getMapStats(runs);
+
+    expect(mockInvoke).toHaveBeenCalledWith('get_map_stats', { runsJson: JSON.stringify(runs) });
+    expect(result.most_run_map).toBe('Lookout');
+  });
+
+  // ── checkPriceAlerts ────────────────────────────────────────────────────────
+
+  it('checkPriceAlerts passes alerts and prices as JSON', async () => {
+    const mockFired = [{ alert_id: 'a1', item_key: 'Chaos Orb', current_price: 0.9, threshold: 1.0, condition: 'Below' as AlertCondition, message: 'Chaos Orb below 1.0c' }];
+    mockInvoke.mockResolvedValueOnce(mockFired);
+
+    const alerts = [{ id: 'a1', item_key: 'Chaos Orb', condition: 'Below' as AlertCondition, threshold: 1.0, active: true, created_at: 0 }];
+    const prices = { 'Chaos Orb': 0.9 };
+    const result = await bridgeModule.checkPriceAlerts(alerts, prices);
+
+    expect(mockInvoke).toHaveBeenCalledWith('check_price_alerts', {
+      alertsJson: JSON.stringify(alerts),
+      pricesJson: JSON.stringify(prices),
+    });
+    expect(result).toHaveLength(1);
+    expect(result[0].alert_id).toBe('a1');
+  });
+
+  // ── deactivatePriceAlert ────────────────────────────────────────────────────
+
+  it('deactivatePriceAlert passes alerts and alert id', async () => {
+    const updatedAlerts = [{ id: 'a1', item_key: 'Chaos Orb', condition: 'Below' as AlertCondition, threshold: 1.0, active: false, created_at: 0 }];
+    mockInvoke.mockResolvedValueOnce(updatedAlerts);
+
+    const alerts = [{ id: 'a1', item_key: 'Chaos Orb', condition: 'Below' as AlertCondition, threshold: 1.0, active: true, created_at: 0 }];
+    const result = await bridgeModule.deactivatePriceAlert(alerts, 'a1');
+
+    expect(mockInvoke).toHaveBeenCalledWith('deactivate_price_alert', {
+      alertsJson: JSON.stringify(alerts),
+      alertId: 'a1',
+    });
+    expect(result[0].active).toBe(false);
+  });
+
+  // ── switchCharacter ─────────────────────────────────────────────────────────
+
+  it('switchCharacter passes character name', async () => {
+    const expected = makeAnalysisResult({ build_id: 'char-1' });
+    mockInvoke.mockResolvedValueOnce(expected);
+
+    const result = await bridgeModule.switchCharacter('MyInquisitor');
+
+    expect(mockInvoke).toHaveBeenCalledWith('switch_character', { characterName: 'MyInquisitor' });
+    expect(result.build_id).toBe('char-1');
   });
 });

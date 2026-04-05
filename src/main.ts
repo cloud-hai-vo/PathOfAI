@@ -5,8 +5,8 @@
 import { listen } from '@tauri-apps/api/event';
 import { open } from '@tauri-apps/plugin-dialog';
 import { store } from './services/store.js';
-import { getAppInfo, analyzeBuild, askSeer, startOAuth, listCharacters, loadCharacter, getCraftSuggestions, getAuthStatus } from './services/bridge.js';
-import type { AnalysisResult, SeerResponse, CraftSuggestion } from './types/index.js';
+import { getAppInfo, analyzeBuild, askSeer, startOAuth, listCharacters, loadCharacter, getCraftSuggestions } from './services/bridge.js';
+import type { AnalysisResult, CraftSuggestion } from './types/index.js';
 import { renderArenaPanel, renderGemsPanel, renderBloodPactPanel, renderDarkPathPanel, renderCurseMapPanel, renderSettingsPanel } from './components/panels.js';
 
 // ─── Boot sequence ────────────────────────────────────────────────────────────

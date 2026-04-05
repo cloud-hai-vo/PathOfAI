@@ -145,6 +145,8 @@ export interface AilmentImmunity {
   bleed_source?: string;
   corrupted_blood: boolean;
   corrupted_blood_source?: string;
+  poison: boolean;
+  stun: boolean;
   curse_immune: boolean;
 }
 
@@ -157,6 +159,7 @@ export interface OffenseStats {
   crit_chance: number;
   crit_multiplier: number;
   attack_speed: number;
+  cast_speed: number;
   hit_chance: number;
   sources: DpsSource[];
   multiplier_chain: MultiplierStep[];
@@ -221,6 +224,7 @@ export interface PriceResult {
   confidence: 'High' | 'Medium' | 'Low' | 'Guess';
   listings: number;
   cached: boolean;
+  cache_age_secs: number;
 }
 
 export interface AppInfo {

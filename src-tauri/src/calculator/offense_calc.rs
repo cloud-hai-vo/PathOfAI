@@ -36,6 +36,7 @@ pub fn calculate(build: &BuildData) -> OffenseStats {
     let crit_multiplier  = base_crit_multi + increased_multi / 100.0;
 
     let attack_speed = attack_speed_from_items(build);
+    let cast_speed   = cast_speed_from_items(build);
 
     // Hit chance: player accuracy vs. level-based monster evasion baseline.
     // Against a level 83 monster, base evasion ≈ 6_000.
@@ -51,7 +52,7 @@ pub fn calculate(build: &BuildData) -> OffenseStats {
         crit_chance,
         crit_multiplier,
         attack_speed,
-        cast_speed: 0.0,
+        cast_speed,
         hit_chance,
         sources,
         multiplier_chain,
@@ -81,6 +82,14 @@ pub(crate) fn crit_multiplier_increased_from_items(build: &BuildData) -> f64 {
 }
 
 /// Sum all "increased attack speed" mods from equipped items (in %).
+/// Sum all "increased cast speed" mods from equipped items.
+pub(crate) fn cast_speed_from_items(build: &BuildData) -> f64 {
+    build.items.iter().flat_map(|it| &it.mods)
+        .filter(|m| m.text.to_lowercase().contains("increased cast speed"))
+        .map(|m| parse_pct(&m.text))
+        .sum()
+}
+
 pub(crate) fn attack_speed_from_items(build: &BuildData) -> f64 {
     build.items.iter().flat_map(|it| &it.mods)
         .filter(|m| m.text.to_lowercase().contains("increased attack speed"))
@@ -467,6 +476,29 @@ mod tests {
         let chain = build_multiplier_chain(&build, Some(&setup));
         let has_swift = chain.iter().any(|s| s.label.contains("Swift Affliction"));
         assert!(has_swift, "chain should include Swift Affliction");
+    }
+
+    #[test]
+    fn cast_speed_sums_item_mods() {
+        let mut build = BuildData::default();
+        build.items.push(item_with_mod("12% increased Cast Speed"));
+        build.items.push(item_with_mod("8% increased Cast Speed"));
+        let spd = cast_speed_from_items(&build);
+        assert!((spd - 20.0).abs() < 0.1, "expected 20% total, got {spd}");
+    }
+
+    #[test]
+    fn cast_speed_zero_with_no_mods() {
+        let build = BuildData::default();
+        assert_eq!(cast_speed_from_items(&build), 0.0);
+    }
+
+    #[test]
+    fn cast_speed_included_in_offense_stats() {
+        let mut build = BuildData::default();
+        build.items.push(item_with_mod("20% increased Cast Speed"));
+        let stats = calculate(&build);
+        assert!(stats.cast_speed > 0.0, "cast_speed should be > 0 with item mods");
     }
 
     #[test]
