@@ -107,6 +107,7 @@ pub fn run() {
             // Market
             commands::market_commands::get_prices,
             commands::market_commands::search_upgrades,
+            commands::market_commands::get_buy_recommendation,
             // Items
             commands::item_commands::parse_clipboard_item,
             commands::item_commands::score_item,

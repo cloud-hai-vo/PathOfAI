@@ -66,6 +66,35 @@ export const getPrices = (itemNames: string[]): Promise<PriceResult[]> =>
 export const searchUpgrades = (slot: string, budgetDiv: number, buildId: string) =>
   invoke('search_upgrades', { slot, budgetDiv, buildId });
 
+export interface PricePoint {
+  price_divine: number;
+}
+
+export interface BuyRecommendation {
+  action: 'Wait' | 'BuySoon' | 'BuyNow' | 'BuyNowOrWait' | 'BuyWhenReady' | 'Monitor';
+  reason: string;
+  urgency: 'None' | 'Low' | 'Medium' | 'High';
+  confidence: 'Low' | 'Medium' | 'High';
+  current_div: number;
+  trend: 'DroppingFast' | 'DroppingSlow' | 'Stable' | 'RisingSlow' | 'RisingFast';
+  change_7d: number;
+  league_phase: string;
+  sparkline: number[];
+}
+
+export type LeaguePhase = 'LaunchFrenzy' | 'CrashPeriod' | 'Stabilization' | 'PeakEconomy' | 'LateLeague';
+
+export const getBuyRecommendation = (
+  itemKey: string,
+  history: PricePoint[],
+  leaguePhase: LeaguePhase,
+): Promise<BuyRecommendation> =>
+  invoke('get_buy_recommendation', {
+    itemKey,
+    historyJson: JSON.stringify(history),
+    leaguePhase,
+  });
+
 // --- Items ---
 
 export const parseClipboardItem = (clipboardText: string, buildId: string): Promise<{item: Item; score: number}> =>

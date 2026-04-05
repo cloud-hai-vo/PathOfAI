@@ -139,4 +139,36 @@ describe('bridge.ts', () => {
     expect(mockInvoke).toHaveBeenCalledWith('undo_last_change', { buildId: 'build-abc' });
     expect(result.build_id).toBe('build-abc');
   });
+
+  // ── getBuyRecommendation ────────────────────────────────────────────────────
+
+  it('getBuyRecommendation serialises history to JSON and passes league phase', async () => {
+    const mockRec: import('../bridge.js').BuyRecommendation = {
+      action: 'BuyWhenReady',
+      reason: 'Watcher\'s Eye is stable at 45.0 div',
+      urgency: 'None',
+      confidence: 'High',
+      current_div: 45.0,
+      trend: 'Stable',
+      change_7d: 0.5,
+      league_phase: 'PeakEconomy',
+      sparkline: [44, 44, 45, 45, 45, 45, 45],
+    };
+    mockInvoke.mockResolvedValueOnce(mockRec);
+
+    const history: import('../bridge.js').PricePoint[] = [
+      { price_divine: 44 }, { price_divine: 44 }, { price_divine: 45 },
+      { price_divine: 45 }, { price_divine: 45 }, { price_divine: 45 },
+      { price_divine: 45 },
+    ];
+    const result = await bridgeModule.getBuyRecommendation("Watcher's Eye", history, 'PeakEconomy');
+
+    expect(mockInvoke).toHaveBeenCalledWith('get_buy_recommendation', {
+      itemKey: "Watcher's Eye",
+      historyJson: JSON.stringify(history),
+      leaguePhase: 'PeakEconomy',
+    });
+    expect(result.action).toBe('BuyWhenReady');
+    expect(result.confidence).toBe('High');
+  });
 });
