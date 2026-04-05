@@ -389,4 +389,55 @@ describe('bridge.ts', () => {
 
     expect(mockInvoke).toHaveBeenCalledWith('remove_price_alert', { alertId: '42' });
   });
+
+  // ── calculateManaReservation ────────────────────────────────────────────────
+
+  it('calculateManaReservation serialises skills and player stats', async () => {
+    const mockResult = {
+      skills: [{ name: 'Determination', base_reservation: 35, effective_reservation: 350, is_percentage: true }],
+      total_reserved: 350,
+      free_mana: 650,
+      effective_pool: 1000,
+      over_reserved: false,
+      reservation_pct_of_pool: 35,
+    };
+    mockInvoke.mockResolvedValueOnce(mockResult);
+
+    const skills = [{ name: 'Determination', base_reservation: 35, is_percentage: true, tags: ['aura'] }];
+    const player = { max_mana: 1000, max_es: 0, reservation_efficiency: 100, increased_mana_reservation: 0, reduced_mana_reservation: 0, main_skill_mana_cost: 10, has_eldritch_battery: false };
+    const result = await bridgeModule.calculateManaReservation(skills, player);
+
+    expect(mockInvoke).toHaveBeenCalledWith('calculate_mana_reservation', {
+      skillsJson: JSON.stringify(skills),
+      playerJson: JSON.stringify(player),
+    });
+    expect(result.free_mana).toBe(650);
+    expect(result.over_reserved).toBe(false);
+  });
+
+  // ── generateShareCode ───────────────────────────────────────────────────────
+
+  it('generateShareCode serialises payload and returns code string', async () => {
+    mockInvoke.mockResolvedValueOnce('pofai:ABC123');
+
+    const payload = { version: 1, build_id: 'b1', build_name: 'RF', class_name: 'Templar', ascendancy: 'Inquisitor', level: 90, archetype: 'fire_dot', tree_nodes: [1, 2], gems: ['RF'], total_dps: 2e6, total_life: 5000 };
+    const code = await bridgeModule.generateShareCode(payload);
+
+    expect(mockInvoke).toHaveBeenCalledWith('generate_share_code', {
+      payloadJson: JSON.stringify(payload),
+    });
+    expect(code).toBe('pofai:ABC123');
+  });
+
+  // ── importShareCode ─────────────────────────────────────────────────────────
+
+  it('importShareCode passes code string and returns payload', async () => {
+    const mockPayload = { version: 1, build_id: 'b1', build_name: 'RF', class_name: 'Templar', ascendancy: 'Inquisitor', level: 90, archetype: 'fire_dot', tree_nodes: [], gems: [], total_dps: 0, total_life: 0 };
+    mockInvoke.mockResolvedValueOnce(mockPayload);
+
+    const result = await bridgeModule.importShareCode('pofai:ABC123');
+
+    expect(mockInvoke).toHaveBeenCalledWith('import_share_code', { code: 'pofai:ABC123' });
+    expect(result.build_name).toBe('RF');
+  });
 });

@@ -2661,6 +2661,7 @@ dependencies = [
  "anyhow",
  "base64 0.22.1",
  "env_logger",
+ "flate2",
  "hex",
  "log",
  "notify",

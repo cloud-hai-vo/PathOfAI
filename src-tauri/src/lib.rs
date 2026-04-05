@@ -125,6 +125,9 @@ pub fn run() {
             commands::simulation_commands::set_price_alert,
             commands::simulation_commands::list_price_alerts,
             commands::simulation_commands::remove_price_alert,
+            commands::simulation_commands::calculate_mana_reservation,
+            commands::simulation_commands::generate_share_code,
+            commands::simulation_commands::import_share_code,
             // Settings / AI providers
             commands::settings_commands::test_cloud_ai,
             commands::settings_commands::save_ai_key,

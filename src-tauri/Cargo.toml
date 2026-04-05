@@ -48,6 +48,9 @@ rusqlite = { version = "0.31", features = ["bundled", "bundled-windows"] }
 aes-gcm = "0.10"
 base64 = "0.22"
 
+# Compression (build share codes)
+flate2 = "1"
+
 # UUID generation
 uuid = { version = "1", features = ["v4"] }
 

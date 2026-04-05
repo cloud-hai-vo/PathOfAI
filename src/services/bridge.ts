@@ -8,6 +8,8 @@ import type {
   Item, CraftSuggestion, BuildSummary, CraftVsBuyResult,
   SimResult, BuildComparison, BuildSnapshot, WealthSummary, StashItem,
   MapRun, MapStats, PriceAlert, AlertFired, MapDangerResult,
+  ReservationSkill, PlayerReservationStats, ReservationResult,
+  SharePayload,
 } from '../types/index.js';
 
 // --- Info ---
@@ -196,6 +198,21 @@ export const listPriceAlerts = (): Promise<PriceAlert[]> =>
 
 export const removePriceAlert = (alertId: string): Promise<void> =>
   invoke('remove_price_alert', { alertId });
+
+export const calculateManaReservation = (
+  skills: ReservationSkill[],
+  player: PlayerReservationStats,
+): Promise<ReservationResult> =>
+  invoke('calculate_mana_reservation', {
+    skillsJson: JSON.stringify(skills),
+    playerJson: JSON.stringify(player),
+  });
+
+export const generateShareCode = (payload: SharePayload): Promise<string> =>
+  invoke('generate_share_code', { payloadJson: JSON.stringify(payload) });
+
+export const importShareCode = (code: string): Promise<SharePayload> =>
+  invoke('import_share_code', { code });
 
 // --- Settings / Cloud AI ---
 

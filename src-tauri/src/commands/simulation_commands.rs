@@ -8,6 +8,8 @@ use crate::core::stash::{tally_currency, StashItem, WealthSummary};
 use crate::core::map_tracker::{accumulate_stats, MapRun, MapStats};
 use crate::core::alert_manager::{check_alerts, deactivate_alert, PriceAlert, AlertFired};
 use crate::core::map_mod_analyzer::{score_map_mods, MapDangerResult};
+use crate::core::mana_reservation::{calculate_reservation, ReservationSkill, PlayerReservationStats, ReservationResult};
+use crate::core::share_codec::{encode_share_code, decode_share_code, SharePayload};
 use crate::models::analysis::AnalysisResult;
 use std::collections::HashMap;
 
@@ -126,4 +128,35 @@ pub async fn remove_price_alert(
 ) -> Result<(), String> {
     let id: i64 = alert_id.parse().map_err(|_| format!("Invalid alert id: {alert_id}"))?;
     state.db.remove_alert(id).map_err(|e| e.to_string())
+}
+
+/// Calculate mana reservation for a list of auras/skills.
+#[tauri::command]
+pub async fn calculate_mana_reservation(
+    skills_json: String,
+    player_json: String,
+    _state: State<'_, AppState>,
+) -> Result<ReservationResult, String> {
+    let skills: Vec<ReservationSkill>     = serde_json::from_str(&skills_json).map_err(|e| e.to_string())?;
+    let player: PlayerReservationStats    = serde_json::from_str(&player_json).map_err(|e| e.to_string())?;
+    Ok(calculate_reservation(&skills, &player))
+}
+
+/// Generate a compact share code from a build payload.
+#[tauri::command]
+pub async fn generate_share_code(
+    payload_json: String,
+    _state: State<'_, AppState>,
+) -> Result<String, String> {
+    let payload: SharePayload = serde_json::from_str(&payload_json).map_err(|e| e.to_string())?;
+    encode_share_code(&payload).map_err(|e| e.to_string())
+}
+
+/// Decode a share code back into a build payload.
+#[tauri::command]
+pub async fn import_share_code(
+    code: String,
+    _state: State<'_, AppState>,
+) -> Result<SharePayload, String> {
+    decode_share_code(&code).map_err(|e| e.to_string())
 }

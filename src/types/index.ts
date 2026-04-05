@@ -262,6 +262,57 @@ export interface BuildSummary {
   last_analyzed: string;
 }
 
+// --- Mana Reservation ---
+
+export interface ReservationSkill {
+  name: string;
+  base_reservation: number;
+  is_percentage: boolean;
+  tags: string[];
+}
+
+export interface PlayerReservationStats {
+  max_mana: number;
+  max_es: number;
+  reservation_efficiency: number;   // default 100
+  increased_mana_reservation: number;
+  reduced_mana_reservation: number;
+  main_skill_mana_cost: number;
+  has_eldritch_battery: boolean;
+}
+
+export interface SkillReservationDetail {
+  name: string;
+  base_reservation: number;
+  effective_reservation: number;
+  is_percentage: boolean;
+}
+
+export interface ReservationResult {
+  skills: SkillReservationDetail[];
+  total_reserved: number;
+  free_mana: number;
+  effective_pool: number;
+  over_reserved: boolean;
+  reservation_pct_of_pool: number;
+}
+
+// --- Build Share Code ---
+
+export interface SharePayload {
+  version: number;
+  build_id: string;
+  build_name: string;
+  class_name: string;
+  ascendancy: string;
+  level: number;
+  archetype: string;
+  tree_nodes: number[];
+  gems: string[];
+  total_dps: number;
+  total_life: number;
+}
+
 // --- Map Mod Analysis ---
 
 export type DangerLevel = 'Safe' | 'Minor' | 'Moderate' | 'Major' | 'Critical';
