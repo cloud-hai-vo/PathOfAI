@@ -85,6 +85,7 @@ pub async fn analyze_build_data(
         issues,
         suggestions,
         item_scores,
+        gem_setups: build.gems.clone(),
     };
 
     // Persist build + result to SQLite

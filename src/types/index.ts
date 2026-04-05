@@ -94,6 +94,7 @@ export interface AnalysisResult {
   issues: Issue[];
   suggestions: Suggestion[];
   item_scores: ItemScore[];
+  gem_setups: GemSetup[];
 }
 
 export interface DefenseStats {

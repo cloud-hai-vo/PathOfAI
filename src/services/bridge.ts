@@ -73,3 +73,24 @@ export const parseClipboardItem = (clipboardText: string, buildId: string): Prom
 
 export const applyUpgrade = (suggestionId: string, buildId: string): Promise<AnalysisResult> =>
   invoke('apply_upgrade', { suggestionId, buildId });
+
+// --- Settings / Cloud AI ---
+
+export interface ConnectionTestResult {
+  provider: string;
+  success: boolean;
+  latency_ms: number;
+  error?: string;
+}
+
+export const testCloudAi = (provider: string, apiKey: string): Promise<ConnectionTestResult> =>
+  invoke('test_cloud_ai', { provider, apiKey });
+
+export const saveAiKey = (provider: string, apiKey: string): Promise<void> =>
+  invoke('save_ai_key', { provider, apiKey });
+
+export const removeAiKey = (provider: string): Promise<void> =>
+  invoke('remove_ai_key', { provider });
+
+export const getConfiguredProviders = (): Promise<string[]> =>
+  invoke('get_configured_providers');

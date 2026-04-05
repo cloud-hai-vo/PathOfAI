@@ -18,7 +18,8 @@ pub async fn ask_seer(
     let analysis = state.db.load_analysis(&build_id)
         .map_err(|e| format!("Analysis not found: {e}"))?;
 
-    router::route(&question, &build, &analysis)
+    let ai_keys = state.ai_keys.lock().unwrap().clone();
+    router::route(&question, &build, &analysis, Some(&ai_keys), Some(&state.http))
         .await
         .map_err(|e| format!("Seer error: {e}"))
 }

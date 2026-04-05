@@ -7,6 +7,7 @@ import { open } from '@tauri-apps/plugin-dialog';
 import { store } from './services/store.js';
 import { getAppInfo, analyzeBuild, askSeer, startOAuth, listCharacters, loadCharacter, getCraftSuggestions, getAuthStatus } from './services/bridge.js';
 import type { AnalysisResult, SeerResponse, CraftSuggestion } from './types/index.js';
+import { renderArenaPanel, renderGemsPanel, renderBloodPactPanel, renderDarkPathPanel, renderCurseMapPanel, renderSettingsPanel } from './components/panels.js';
 
 // ─── Boot sequence ────────────────────────────────────────────────────────────
 
@@ -23,22 +24,27 @@ async function boot() {
     const versionEl = document.getElementById('loading-version');
     if (versionEl) versionEl.textContent = `v${appInfo.version}`;
 
-    setLoadingProgress(80, 'Ready.');
-
-    // Register Tauri event listeners
-    await registerBackendEvents();
-
     setLoadingProgress(100, 'Ready.');
 
     // Small delay so the loading bar reaches 100% visually
     await delay(300);
 
+    // Show HUD first — so UI is visible even if event registration fails
     showHUD();
     renderHUD();
+
+    // Register Tauri backend event listeners (non-fatal if backend not running)
+    registerBackendEvents().catch(err => {
+      log(`Backend events unavailable: ${err}`);
+    });
 
   } catch (err) {
     showError(`Failed to connect to backend: ${err}`);
   }
+}
+
+function log(msg: string) {
+  if (typeof console !== 'undefined') console.info('[PathOfAI]', msg);
 }
 
 function setLoadingProgress(pct: number, message: string) {
@@ -100,7 +106,7 @@ function renderHUD() {
       <div class="header-right">
         <button class="hud-btn" id="btn-import-pob" title="Import PoB file">📁 Import PoB</button>
         <button class="hud-btn" id="btn-connect-poe" title="Connect PoE Account">⚡ Connect PoE</button>
-        <button class="hud-btn" id="btn-settings" title="Settings">⚙</button>
+        <button class="hud-btn" id="btn-settings" title="Settings">⚙ Settings</button>
       </div>
     </div>
 
@@ -182,6 +188,7 @@ function renderHUD() {
   document.getElementById('btn-import-center')?.addEventListener('click', importFromPoB);
   document.getElementById('btn-connect-poe')?.addEventListener('click', connectPoE);
   document.getElementById('btn-connect-center')?.addEventListener('click', connectPoE);
+  document.getElementById('btn-settings')?.addEventListener('click', openSettingsPanel);
   document.getElementById('seer-submit')?.addEventListener('click', submitSeerQuestion);
   document.getElementById('seer-input')?.addEventListener('keydown', (e) => {
     if ((e as KeyboardEvent).key === 'Enter') submitSeerQuestion();
@@ -289,6 +296,24 @@ function renderActivePanel(panelId: string) {
     case 'forge':
       content.innerHTML = renderForgePanelLoading();
       loadForgePanel(analysis).then(html => { content.innerHTML = html; wireForgePanel(analysis); });
+      break;
+    case 'combat':
+      content.innerHTML = renderArenaPanel(analysis);
+      break;
+    case 'gems':
+      content.innerHTML = renderGemsPanel(analysis);
+      break;
+    case 'blood':
+      content.innerHTML = renderBloodPactPanel(analysis);
+      break;
+    case 'darkpath':
+      content.innerHTML = renderDarkPathPanel(analysis);
+      break;
+    case 'cursemap':
+      content.innerHTML = renderCurseMapPanel(analysis);
+      break;
+    case 'settings':
+      loadSettingsPanel(content);
       break;
     default:
       content.innerHTML = `<div class="panel-placeholder">
@@ -570,6 +595,64 @@ function wireForgePanel(analysis: AnalysisResult | null) {
 }
 
 // ─── Actions ──────────────────────────────────────────────────────────────────
+
+async function openSettingsPanel() {
+  store.set({ activePanel: 'settings' });
+  document.querySelectorAll('.panel-nav-btn').forEach(b => b.classList.remove('active'));
+  const content = document.getElementById('panel-content');
+  if (!content) return;
+  loadSettingsPanel(content);
+}
+
+async function loadSettingsPanel(content: HTMLElement) {
+  const { getConfiguredProviders, testCloudAi, saveAiKey } = await import('./services/bridge.js');
+  const configured = await getConfiguredProviders().catch(() => [] as string[]);
+  content.innerHTML = renderSettingsPanel(configured);
+
+  // Wire Test buttons
+  content.querySelectorAll('.settings-test-btn').forEach(btn => {
+    btn.addEventListener('click', async () => {
+      const provider = (btn as HTMLElement).dataset.provider ?? '';
+      const input = document.getElementById(`ai-key-${provider}`) as HTMLInputElement;
+      const statusEl = document.getElementById(`ai-status-${provider}`);
+      if (!input || !statusEl) return;
+      statusEl.textContent = 'Testing…';
+      statusEl.style.color = 'var(--text-muted)';
+      try {
+        const result = await testCloudAi(provider, input.value);
+        if (result.success) {
+          statusEl.textContent = `✓ Connected (${result.latency_ms}ms)`;
+          statusEl.style.color = 'var(--success)';
+        } else {
+          statusEl.textContent = `✗ ${result.error ?? 'Failed'}`;
+          statusEl.style.color = 'var(--danger)';
+        }
+      } catch (err) {
+        statusEl.textContent = `✗ ${err}`;
+        statusEl.style.color = 'var(--danger)';
+      }
+    });
+  });
+
+  // Wire Save buttons
+  content.querySelectorAll('.settings-save-btn').forEach(btn => {
+    btn.addEventListener('click', async () => {
+      const provider = (btn as HTMLElement).dataset.provider ?? '';
+      const input = document.getElementById(`ai-key-${provider}`) as HTMLInputElement;
+      const statusEl = document.getElementById(`ai-status-${provider}`);
+      if (!input || !statusEl) return;
+      try {
+        await saveAiKey(provider, input.value);
+        statusEl.textContent = '✓ Key saved';
+        statusEl.style.color = 'var(--success)';
+        input.value = '';
+      } catch (err) {
+        statusEl.textContent = `✗ ${err}`;
+        statusEl.style.color = 'var(--danger)';
+      }
+    });
+  });
+}
 
 async function importFromPoB() {
   try {

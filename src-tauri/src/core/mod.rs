@@ -15,3 +15,4 @@ pub mod alert_manager;
 pub mod build_comparator;
 pub mod combat_sim;
 pub mod data_loader;
+pub mod cloud_ai;

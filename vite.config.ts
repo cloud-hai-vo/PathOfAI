@@ -1,6 +1,9 @@
 import { defineConfig } from "vite";
 
 export default defineConfig({
+  // Serve from src/ so index.html and assets are found
+  root: "src",
+  publicDir: "../public",
   // Tauri dev server runs on 5173
   server: {
     port: 5173,

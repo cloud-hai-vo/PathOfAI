@@ -1,4 +1,5 @@
 use serde::{Deserialize, Serialize};
+use crate::models::build::GemSetup;
 
 /// Full analysis result returned by `analyze_build` and `load_character`.
 /// This is what the frontend receives and renders.
@@ -17,6 +18,7 @@ pub struct AnalysisResult {
     pub issues: Vec<Issue>,
     pub suggestions: Vec<Suggestion>,
     pub item_scores: Vec<ItemScore>,
+    pub gem_setups: Vec<GemSetup>,  // gem links — for the Gems panel
 }
 
 #[derive(Debug, Clone, Serialize, Deserialize, Default)]
