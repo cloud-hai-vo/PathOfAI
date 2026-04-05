@@ -4,7 +4,7 @@ use crate::core::combat_sim::{
     simulate_map, PlayerState, DefenseSnapshot, OffenseSnapshot, Monster, FlaskState, SimResult,
 };
 use crate::core::build_comparator::{compare_builds, BuildSnapshot, BuildComparison};
-use crate::core::stash::{find_stash_upgrades, tally_currency, StashItem, WealthSummary};
+use crate::core::stash::{tally_currency, StashItem, WealthSummary};
 use crate::core::map_tracker::{accumulate_stats, MapRun, MapStats};
 use crate::core::alert_manager::{check_alerts, deactivate_alert, PriceAlert, AlertFired};
 use std::collections::HashMap;

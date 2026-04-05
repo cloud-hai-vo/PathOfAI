@@ -16,7 +16,7 @@ pub struct BuildData {
     pub source: BuildSource,
 }
 
-#[derive(Debug, Clone, Serialize, Deserialize, Default)]
+#[derive(Debug, Clone, Serialize, Deserialize, Default, PartialEq)]
 pub enum BuildSource {
     #[default]
     Unknown,

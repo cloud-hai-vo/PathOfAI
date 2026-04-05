@@ -112,6 +112,8 @@ pub fn run() {
             commands::item_commands::parse_clipboard_item,
             commands::item_commands::score_item,
             commands::item_commands::apply_upgrade,
+            commands::item_commands::estimate_item_swap,
+            commands::item_commands::resolve_item_image,
             // Simulation & Analysis
             commands::simulation_commands::run_simulation,
             commands::simulation_commands::compare_builds_cmd,

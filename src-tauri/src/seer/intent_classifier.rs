@@ -1,7 +1,6 @@
 /// Seer intent classifier — 50 regex rules to classify user questions.
 /// See ALGORITHMS.md Algorithm 1 (Seer Query Router).
 use regex::Regex;
-use std::sync::LazyLock;
 
 #[derive(Debug, Clone, PartialEq)]
 pub enum Intent {
@@ -18,17 +17,6 @@ pub enum Intent {
     CompareQuery,
     PriceQuery,
     Fallback,
-}
-
-struct Rule {
-    pattern: LazyLock<Regex>,
-    intent: Intent,
-}
-
-macro_rules! rule {
-    ($pattern:expr, $intent:expr) => {
-        ($pattern, $intent)
-    };
 }
 
 static RULES: &[(&str, Intent)] = &[

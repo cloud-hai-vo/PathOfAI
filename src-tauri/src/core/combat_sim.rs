@@ -1,7 +1,6 @@
 /// combat_sim.rs — Discrete-tick combat simulator (Algorithm 20).
 /// Tests written FIRST (TDD RED). Run `cargo test combat_sim` → all FAIL → then implement.
 use serde::{Deserialize, Serialize};
-use std::collections::HashMap;
 
 pub const TICK_MS: u64 = 100;
 

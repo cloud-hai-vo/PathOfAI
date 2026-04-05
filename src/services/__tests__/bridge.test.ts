@@ -171,4 +171,41 @@ describe('bridge.ts', () => {
     expect(result.action).toBe('BuyWhenReady');
     expect(result.confidence).toBe('High');
   });
+
+  // ── estimateItemSwap ───────────────────────────────────────────────────��────
+
+  it('estimateItemSwap serialises mods and passes buildId', async () => {
+    const mockEst: import('../bridge.js').EstimateResult = {
+      dps_change: 50000,
+      life_change: 80,
+      is_estimate: true,
+    };
+    mockInvoke.mockResolvedValueOnce(mockEst);
+
+    const newMods: Array<[import('../bridge.js').StatType, number]> = [['FlatLife', 80], ['FireDotMulti', 20]];
+    const curMods: Array<[import('../bridge.js').StatType, number]> = [['FlatLife', 50]];
+    const result = await bridgeModule.estimateItemSwap('build-1', newMods, curMods);
+
+    expect(mockInvoke).toHaveBeenCalledWith('estimate_item_swap', {
+      buildId:         'build-1',
+      newItemJson:     JSON.stringify(newMods),
+      currentItemJson: JSON.stringify(curMods),
+    });
+    expect(result.dps_change).toBe(50000);
+    expect(result.is_estimate).toBe(true);
+  });
+
+  // ── resolveItemImage ────────────────────────────────────────────────────────
+
+  it('resolveItemImage passes type and name to backend', async () => {
+    mockInvoke.mockResolvedValueOnce('https://web.poecdn.com/image/Art/2DItems/Armours/KaomsHeart.png');
+
+    const url = await bridgeModule.resolveItemImage('unique', "Kaom's Heart");
+
+    expect(mockInvoke).toHaveBeenCalledWith('resolve_item_image', {
+      itemType: 'unique',
+      itemName: "Kaom's Heart",
+    });
+    expect(url).toContain('poecdn.com');
+  });
 });

@@ -103,6 +103,36 @@ export const parseClipboardItem = (clipboardText: string, buildId: string): Prom
 export const applyUpgrade = (suggestionId: string, buildId: string): Promise<AnalysisResult> =>
   invoke('apply_upgrade', { suggestionId, buildId });
 
+export type StatType =
+  | 'FlatLife' | 'PercentLife' | 'FireDotMulti' | 'FlatPhysDamage'
+  | 'AttackSpeed' | 'CritChance' | 'CritMultiplier'
+  | 'FireRes' | 'ColdRes' | 'LightningRes';
+
+export interface EstimateResult {
+  dps_change: number;
+  life_change: number;
+  is_estimate: boolean;
+}
+
+/** Resolve an item image URL (CDN/disk cache — Algorithm 51). */
+export const resolveItemImage = (
+  itemType: 'unique' | 'base' | 'gem' | 'currency',
+  itemName: string,
+): Promise<string> =>
+  invoke('resolve_item_image', { itemType, itemName });
+
+/** Fast item swap estimate using Algorithm 25 ImpactTable. */
+export const estimateItemSwap = (
+  buildId: string,
+  newItemMods: Array<[StatType, number]>,
+  currentItemMods: Array<[StatType, number]>,
+): Promise<EstimateResult> =>
+  invoke('estimate_item_swap', {
+    buildId,
+    newItemJson:     JSON.stringify(newItemMods),
+    currentItemJson: JSON.stringify(currentItemMods),
+  });
+
 // --- Settings / Cloud AI ---
 
 export interface ConnectionTestResult {

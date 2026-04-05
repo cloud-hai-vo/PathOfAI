@@ -28,6 +28,10 @@ impl Database {
         Ok(Database { conn: Mutex::new(conn), enc_key, data_dir })
     }
 
+    pub fn data_dir(&self) -> &Path {
+        &self.data_dir
+    }
+
     pub fn run_migrations(&self) -> Result<()> {
         let conn = self.conn.lock().unwrap();
         conn.execute_batch(SCHEMA)?;

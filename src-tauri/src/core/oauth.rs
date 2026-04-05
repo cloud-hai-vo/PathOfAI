@@ -230,7 +230,6 @@ pub fn load_or_create_key(data_dir: &std::path::Path) -> Result<[u8; 32]> {
         // Hide the key file on Windows
         #[cfg(target_os = "windows")]
         {
-            use std::os::windows::fs::OpenOptionsExt;
             // Set hidden attribute — best effort
             let _ = std::process::Command::new("attrib")
                 .arg("+H")
