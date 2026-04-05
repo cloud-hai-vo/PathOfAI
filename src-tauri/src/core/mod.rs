@@ -21,3 +21,5 @@ pub mod image_resolver;
 pub mod map_mod_analyzer;
 pub mod mana_reservation;
 pub mod share_codec;
+pub mod stat_checker;
+pub mod vendor_recipe;

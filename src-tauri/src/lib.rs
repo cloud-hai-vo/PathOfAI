@@ -128,6 +128,8 @@ pub fn run() {
             commands::simulation_commands::calculate_mana_reservation,
             commands::simulation_commands::generate_share_code,
             commands::simulation_commands::import_share_code,
+            commands::simulation_commands::check_stat_requirements,
+            commands::simulation_commands::detect_vendor_recipes,
             // Settings / AI providers
             commands::settings_commands::test_cloud_ai,
             commands::settings_commands::save_ai_key,

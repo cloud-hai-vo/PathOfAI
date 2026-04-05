@@ -10,7 +10,10 @@ use crate::core::alert_manager::{check_alerts, deactivate_alert, PriceAlert, Ale
 use crate::core::map_mod_analyzer::{score_map_mods, MapDangerResult};
 use crate::core::mana_reservation::{calculate_reservation, ReservationSkill, PlayerReservationStats, ReservationResult};
 use crate::core::share_codec::{encode_share_code, decode_share_code, SharePayload};
+use crate::core::stat_checker::{check_requirements, StatCheckResult};
+use crate::core::vendor_recipe::{detect_recipes, RecipeCandidate, RecipeAnalysis};
 use crate::models::analysis::AnalysisResult;
+use crate::models::build::Item;
 use std::collections::HashMap;
 
 /// Run combat simulation for a build.
@@ -159,4 +162,29 @@ pub async fn import_share_code(
     _state: State<'_, AppState>,
 ) -> Result<SharePayload, String> {
     decode_share_code(&code).map_err(|e| e.to_string())
+}
+
+/// Check stat requirements for all equipped items, optionally simulating a candidate swap.
+#[tauri::command]
+pub async fn check_stat_requirements(
+    build_json:     String,
+    candidate_json: Option<String>,
+    _state: State<'_, AppState>,
+) -> Result<StatCheckResult, String> {
+    let build = serde_json::from_str(&build_json).map_err(|e| e.to_string())?;
+    let candidate: Option<Item> = match candidate_json {
+        Some(ref json) => Some(serde_json::from_str(json).map_err(|e| e.to_string())?),
+        None => None,
+    };
+    Ok(check_requirements(&build, candidate.as_ref()))
+}
+
+/// Detect vendor recipes (chaos, regal, quality) from a list of stash items.
+#[tauri::command]
+pub async fn detect_vendor_recipes(
+    items_json: String,
+    _state: State<'_, AppState>,
+) -> Result<RecipeAnalysis, String> {
+    let items: Vec<RecipeCandidate> = serde_json::from_str(&items_json).map_err(|e| e.to_string())?;
+    Ok(detect_recipes(&items))
 }

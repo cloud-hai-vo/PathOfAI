@@ -1,5 +1,10 @@
 // TypeScript types — must match Rust models exactly (src-tauri/src/models/)
 
+export type BuildSource =
+  | 'Unknown'
+  | { PobFile: string }
+  | { OAuthCharacter: string };
+
 export interface BuildData {
   id: string;
   name: string;
@@ -10,6 +15,7 @@ export interface BuildData {
   gems: GemSetup[];
   passive_tree: PassiveTree;
   config: BuildConfig;
+  source: BuildSource;
 }
 
 export interface Item {
@@ -23,7 +29,11 @@ export interface Item {
   quality: number;
   sockets: string;
   mods: ItemMod[];
+  influence: string[];          // "Shaper", "Elder", etc.
   is_corrupted: boolean;
+  is_synthesised: boolean;
+  is_fractured: boolean;
+  image_url?: string;
   score?: number;
 }
 
@@ -32,8 +42,9 @@ export interface ItemMod {
   text: string;
   value1: number;
   value2?: number;
-  mod_type: 'Prefix' | 'Suffix' | 'Implicit' | 'Enchant' | 'Corrupted';
+  mod_type: 'Prefix' | 'Suffix' | 'Implicit' | 'Enchant' | 'Corrupted' | 'Crafted';
   is_crafted: boolean;
+  is_fractured: boolean;
 }
 
 export interface GemSetup {
@@ -311,6 +322,73 @@ export interface SharePayload {
   gems: string[];
   total_dps: number;
   total_life: number;
+}
+
+// --- Stat Requirement Checker ---
+
+export type AttributeType = 'Strength' | 'Dexterity' | 'Intelligence';
+
+export interface StatDeficiency {
+  stat: AttributeType;
+  required: number;
+  available: number;
+  shortfall: number;
+  blocking_slot: string;
+}
+
+export interface AttributeTotals {
+  strength: number;
+  dexterity: number;
+  intelligence: number;
+}
+
+export interface StatCheckResult {
+  totals: AttributeTotals;
+  deficiencies: StatDeficiency[];
+  all_met: boolean;
+}
+
+// --- Vendor Recipe Detector ---
+
+export type EquipSlot = 'Helmet' | 'Chest' | 'Gloves' | 'Boots' | 'Belt' | 'Amulet' | 'Ring' | 'Weapon' | 'Shield';
+
+export interface RecipeCandidate {
+  id: string;
+  name: string;
+  base_type: string;
+  item_level: number;
+  quality: number;
+  is_rare: boolean;
+  is_identified: boolean;
+  is_two_hand: boolean;
+  item_class: string;
+}
+
+export interface RecipeItem {
+  id: string;
+  name: string;
+  slot: EquipSlot;
+  item_level: number;
+  is_two_hand: boolean;
+}
+
+export interface RecipeSet {
+  items: RecipeItem[];
+  is_unidentified: boolean;
+}
+
+export interface QualityRecipe {
+  output: string;
+  count: number;
+}
+
+export interface RecipeAnalysis {
+  chaos_sets: RecipeSet[];
+  regal_sets: RecipeSet[];
+  chaos_set_count: number;
+  regal_set_count: number;
+  missing_slots: string[];
+  quality_recipes: QualityRecipe[];
 }
 
 // --- Map Mod Analysis ---

@@ -9,7 +9,8 @@ import type {
   SimResult, BuildComparison, BuildSnapshot, WealthSummary, StashItem,
   MapRun, MapStats, PriceAlert, AlertFired, MapDangerResult,
   ReservationSkill, PlayerReservationStats, ReservationResult,
-  SharePayload,
+  SharePayload, BuildData,
+  StatCheckResult, RecipeCandidate, RecipeAnalysis,
 } from '../types/index.js';
 
 // --- Info ---
@@ -213,6 +214,18 @@ export const generateShareCode = (payload: SharePayload): Promise<string> =>
 
 export const importShareCode = (code: string): Promise<SharePayload> =>
   invoke('import_share_code', { code });
+
+export const checkStatRequirements = (
+  build: BuildData,
+  candidate?: Item,
+): Promise<StatCheckResult> =>
+  invoke('check_stat_requirements', {
+    buildJson:     JSON.stringify(build),
+    candidateJson: candidate ? JSON.stringify(candidate) : null,
+  });
+
+export const detectVendorRecipes = (items: RecipeCandidate[]): Promise<RecipeAnalysis> =>
+  invoke('detect_vendor_recipes', { itemsJson: JSON.stringify(items) });
 
 // --- Settings / Cloud AI ---
 
