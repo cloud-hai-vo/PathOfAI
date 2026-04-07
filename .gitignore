@@ -16,6 +16,8 @@ dist/
 *.sqlite-shm
 *.sqlite-wal
 data/
+# Bundled static game data IS committed
+!src-tauri/data/
 
 # ── Logs ───────────────────────────────────────────────────────────────────────
 *.log

@@ -393,8 +393,8 @@ mod tests {
         let build = parse_file(path).expect("should parse without error");
 
         assert_eq!(build.class_name, "Templar", "class should be Templar");
-        assert!(!build.ascendancy.is_empty(), "ascendancy should be set");
-        assert!(build.level > 0, "level should be > 0");
+        assert_eq!(build.ascendancy, "Inquisitor", "ascendancy should be Inquisitor");
+        assert_eq!(build.level, 95, "level should be 95");
         assert!(!build.items.is_empty(), "should have items");
         assert!(!build.gems.is_empty(), "should have gem setups");
         assert!(!build.passive_tree.allocated_nodes.is_empty(), "should have passives");

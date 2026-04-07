@@ -1,0 +1,240 @@
+[
+  {
+    "id": "righteous_fire",
+    "name": "Righteous Fire",
+    "tags": ["fire", "spell", "aoe", "duration"],
+    "is_support": false,
+    "levels": [
+      {"level":1,"dps_mult":1.0,"cost":0},
+      {"level":2,"dps_mult":1.05,"cost":0},
+      {"level":3,"dps_mult":1.10,"cost":0},
+      {"level":4,"dps_mult":1.16,"cost":0},
+      {"level":5,"dps_mult":1.22,"cost":0},
+      {"level":6,"dps_mult":1.29,"cost":0},
+      {"level":7,"dps_mult":1.36,"cost":0},
+      {"level":8,"dps_mult":1.44,"cost":0},
+      {"level":9,"dps_mult":1.52,"cost":0},
+      {"level":10,"dps_mult":1.61,"cost":0},
+      {"level":11,"dps_mult":1.70,"cost":0},
+      {"level":12,"dps_mult":1.80,"cost":0},
+      {"level":13,"dps_mult":1.91,"cost":0},
+      {"level":14,"dps_mult":2.02,"cost":0},
+      {"level":15,"dps_mult":2.14,"cost":0},
+      {"level":16,"dps_mult":2.27,"cost":0},
+      {"level":17,"dps_mult":2.40,"cost":0},
+      {"level":18,"dps_mult":2.54,"cost":0},
+      {"level":19,"dps_mult":2.69,"cost":0},
+      {"level":20,"dps_mult":2.85,"cost":0},
+      {"level":21,"dps_mult":3.02,"cost":0}
+    ]
+  },
+  {
+    "id": "burning_damage_support",
+    "name": "Burning Damage Support",
+    "tags": ["fire", "support"],
+    "is_support": true,
+    "levels": [
+      {"level":1,"dps_mult":1.30,"cost":0},
+      {"level":10,"dps_mult":1.44,"cost":0},
+      {"level":20,"dps_mult":1.59,"cost":0}
+    ]
+  },
+  {
+    "id": "elemental_focus_support",
+    "name": "Elemental Focus Support",
+    "tags": ["fire", "cold", "lightning", "support"],
+    "is_support": true,
+    "levels": [
+      {"level":1,"dps_mult":1.40,"cost":0},
+      {"level":10,"dps_mult":1.54,"cost":0},
+      {"level":20,"dps_mult":1.69,"cost":0}
+    ]
+  },
+  {
+    "id": "efficacy_support",
+    "name": "Efficacy Support",
+    "tags": ["spell", "duration", "support"],
+    "is_support": true,
+    "levels": [
+      {"level":1,"dps_mult":1.30,"cost":0},
+      {"level":10,"dps_mult":1.40,"cost":0},
+      {"level":20,"dps_mult":1.52,"cost":0}
+    ]
+  },
+  {
+    "id": "swift_affliction_support",
+    "name": "Swift Affliction Support",
+    "tags": ["duration", "support"],
+    "is_support": true,
+    "levels": [
+      {"level":1,"dps_mult":1.25,"cost":0},
+      {"level":10,"dps_mult":1.35,"cost":0},
+      {"level":20,"dps_mult":1.44,"cost":0}
+    ]
+  },
+  {
+    "id": "lifetap_support",
+    "name": "Lifetap Support",
+    "tags": ["support"],
+    "is_support": true,
+    "levels": [
+      {"level":1,"dps_mult":1.20,"cost":0},
+      {"level":10,"dps_mult":1.28,"cost":0},
+      {"level":20,"dps_mult":1.37,"cost":0}
+    ]
+  },
+  {
+    "id": "increased_area_of_effect_support",
+    "name": "Increased Area of Effect Support",
+    "tags": ["aoe", "support"],
+    "is_support": true,
+    "levels": [
+      {"level":1,"dps_mult":1.0,"cost":0},
+      {"level":10,"dps_mult":1.0,"cost":0},
+      {"level":20,"dps_mult":1.0,"cost":0}
+    ]
+  },
+  {
+    "id": "flame_dash",
+    "name": "Flame Dash",
+    "tags": ["fire", "movement", "spell", "duration"],
+    "is_support": false,
+    "levels": [
+      {"level":1,"dps_mult":1.0,"cost":0},
+      {"level":10,"dps_mult":1.3,"cost":0},
+      {"level":20,"dps_mult":1.8,"cost":0}
+    ]
+  },
+  {
+    "id": "vaal_righteous_fire",
+    "name": "Vaal Righteous Fire",
+    "tags": ["fire", "spell", "aoe", "duration", "vaal"],
+    "is_support": false,
+    "levels": [
+      {"level":1,"dps_mult":3.0,"cost":0},
+      {"level":20,"dps_mult":5.0,"cost":0}
+    ]
+  },
+  {
+    "id": "purity_of_fire",
+    "name": "Purity of Fire",
+    "tags": ["fire", "aura", "spell"],
+    "is_support": false,
+    "levels": [
+      {"level":1,"dps_mult":1.0,"cost":0},
+      {"level":20,"dps_mult":1.0,"cost":0}
+    ]
+  },
+  {
+    "id": "purity_of_elements",
+    "name": "Purity of Elements",
+    "tags": ["aura", "spell"],
+    "is_support": false,
+    "levels": [
+      {"level":1,"dps_mult":1.0,"cost":0},
+      {"level":20,"dps_mult":1.0,"cost":0}
+    ]
+  },
+  {
+    "id": "determination",
+    "name": "Determination",
+    "tags": ["aura", "spell", "physical"],
+    "is_support": false,
+    "levels": [
+      {"level":1,"dps_mult":1.0,"cost":0},
+      {"level":20,"dps_mult":1.0,"cost":0}
+    ]
+  },
+  {
+    "id": "malevolence",
+    "name": "Malevolence",
+    "tags": ["aura", "spell", "duration"],
+    "is_support": false,
+    "levels": [
+      {"level":1,"dps_mult":1.0,"cost":0},
+      {"level":20,"dps_mult":1.0,"cost":0}
+    ]
+  },
+  {
+    "id": "wave_of_conviction",
+    "name": "Wave of Conviction",
+    "tags": ["fire", "lightning", "spell", "projectile"],
+    "is_support": false,
+    "levels": [
+      {"level":1,"dps_mult":1.0,"cost":0},
+      {"level":20,"dps_mult":2.1,"cost":0}
+    ]
+  },
+  {
+    "id": "ball_lightning",
+    "name": "Ball Lightning",
+    "tags": ["lightning", "spell", "projectile"],
+    "is_support": false,
+    "levels": [
+      {"level":1,"dps_mult":1.0,"cost":0},
+      {"level":10,"dps_mult":1.5,"cost":0},
+      {"level":20,"dps_mult":2.1,"cost":0}
+    ]
+  },
+  {
+    "id": "controlled_destruction_support",
+    "name": "Controlled Destruction Support",
+    "tags": ["spell", "support"],
+    "is_support": true,
+    "levels": [
+      {"level":1,"dps_mult":1.50,"cost":0},
+      {"level":20,"dps_mult":1.79,"cost":0}
+    ]
+  },
+  {
+    "id": "spell_echo_support",
+    "name": "Spell Echo Support",
+    "tags": ["spell", "support"],
+    "is_support": true,
+    "levels": [
+      {"level":1,"dps_mult":1.40,"cost":0},
+      {"level":20,"dps_mult":1.60,"cost":0}
+    ]
+  },
+  {
+    "id": "cyclone",
+    "name": "Cyclone",
+    "tags": ["attack", "aoe", "melee"],
+    "is_support": false,
+    "levels": [
+      {"level":1,"dps_mult":1.0,"cost":0},
+      {"level":10,"dps_mult":1.3,"cost":0},
+      {"level":20,"dps_mult":1.65,"cost":0}
+    ]
+  },
+  {
+    "id": "raise_spectre",
+    "name": "Raise Spectre",
+    "tags": ["minion", "spell"],
+    "is_support": false,
+    "levels": [
+      {"level":1,"dps_mult":1.0,"cost":0},
+      {"level":20,"dps_mult":2.5,"cost":0}
+    ]
+  },
+  {
+    "id": "minion_damage_support",
+    "name": "Minion Damage Support",
+    "tags": ["minion", "support"],
+    "is_support": true,
+    "levels": [
+      {"level":1,"dps_mult":1.40,"cost":0},
+      {"level":20,"dps_mult":1.59,"cost":0}
+    ]
+  },
+  {
+    "id": "feeding_frenzy_support",
+    "name": "Feeding Frenzy Support",
+    "tags": ["minion", "support"],
+    "is_support": true,
+    "levels": [
+      {"level":1,"dps_mult":1.10,"cost":0},
+      {"level":20,"dps_mult":1.20,"cost":0}
+    ]
+  }
+]
