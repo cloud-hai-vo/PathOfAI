@@ -17,6 +17,7 @@ use crate::core::ailment_mechanics::{
     IgniteResult, ChillResult, FreezeResult, ShockResult, PoisonResult, BleedResult,
 };
 use crate::core::charge_manager::{gain_charge, charge_bonuses, ChargeType, ChargeConfig, ChargeState, ChargeBonuses};
+use crate::core::es_recharge::{tick_es_recharge, EsRechargeConfig, EsRechargeState, EsTickResult};
 use crate::models::analysis::AnalysisResult;
 use crate::models::build::Item;
 use std::collections::HashMap;
@@ -288,4 +289,20 @@ pub async fn apply_charge_gain_cmd(
     };
     gain_charge(&mut charge_state, &config, kind, count);
     Ok(charge_state)
+}
+
+/// Advance ES recharge state by one tick (Algorithm 27).
+#[tauri::command]
+pub async fn tick_es_recharge_cmd(
+    state_json:           String,
+    config_json:          String,
+    dt:                   f64,
+    es_damaged_this_tick: bool,
+    _state: State<'_, AppState>,
+) -> Result<EsTickResult, String> {
+    let mut es_state: EsRechargeState = serde_json::from_str(&state_json)
+        .map_err(|e| e.to_string())?;
+    let config: EsRechargeConfig = serde_json::from_str(&config_json)
+        .map_err(|e| e.to_string())?;
+    Ok(tick_es_recharge(&mut es_state, &config, dt, es_damaged_this_tick))
 }

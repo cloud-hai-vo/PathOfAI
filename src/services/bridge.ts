@@ -13,6 +13,7 @@ import type {
   StatCheckResult, RecipeCandidate, RecipeAnalysis,
   IgniteResult, ChillResult, FreezeResult, ShockResult, PoisonResult, BleedResult,
   ChargeType, ChargeConfig, ChargeState, ChargeBonuses,
+  EsRechargeConfig, EsRechargeState, EsTickResult,
 } from '../types/index.js';
 
 // --- Info ---
@@ -292,6 +293,21 @@ export const applyChargeGain = (
     chargeType: chargeType.toLowerCase(),
     count,
     configJson: config ? JSON.stringify(config) : null,
+  });
+
+// --- ES Recharge ---
+
+export const tickEsRecharge = (
+  state: EsRechargeState,
+  config: EsRechargeConfig,
+  dt: number,
+  esDamagedThisTick: boolean,
+): Promise<EsTickResult> =>
+  invoke('tick_es_recharge_cmd', {
+    stateJson:  JSON.stringify(state),
+    configJson: JSON.stringify(config),
+    dt,
+    esDamagedThisTick,
   });
 
 // --- Settings / Cloud AI ---

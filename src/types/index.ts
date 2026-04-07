@@ -429,6 +429,30 @@ export interface RecipeAnalysis {
   quality_recipes: QualityRecipe[];
 }
 
+// --- ES Recharge ---
+
+export interface EsRechargeConfig {
+  max_es: number;
+  increased_recharge_rate_pct: number;
+  reduced_recharge_delay_pct: number;
+  recharge_begins_immediately: boolean;
+  has_ghost_reaver: boolean;
+  has_ghost_dance: boolean;
+  ghost_shrouds: number;
+}
+
+export interface EsRechargeState {
+  es: number;
+  recharge_timer: number;
+  recharging: boolean;
+}
+
+export interface EsTickResult {
+  es: number;
+  recharging: boolean;
+  recovered: number;
+}
+
 // --- Charge Management ---
 
 export type ChargeType = 'Endurance' | 'Frenzy' | 'Power';

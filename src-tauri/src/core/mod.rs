@@ -25,3 +25,4 @@ pub mod stat_checker;
 pub mod vendor_recipe;
 pub mod ailment_mechanics;
 pub mod charge_manager;
+pub mod es_recharge;

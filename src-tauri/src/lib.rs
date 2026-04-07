@@ -138,6 +138,7 @@ pub fn run() {
             commands::simulation_commands::calc_bleed_cmd,
             commands::simulation_commands::calc_charge_bonuses_cmd,
             commands::simulation_commands::apply_charge_gain_cmd,
+            commands::simulation_commands::tick_es_recharge_cmd,
             // Settings / AI providers
             commands::settings_commands::test_cloud_ai,
             commands::settings_commands::save_ai_key,
