@@ -26,3 +26,5 @@ pub mod vendor_recipe;
 pub mod ailment_mechanics;
 pub mod charge_manager;
 pub mod es_recharge;
+pub mod change_history;
+pub mod session_persistence;
