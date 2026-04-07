@@ -270,7 +270,7 @@ pub async fn calc_charge_bonuses_cmd(
 ) -> Result<ChargeBonuses, String> {
     let counts: [u8; 3] = serde_json::from_str(&counts_json)
         .map_err(|e| e.to_string())?;
-    let config: ChargeConfig = config_json
+    let _config: ChargeConfig = config_json
         .map(|j| serde_json::from_str(&j).map_err(|e: serde_json::Error| e.to_string()))
         .transpose()?
         .unwrap_or_default();
@@ -422,7 +422,7 @@ pub async fn compare_to_top(
     state:    State<'_, AppState>,
 ) -> Result<TopBuildComparison, String> {
     use crate::core::build_analyzer::score_items;
-    use crate::core::build_detector::{detect_archetype, Archetype};
+    use crate::core::build_detector::detect_archetype;
 
     let build = state.db.load_build(&build_id).map_err(|e| e.to_string())?;
     let archetype = detect_archetype(&build);

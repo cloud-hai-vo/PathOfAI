@@ -409,7 +409,7 @@ fn archetype_tree_recommendations(build: &BuildData) -> Vec<crate::models::seer:
     }
 
     let asc = build.ascendancy.to_lowercase();
-    let class = build.class_name.to_lowercase();
+    let _class = build.class_name.to_lowercase();
 
     // Base recommendations list for this build type
     let recs: &[(&str, f64, u32, &str)] = if asc.contains("inquisitor") || asc.contains("chieftain") {

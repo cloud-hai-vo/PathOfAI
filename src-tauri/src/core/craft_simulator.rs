@@ -8,6 +8,7 @@ use serde::{Deserialize, Serialize};
 
 /// A simulated craft attempt result.
 #[derive(Debug, Clone)]
+#[allow(dead_code)] // attempts/best_score reserved for future detailed reporting
 enum SimOutcome {
     Success { cost: f64, attempts: u32 },
     ShouldHaveBought { cost: f64, attempts: u32, best_score: f64 },
