@@ -97,6 +97,7 @@ pub fn run() {
             commands::character_commands::list_characters,
             commands::character_commands::switch_character,
             commands::character_commands::start_oauth,
+            commands::character_commands::start_poe_oauth,
             commands::character_commands::get_auth_status,
             commands::character_commands::list_builds,
             // Seer
@@ -142,10 +143,12 @@ pub fn run() {
             commands::simulation_commands::simulate_boss,
             commands::simulation_commands::simulate_map_clear,
             commands::simulation_commands::compare_to_top,
+            commands::simulation_commands::compare_builds,
             // Stash
             commands::stash_commands::fetch_stash_tabs,
             commands::stash_commands::fetch_stash_items,
             commands::stash_commands::find_stash_upgrades_cmd,
+            commands::stash_commands::find_stash_upgrades,
             commands::stash_commands::get_currency_totals,
             // Settings / AI providers
             commands::settings_commands::test_cloud_ai,

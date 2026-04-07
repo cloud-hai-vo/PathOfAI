@@ -4,7 +4,7 @@
 /// `find_stash_upgrades` and `get_currency_totals` use local pure-logic helpers.
 use tauri::State;
 use crate::AppState;
-use crate::core::stash::{StashItem, StashUpgradeSuggestion, WealthSummary, tally_currency, find_stash_upgrades};
+use crate::core::stash::{StashItem, StashUpgradeSuggestion, WealthSummary, tally_currency, find_stash_upgrades as find_stash_upgrades_pure};
 use serde::{Deserialize, Serialize};
 
 // ─── Types ────────────────────────────────────────────────────────────────────
@@ -125,7 +125,23 @@ pub async fn find_stash_upgrades_cmd(
     let upgrade_fn = |item: &StashItem| {
         if item.chaos_value > 200.0 { Some(item.chaos_value * 1.1) } else { None }
     };
-    Ok(find_stash_upgrades(&items, &score_fn, &upgrade_fn, threshold))
+    Ok(find_stash_upgrades_pure(&items, &score_fn, &upgrade_fn, threshold))
+}
+
+/// Alias for find_stash_upgrades_cmd — matches IPC spec name `find_stash_upgrades`.
+#[tauri::command]
+pub async fn find_stash_upgrades(
+    items_json: String,
+    min_gain: Option<f64>,
+    _state: State<'_, AppState>,
+) -> Result<Vec<StashUpgradeSuggestion>, String> {
+    let items: Vec<StashItem> = serde_json::from_str(&items_json).map_err(|e| e.to_string())?;
+    let threshold = min_gain.unwrap_or(1.0);
+    let score_fn   = |item: &StashItem| item.chaos_value;
+    let upgrade_fn = |item: &StashItem| {
+        if item.chaos_value > 200.0 { Some(item.chaos_value * 1.1) } else { None }
+    };
+    Ok(find_stash_upgrades_pure(&items, &score_fn, &upgrade_fn, threshold))
 }
 
 /// Tally total stash wealth across all items.

@@ -58,6 +58,14 @@ pub async fn start_oauth(
     Ok(format!("Connected! Scope: {}", token.scope))
 }
 
+/// Alias for start_oauth — matches the IPC spec name `start_poe_oauth`.
+#[tauri::command]
+pub async fn start_poe_oauth(
+    state: State<'_, AppState>,
+) -> Result<String, String> {
+    start_oauth(state).await
+}
+
 /// Check whether the user has a valid OAuth token stored.
 #[tauri::command]
 pub fn get_auth_status(state: State<'_, AppState>) -> bool {

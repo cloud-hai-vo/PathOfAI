@@ -3,7 +3,7 @@ use crate::AppState;
 use crate::core::combat_sim::{
     simulate_map, PlayerState, DefenseSnapshot, OffenseSnapshot, Monster, FlaskState, SimResult,
 };
-use crate::core::build_comparator::{compare_builds, BuildSnapshot, BuildComparison};
+use crate::core::build_comparator::{compare_builds as compare_builds_pure, BuildSnapshot, BuildComparison};
 use crate::core::stash::{tally_currency, StashItem, WealthSummary};
 use crate::core::map_tracker::{accumulate_stats, MapRun, MapStats};
 use crate::core::alert_manager::{check_alerts, deactivate_alert, PriceAlert, AlertFired};
@@ -49,7 +49,19 @@ pub async fn compare_builds_cmd(
 ) -> Result<BuildComparison, String> {
     let a: BuildSnapshot = serde_json::from_str(&build_a_json).map_err(|e| e.to_string())?;
     let b: BuildSnapshot = serde_json::from_str(&build_b_json).map_err(|e| e.to_string())?;
-    Ok(compare_builds(&a, &b))
+    Ok(compare_builds_pure(&a, &b))
+}
+
+/// Alias for compare_builds_cmd — matches the IPC spec name `compare_builds`.
+#[tauri::command]
+pub async fn compare_builds(
+    build_a_json: String,
+    build_b_json: String,
+    _state: State<'_, AppState>,
+) -> Result<BuildComparison, String> {
+    let a: BuildSnapshot = serde_json::from_str(&build_a_json).map_err(|e| e.to_string())?;
+    let b: BuildSnapshot = serde_json::from_str(&build_b_json).map_err(|e| e.to_string())?;
+    Ok(compare_builds_pure(&a, &b))
 }
 
 /// Tally stash tab wealth.
