@@ -551,6 +551,32 @@ export interface BuildSnapshot {
   gems: string[];
 }
 
+// --- Stash Tab ---
+
+export interface StashTabColour {
+  r: number;
+  g: number;
+  b: number;
+}
+
+export interface StashTab {
+  id: string;
+  name: string;
+  tab_type: string;
+  index: number;
+  colour?: StashTabColour;
+}
+
+export interface StashUpgradeSuggestion {
+  item_id: string;
+  item_name: string;
+  current_score: number;
+  upgrade_score: number;
+  score_gain: number;
+  price_chaos: number;
+  efficiency: number;
+}
+
 // --- Stash ---
 
 export interface StashItem {

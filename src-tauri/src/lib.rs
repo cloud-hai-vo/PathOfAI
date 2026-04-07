@@ -141,6 +141,11 @@ pub fn run() {
             commands::simulation_commands::tick_es_recharge_cmd,
             commands::simulation_commands::simulate_boss,
             commands::simulation_commands::simulate_map_clear,
+            // Stash
+            commands::stash_commands::fetch_stash_tabs,
+            commands::stash_commands::fetch_stash_items,
+            commands::stash_commands::find_stash_upgrades_cmd,
+            commands::stash_commands::get_currency_totals,
             // Settings / AI providers
             commands::settings_commands::test_cloud_ai,
             commands::settings_commands::save_ai_key,

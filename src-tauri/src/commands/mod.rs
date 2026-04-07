@@ -6,3 +6,4 @@ pub mod market_commands;
 pub mod item_commands;
 pub mod simulation_commands;
 pub mod settings_commands;
+pub mod stash_commands;

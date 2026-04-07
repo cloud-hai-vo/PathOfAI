@@ -15,6 +15,7 @@ import type {
   ChargeType, ChargeConfig, ChargeState, ChargeBonuses,
   EsRechargeConfig, EsRechargeState, EsTickResult,
   AppSettings,
+  StashTab, StashUpgradeSuggestion,
 } from '../types/index.js';
 
 // --- Info ---
@@ -162,6 +163,30 @@ export const compareBuilds = (buildA: BuildSnapshot, buildB: BuildSnapshot): Pro
 export const tallyStashWealth = (items: StashItem[], divinePriceC: number): Promise<WealthSummary> =>
   invoke('tally_stash_wealth', {
     itemsJson: JSON.stringify(items),
+    divinePriceC,
+  });
+
+export const fetchStashTabs = (): Promise<StashTab[]> =>
+  invoke('fetch_stash_tabs');
+
+export const fetchStashItems = (tabId: string): Promise<StashItem[]> =>
+  invoke('fetch_stash_items', { tabId });
+
+export const findStashUpgrades = (
+  items: StashItem[],
+  minGain?: number,
+): Promise<StashUpgradeSuggestion[]> =>
+  invoke('find_stash_upgrades_cmd', {
+    itemsJson: JSON.stringify(items),
+    minGain,
+  });
+
+export const getCurrencyTotals = (
+  items: StashItem[],
+  divinePriceC: number,
+): Promise<WealthSummary> =>
+  invoke('get_currency_totals', {
+    itemsJson:     JSON.stringify(items),
     divinePriceC,
   });
 
