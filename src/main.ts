@@ -7,7 +7,7 @@ import { open } from '@tauri-apps/plugin-dialog';
 import { store } from './services/store.js';
 import { getAppInfo, analyzeBuild, askSeer, startOAuth, listCharacters, loadCharacter, getCraftSuggestions } from './services/bridge.js';
 import type { AnalysisResult, CraftSuggestion } from './types/index.js';
-import { renderArenaPanel, renderGemsPanel, renderBloodPactPanel, renderDarkPathPanel, renderCurseMapPanel, renderSettingsPanel } from './components/panels.js';
+import { renderArenaPanel, renderGemsPanel, renderBloodPactPanel, renderDarkPathPanel, renderCurseMapPanel, renderSettingsPanel, renderPassiveTreePanel, renderStashPanel, renderHarbingerPanel } from './components/panels.js';
 
 // ─── Boot sequence ────────────────────────────────────────────────────────────
 
@@ -241,10 +241,14 @@ function renderPanelNav() {
     { id: 'defenses', icon: '🛡',  label: 'Defenses' },
     { id: 'dps',      icon: '💥', label: 'DPS' },
     { id: 'gems',     icon: '💎', label: 'Gems' },
+    { id: 'passive',  icon: '🌳', label: 'Passive Tree' },
     { id: 'blood',    icon: '☠',  label: 'Blood Pact' },
     { id: 'darkpath', icon: '🗡', label: 'Dark Path' },
     { id: 'forge',    icon: '🔨', label: 'The Forge' },
     { id: 'cursemap', icon: '🗺', label: 'Curse Map' },
+    { id: 'harbinger',icon: '⚠',  label: 'Harbinger' },
+    { id: 'stash',    icon: '📦', label: 'Stash' },
+    { id: 'settings', icon: '⚙',  label: 'Settings' },
   ];
 
   const nav = document.getElementById('panel-nav');
@@ -311,6 +315,16 @@ function renderActivePanel(panelId: string) {
       break;
     case 'cursemap':
       content.innerHTML = renderCurseMapPanel(analysis);
+      break;
+    case 'passive':
+      content.innerHTML = renderPassiveTreePanel(analysis);
+      break;
+    case 'harbinger':
+      content.innerHTML = renderHarbingerPanel(analysis);
+      break;
+    case 'stash':
+      content.innerHTML = renderStashPanel([]);
+      loadStashPanel(content);
       break;
     case 'settings':
       loadSettingsPanel(content);
@@ -674,6 +688,28 @@ async function importFromPoB() {
   } catch (err) {
     showNotification(`⚠ Import failed: ${err}`);
     store.set({ isLoading: false });
+  }
+}
+
+async function loadStashPanel(content: HTMLElement) {
+  const { fetchStashTabs, fetchStashItems, getCurrencyTotals } = await import('./services/bridge.js');
+  try {
+    const tabs = await fetchStashTabs();
+    if (tabs.length === 0) {
+      content.innerHTML = renderStashPanel([]);
+      return;
+    }
+    // Fetch first tab's items
+    const items = await fetchStashItems(tabs[0].id);
+    const { renderStashPanel: render } = await import('./components/panels.js');
+    content.innerHTML = render(items.map(i => ({
+      name:        i.name || i.type_line,
+      chaos_value: i.chaos_value,
+      stack_size:  i.stack_size,
+      tab_name:    tabs[0].name,
+    })));
+  } catch {
+    // Not authenticated — placeholder already shown
   }
 }
 

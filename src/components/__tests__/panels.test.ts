@@ -12,6 +12,9 @@ import {
   renderBloodPactPanel,
   renderDarkPathPanel,
   renderCurseMapPanel,
+  renderPassiveTreePanel,
+  renderStashPanel,
+  renderHarbingerPanel,
 } from '../panels.js';
 
 // ── Shared test fixture ───────────────────────────────────────────────────────
@@ -222,6 +225,96 @@ describe('renderDarkPathPanel', () => {
     expect(html).toContain('div');        // cost in divines
     expect(html).toContain('DPS');
     expect(html).toContain('Surv');
+  });
+});
+
+// ── Passive Tree panel ────────────────────────────────────────────────────────
+
+describe('renderPassiveTreePanel', () => {
+  it('shows placeholder when no analysis', () => {
+    const html = renderPassiveTreePanel(null);
+    expect(html).toContain('Load a build first');
+  });
+
+  it('shows points spent bar', () => {
+    const html = renderPassiveTreePanel(makeAnalysis({ level: 90 }));
+    expect(html).toContain('Points Spent');
+    expect(html).toContain('/ 123');
+  });
+
+  it('shows archetype label', () => {
+    const html = renderPassiveTreePanel(makeAnalysis());
+    expect(html).toContain('RF Inquisitor');
+  });
+
+  it('shows class and ascendancy', () => {
+    const html = renderPassiveTreePanel(makeAnalysis());
+    expect(html).toContain('Templar');
+    expect(html).toContain('Inquisitor');
+  });
+});
+
+// ── Stash panel ───────────────────────────────────────────────────────────────
+
+describe('renderStashPanel', () => {
+  it('shows connect prompt when no items', () => {
+    const html = renderStashPanel([]);
+    expect(html).toContain('Connect your PoE account');
+  });
+
+  it('shows total value in divines', () => {
+    const items = [
+      { name: "Watcher's Eye", chaos_value: 440, stack_size: 1, tab_name: 'Gear' },
+      { name: 'Divine Orb',    chaos_value: 220, stack_size: 5, tab_name: 'Currency' },
+    ];
+    const html = renderStashPanel(items, 220);
+    // 440*1 + 220*5 = 1540 chaos / 220 = 7.0 divine
+    expect(html).toContain('7.0d');
+    expect(html).toContain('2');  // 2 unique items
+  });
+
+  it('shows top items sorted by value', () => {
+    const items = [
+      { name: 'Chaos Orb',     chaos_value: 1,   stack_size: 100, tab_name: 'Currency' },
+      { name: "Watcher's Eye", chaos_value: 440, stack_size: 1,   tab_name: 'Gear' },
+    ];
+    const html = renderStashPanel(items, 220);
+    const watcherPos  = html.indexOf("Watcher's Eye");
+    const chaosPos    = html.indexOf('Chaos Orb');
+    expect(watcherPos).toBeLessThan(chaosPos); // higher value item first
+  });
+});
+
+// ── Harbinger panel ───────────────────────────────────────────────────────────
+
+describe('renderHarbingerPanel', () => {
+  it('shows placeholder when no analysis', () => {
+    const html = renderHarbingerPanel(null);
+    expect(html).toContain('Load a build first');
+  });
+
+  it('shows no-issue message when issues array is empty', () => {
+    const html = renderHarbingerPanel(makeAnalysis({ issues: [] }));
+    expect(html).toContain('No issues detected');
+  });
+
+  it('shows issue count in header', () => {
+    const issues = [
+      { id: '1', severity: 'Critical' as const, title: 'Low life', detail: 'Need more life', fix: 'Add life', slot: 'Ring' },
+      { id: '2', severity: 'Minor' as const,    title: 'Low res',  detail: 'Resist low',     fix: 'Add res'  },
+    ];
+    const html = renderHarbingerPanel(makeAnalysis({ issues }));
+    expect(html).toContain('(2)');
+  });
+
+  it('renders critical issues with red styling', () => {
+    const issues = [
+      { id: '1', severity: 'Critical' as const, title: 'Chaos res 0%', detail: 'Instant death', fix: 'Get chaos res' },
+    ];
+    const html = renderHarbingerPanel(makeAnalysis({ issues }));
+    expect(html).toContain('Critical');
+    expect(html).toContain('Chaos res 0%');
+    expect(html).toContain('Instant death');
   });
 });
 

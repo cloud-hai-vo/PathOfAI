@@ -411,6 +411,152 @@ const AI_PROVIDERS: AiProvider[] = [
   { id: 'ollama',     label: 'Ollama (local)',       placeholder: 'no key needed', url: 'https://ollama.ai/' },
 ];
 
+// ─── Passive Tree Panel ───────────────────────────────────────────────────────
+
+export function renderPassiveTreePanel(analysis: AnalysisResult | null): string {
+  if (!analysis) return `<div class="panel-placeholder">Load a build first</div>`;
+  const pts = analysis.level > 0 ? Math.min(analysis.level - 1, 123) : 0;
+  return `
+    <div class="section-label">🌳 Passive Tree — ${analysis.build_name}</div>
+
+    <div style="background:var(--bg-card);border:1px solid var(--border);border-radius:2px;padding:10px;margin-bottom:8px;">
+      <div style="display:flex;justify-content:space-between;margin-bottom:6px;">
+        <span style="font-size:12px;color:var(--text-bright);font-weight:600;font-family:'Cinzel',serif;">Points Spent</span>
+        <span style="font-size:14px;font-weight:800;color:var(--gold);font-family:'JetBrains Mono',monospace;">${pts} / 123</span>
+      </div>
+      <div style="height:5px;background:var(--bg-dark);border-radius:3px;overflow:hidden;">
+        <div style="height:100%;width:${Math.round(pts / 123 * 100)}%;background:linear-gradient(90deg,var(--gold),var(--success));border-radius:3px;"></div>
+      </div>
+      <div style="font-size:10px;color:var(--text-dim);margin-top:4px;">${123 - pts} unallocated points available</div>
+    </div>
+
+    <div style="font-size:10px;color:var(--text-dim);text-transform:uppercase;letter-spacing:1px;font-family:'Cinzel',serif;margin:10px 0 6px;">🔑 Build Archetype</div>
+    <div style="background:var(--bg-card);border:1px solid var(--border);border-left:3px solid var(--fire);border-radius:2px;padding:8px 10px;margin-bottom:8px;">
+      <div style="font-size:12px;color:var(--text-bright);font-weight:600;">${analysis.archetype_label}</div>
+      <div style="font-size:9px;color:var(--text-muted);margin-top:2px;">${analysis.class_name} — ${analysis.ascendancy}</div>
+    </div>
+
+    <div style="font-size:10px;color:var(--text-dim);text-transform:uppercase;letter-spacing:1px;font-family:'Cinzel',serif;margin:10px 0 6px;">⬆ Seer Recommendations</div>
+    <div style="background:var(--bg-card);border:1px solid var(--border);border-left:3px solid var(--success);border-radius:2px;padding:8px 10px;margin-bottom:4px;">
+      <div style="display:flex;justify-content:space-between;font-size:11px;">
+        <span style="color:var(--text-bright);">Ask the Seer for tree advice</span>
+        <span style="color:var(--success);font-size:10px;">→ Grimoire</span>
+      </div>
+      <div style="font-size:9px;color:var(--text-muted);">The Seer can recommend the next 3-5 passive points for your archetype.</div>
+    </div>
+
+    <div style="margin-top:10px;padding:8px;background:#c4a83008;border:1px solid #c4a83020;border-radius:2px;font-size:10px;color:var(--gold);text-align:center;">
+      🌳 Full interactive passive tree viewer — open Path of Building for node details
+    </div>
+  `;
+}
+
+// ─── Stash Panel ──────────────────────────────────────────────────────────────
+
+export interface StashPanelItem {
+  name: string;
+  chaos_value: number;
+  stack_size: number;
+  tab_name: string;
+}
+
+export function renderStashPanel(items: StashPanelItem[], divinePriceC = 220): string {
+  if (items.length === 0) {
+    return `
+      <div class="section-label">📦 Stash — Inventory Intelligence</div>
+      <div style="text-align:center;padding:30px 0;color:var(--text-muted);font-size:11px;">
+        <div style="font-size:24px;margin-bottom:8px;">📦</div>
+        Connect your PoE account to view stash contents.<br>
+        <small style="color:var(--text-dim);">Settings → Connect PoE Account</small>
+      </div>
+    `;
+  }
+
+  const totalChaos = items.reduce((s, i) => s + i.chaos_value * i.stack_size, 0);
+  const totalDiv   = divinePriceC > 0 ? totalChaos / divinePriceC : 0;
+
+  const tabNames = [...new Set(items.map(i => i.tab_name))];
+  const topItems = [...items]
+    .sort((a, b) => b.chaos_value * b.stack_size - a.chaos_value * a.stack_size)
+    .slice(0, 10);
+
+  return `
+    <div class="section-label">📦 Stash — Inventory Intelligence</div>
+
+    <div style="display:flex;gap:8px;margin-bottom:10px;">
+      <div style="flex:1;background:var(--bg-card);border:1px solid var(--border);border-radius:2px;padding:8px;text-align:center;">
+        <div style="font-size:18px;font-weight:800;color:var(--gold);font-family:'JetBrains Mono',monospace;">${totalDiv.toFixed(1)}d</div>
+        <div style="font-size:9px;color:var(--text-muted);">Total Value</div>
+      </div>
+      <div style="flex:1;background:var(--bg-card);border:1px solid var(--border);border-radius:2px;padding:8px;text-align:center;">
+        <div style="font-size:18px;font-weight:800;color:var(--text-bright);font-family:'JetBrains Mono',monospace;">${items.length}</div>
+        <div style="font-size:9px;color:var(--text-muted);">Unique Items</div>
+      </div>
+      <div style="flex:1;background:var(--bg-card);border:1px solid var(--border);border-radius:2px;padding:8px;text-align:center;">
+        <div style="font-size:18px;font-weight:800;color:var(--text-bright);font-family:'JetBrains Mono',monospace;">${tabNames.length}</div>
+        <div style="font-size:9px;color:var(--text-muted);">Tabs</div>
+      </div>
+    </div>
+
+    <div style="font-size:10px;color:var(--text-dim);text-transform:uppercase;letter-spacing:1px;font-family:'Cinzel',serif;margin-bottom:6px;">💰 Top Items by Value</div>
+    ${topItems.map(item => {
+      const val = item.chaos_value * item.stack_size;
+      const divVal = divinePriceC > 0 ? (val / divinePriceC).toFixed(1) : '?';
+      return `
+        <div style="display:flex;justify-content:space-between;align-items:center;padding:5px 8px;background:var(--bg-card);border:1px solid var(--border);border-radius:2px;margin-bottom:3px;">
+          <div>
+            <span style="font-size:11px;color:var(--text-bright);">${item.name}</span>
+            ${item.stack_size > 1 ? `<span style="font-size:9px;color:var(--text-muted);margin-left:4px;">×${item.stack_size}</span>` : ''}
+            <div style="font-size:8px;color:var(--text-dim);">${item.tab_name}</div>
+          </div>
+          <span style="font-size:11px;font-weight:700;color:var(--gold);font-family:'JetBrains Mono',monospace;">${divVal}d</span>
+        </div>
+      `;
+    }).join('')}
+  `;
+}
+
+// ─── Harbinger Panel (Issues list) ───────────────────────────────────────────
+
+export function renderHarbingerPanel(analysis: AnalysisResult | null): string {
+  if (!analysis) return `<div class="panel-placeholder">Load a build first</div>`;
+
+  const issues = analysis.issues;
+  if (issues.length === 0) {
+    return `
+      <div class="section-label">⚠ Harbinger Warnings (0)</div>
+      <div style="text-align:center;padding:20px 0;color:var(--success);font-size:12px;">✓ No issues detected — build looks solid!</div>
+    `;
+  }
+
+  const bySeverity = (s: string) => issues.filter(i => i.severity === s);
+  const sections: Array<[string, string, string]> = [
+    ['Critical', 'var(--danger)',  '🔴'],
+    ['Major',    'var(--warning)', '🟠'],
+    ['Minor',    'var(--gold)',    '🟡'],
+    ['Info',     'var(--info)',    'ℹ'],
+  ];
+
+  return `
+    <div class="section-label">⚠ Harbinger Warnings (${issues.length})</div>
+    ${sections.map(([sev, color, icon]) => {
+      const grp = bySeverity(sev);
+      if (grp.length === 0) return '';
+      return `
+        <div style="font-size:10px;color:${color};text-transform:uppercase;letter-spacing:1px;font-family:'Cinzel',serif;margin:8px 0 4px;">${icon} ${sev} (${grp.length})</div>
+        ${grp.map(issue => `
+          <div style="background:var(--bg-card);border:1px solid var(--border);border-left:3px solid ${color};border-radius:2px;padding:8px 10px;margin-bottom:4px;">
+            <div style="font-size:11px;color:${color};font-weight:600;margin-bottom:3px;">${issue.title}</div>
+            <div style="font-size:9px;color:var(--text-muted);margin-bottom:3px;">${issue.detail}</div>
+            <div style="font-size:9px;color:var(--text-dim);">Fix: ${issue.fix}</div>
+            ${issue.slot ? `<div style="font-size:8px;color:var(--text-dim);margin-top:2px;">Slot: ${issue.slot}</div>` : ''}
+          </div>
+        `).join('')}
+      `;
+    }).join('')}
+  `;
+}
+
 export function renderSettingsPanel(configuredProviders: string[] = []): string {
   const providerRows = AI_PROVIDERS.map(p => {
     const configured = configuredProviders.includes(p.label);
