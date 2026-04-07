@@ -16,6 +16,7 @@ import type {
   EsRechargeConfig, EsRechargeState, EsTickResult,
   AppSettings,
   StashTab, StashUpgradeSuggestion,
+  TopBuildComparison,
 } from '../types/index.js';
 
 // --- Info ---
@@ -362,6 +363,9 @@ export const simulateBoss = (
   bossId: string,
 ): Promise<SimResult> =>
   invoke('simulate_boss', { playerJson, defenseJson, offenseJson, bossId });
+
+export const compareToTop = (buildId: string, limit: number): Promise<TopBuildComparison> =>
+  invoke('compare_to_top', { buildId, limit });
 
 export const simulateMapClear = (
   playerJson: string,

@@ -141,6 +141,7 @@ pub fn run() {
             commands::simulation_commands::tick_es_recharge_cmd,
             commands::simulation_commands::simulate_boss,
             commands::simulation_commands::simulate_map_clear,
+            commands::simulation_commands::compare_to_top,
             // Stash
             commands::stash_commands::fetch_stash_tabs,
             commands::stash_commands::fetch_stash_items,

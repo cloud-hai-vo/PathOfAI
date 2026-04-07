@@ -491,6 +491,30 @@ export interface ChargeBonuses {
   increased_crit_chance: number;
 }
 
+// --- Top Build Comparison ---
+
+export interface GearGap {
+  slot: string;
+  your_score: number;
+  avg_score: number;
+}
+
+export interface PopularGem {
+  gem: string;
+  usage_percent: number;
+  you_use: boolean;
+}
+
+export interface TopBuildComparison {
+  your_dps: number;
+  avg_top_dps: number;
+  percentile: number;
+  gear_gaps: GearGap[];
+  tree_overlap: number;
+  missing_nodes: string[];
+  popular_gems: PopularGem[];
+}
+
 // --- Map Mod Analysis ---
 
 export type DangerLevel = 'Safe' | 'Minor' | 'Moderate' | 'Major' | 'Critical';
