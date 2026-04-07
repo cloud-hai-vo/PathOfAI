@@ -14,6 +14,7 @@ import type {
   IgniteResult, ChillResult, FreezeResult, ShockResult, PoisonResult, BleedResult,
   ChargeType, ChargeConfig, ChargeState, ChargeBonuses,
   EsRechargeConfig, EsRechargeState, EsTickResult,
+  AppSettings,
 } from '../types/index.js';
 
 // --- Info ---
@@ -309,6 +310,42 @@ export const tickEsRecharge = (
     dt,
     esDamagedThisTick,
   });
+
+// --- Settings ---
+
+export const saveSettings = (settings: AppSettings): Promise<void> =>
+  invoke('save_settings', { settingsJson: JSON.stringify(settings) });
+
+export const loadSettings = (): Promise<AppSettings> =>
+  invoke('load_settings');
+
+export const watchPobDirectory = (path: string): Promise<string> =>
+  invoke('watch_pob_directory', { path });
+
+// --- Boss / Map Simulation ---
+
+export interface BossSimInput {
+  playerJson: string;
+  defenseJson: string;
+  offenseJson: string;
+}
+
+export const simulateBoss = (
+  playerJson: string,
+  defenseJson: string,
+  offenseJson: string,
+  bossId: string,
+): Promise<SimResult> =>
+  invoke('simulate_boss', { playerJson, defenseJson, offenseJson, bossId });
+
+export const simulateMapClear = (
+  playerJson: string,
+  defenseJson: string,
+  offenseJson: string,
+  mapTier: number,
+  monsterCount?: number,
+): Promise<SimResult> =>
+  invoke('simulate_map_clear', { playerJson, defenseJson, offenseJson, mapTier, monsterCount });
 
 // --- Settings / Cloud AI ---
 

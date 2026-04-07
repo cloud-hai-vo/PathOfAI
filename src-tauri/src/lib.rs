@@ -139,12 +139,17 @@ pub fn run() {
             commands::simulation_commands::calc_charge_bonuses_cmd,
             commands::simulation_commands::apply_charge_gain_cmd,
             commands::simulation_commands::tick_es_recharge_cmd,
+            commands::simulation_commands::simulate_boss,
+            commands::simulation_commands::simulate_map_clear,
             // Settings / AI providers
             commands::settings_commands::test_cloud_ai,
             commands::settings_commands::save_ai_key,
             commands::settings_commands::remove_ai_key,
             commands::settings_commands::get_configured_providers,
             commands::settings_commands::get_pob_watch_dir,
+            commands::settings_commands::save_settings,
+            commands::settings_commands::load_settings,
+            commands::settings_commands::watch_pob_directory,
         ])
         .run(tauri::generate_context!())
         .expect("error while running Path of AI");

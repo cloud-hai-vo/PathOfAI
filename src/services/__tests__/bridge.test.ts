@@ -440,4 +440,54 @@ describe('bridge.ts', () => {
     expect(mockInvoke).toHaveBeenCalledWith('import_share_code', { code: 'pofai:ABC123' });
     expect(result.build_name).toBe('RF');
   });
+
+  // ── saveSettings ────────────────────────────────────────────────────────────
+
+  it('saveSettings serialises settings to JSON', async () => {
+    mockInvoke.mockResolvedValueOnce(undefined);
+    const settings = { league: 'Settlers', default_boss: 'Shaper', price_refresh_secs: 300, price_currency: 'divine' as const, sound_enabled: true, pob_watch_dir: '' };
+
+    await bridgeModule.saveSettings(settings);
+
+    expect(mockInvoke).toHaveBeenCalledWith('save_settings', { settingsJson: JSON.stringify(settings) });
+  });
+
+  it('loadSettings returns AppSettings from backend', async () => {
+    const mockSettings = { league: 'HC', default_boss: 'Maven', price_refresh_secs: 60, price_currency: 'chaos' as const, sound_enabled: false, pob_watch_dir: '/tmp/pob' };
+    mockInvoke.mockResolvedValueOnce(mockSettings);
+
+    const result = await bridgeModule.loadSettings();
+
+    expect(mockInvoke).toHaveBeenCalledWith('load_settings');
+    expect(result.league).toBe('HC');
+    expect(result.sound_enabled).toBe(false);
+  });
+
+  // ── simulateBoss ─────────────────────────────────────────────────────────────
+
+  it('simulateBoss passes boss_id and player/defense/offense JSON', async () => {
+    const mockResult = { clear_time_ms: 12000, kills: 1, deaths: 0, ticks: 1200 };
+    mockInvoke.mockResolvedValueOnce(mockResult);
+
+    const result = await bridgeModule.simulateBoss('{}', '{}', '{}', 'shaper');
+
+    expect(mockInvoke).toHaveBeenCalledWith('simulate_boss', {
+      playerJson: '{}', defenseJson: '{}', offenseJson: '{}', bossId: 'shaper',
+    });
+    expect(result.kills).toBe(1);
+  });
+
+  // ── simulateMapClear ──────────────────────────────────────────────────────────
+
+  it('simulateMapClear passes mapTier and optional monsterCount', async () => {
+    const mockResult = { clear_time_ms: 45000, kills: 100, deaths: 0, ticks: 4500 };
+    mockInvoke.mockResolvedValueOnce(mockResult);
+
+    const result = await bridgeModule.simulateMapClear('{}', '{}', '{}', 16, 100);
+
+    expect(mockInvoke).toHaveBeenCalledWith('simulate_map_clear', {
+      playerJson: '{}', defenseJson: '{}', offenseJson: '{}', mapTier: 16, monsterCount: 100,
+    });
+    expect(result.kills).toBe(100);
+  });
 });

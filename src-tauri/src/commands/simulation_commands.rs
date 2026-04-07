@@ -306,3 +306,70 @@ pub async fn tick_es_recharge_cmd(
         .map_err(|e| e.to_string())?;
     Ok(tick_es_recharge(&mut es_state, &config, dt, es_damaged_this_tick))
 }
+
+// ─── Boss / Map-Clear Simulation helpers ──────────────────────────────────────
+
+/// Boss stat presets keyed by boss_id.
+fn boss_monsters(boss_id: &str) -> Vec<crate::core::combat_sim::Monster> {
+    use crate::core::combat_sim::{Monster, DamageType, Rarity};
+    let (hp, dps) = match boss_id {
+        "shaper"       => (30_000_000.0, 8_000.0),
+        "elder"        => (25_000_000.0, 7_000.0),
+        "maven"        => (50_000_000.0, 12_000.0),
+        "uber_shaper"  => (60_000_000.0, 15_000.0),
+        "uber_elder"   => (55_000_000.0, 14_000.0),
+        "sirus"        => (40_000_000.0, 10_000.0),
+        _              => (20_000_000.0, 6_000.0),
+    };
+    vec![Monster {
+        id: 0, hp, max_hp: hp, damage: dps,
+        damage_type: DamageType::Physical,
+        attack_cooldown_ms: 1000, attack_timer_ms: 0,
+        rarity: Rarity::Unique, alive: true,
+    }]
+}
+
+/// Simulate a boss fight and return SimResult.
+#[tauri::command]
+pub async fn simulate_boss(
+    player_json:  String,
+    defense_json: String,
+    offense_json: String,
+    boss_id:      String,
+    _state: State<'_, AppState>,
+) -> Result<SimResult, String> {
+    let player:  PlayerState      = serde_json::from_str(&player_json).map_err(|e| e.to_string())?;
+    let defense: DefenseSnapshot  = serde_json::from_str(&defense_json).map_err(|e| e.to_string())?;
+    let offense: OffenseSnapshot  = serde_json::from_str(&offense_json).map_err(|e| e.to_string())?;
+    let monsters = boss_monsters(&boss_id);
+    Ok(simulate_map(&player, &defense, &offense, monsters, vec![]))
+}
+
+/// Simulate a map clear (N monsters at tier-scaled stats) and return SimResult.
+#[tauri::command]
+pub async fn simulate_map_clear(
+    player_json:  String,
+    defense_json: String,
+    offense_json: String,
+    map_tier:     u32,
+    monster_count: Option<u32>,
+    _state: State<'_, AppState>,
+) -> Result<SimResult, String> {
+    use crate::core::combat_sim::Monster;
+    let player:  PlayerState     = serde_json::from_str(&player_json).map_err(|e| e.to_string())?;
+    let defense: DefenseSnapshot = serde_json::from_str(&defense_json).map_err(|e| e.to_string())?;
+    let offense: OffenseSnapshot = serde_json::from_str(&offense_json).map_err(|e| e.to_string())?;
+    let count = monster_count.unwrap_or(100).min(500) as usize;
+    // Monster HP/DPS scales with map tier (base ×1 at T1, ×3 at T16)
+    let scale = 1.0 + (map_tier.saturating_sub(1) as f64) * (2.0 / 15.0);
+    let mon_hp  = 50_000.0 * scale;
+    let mon_dps = 200.0 * scale;
+    use crate::core::combat_sim::{DamageType, Rarity};
+    let monsters: Vec<Monster> = (0..count).map(|i| Monster {
+        id: i as u32, hp: mon_hp, max_hp: mon_hp,
+        damage: mon_dps, damage_type: DamageType::Physical,
+        attack_cooldown_ms: 1000, attack_timer_ms: 0,
+        rarity: Rarity::Normal, alive: true,
+    }).collect();
+    Ok(simulate_map(&player, &defense, &offense, monsters, vec![]))
+}

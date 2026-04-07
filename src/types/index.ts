@@ -429,6 +429,17 @@ export interface RecipeAnalysis {
   quality_recipes: QualityRecipe[];
 }
 
+// --- App Settings ---
+
+export interface AppSettings {
+  league: string;
+  default_boss: string;
+  price_refresh_secs: number;
+  price_currency: 'divine' | 'chaos';
+  sound_enabled: boolean;
+  pob_watch_dir: string;
+}
+
 // --- ES Recharge ---
 
 export interface EsRechargeConfig {
