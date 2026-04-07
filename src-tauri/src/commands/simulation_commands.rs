@@ -12,6 +12,10 @@ use crate::core::mana_reservation::{calculate_reservation, ReservationSkill, Pla
 use crate::core::share_codec::{encode_share_code, decode_share_code, SharePayload};
 use crate::core::stat_checker::{check_requirements, StatCheckResult};
 use crate::core::vendor_recipe::{detect_recipes, RecipeCandidate, RecipeAnalysis};
+use crate::core::ailment_mechanics::{
+    calc_ignite, calc_chill, calc_freeze, calc_shock, calc_poison, calc_bleed,
+    IgniteResult, ChillResult, FreezeResult, ShockResult, PoisonResult, BleedResult,
+};
 use crate::models::analysis::AnalysisResult;
 use crate::models::build::Item;
 use std::collections::HashMap;
@@ -187,4 +191,60 @@ pub async fn detect_vendor_recipes(
 ) -> Result<RecipeAnalysis, String> {
     let items: Vec<RecipeCandidate> = serde_json::from_str(&items_json).map_err(|e| e.to_string())?;
     Ok(detect_recipes(&items))
+}
+
+/// Calculate ignite DPS and duration for a given hit.
+#[tauri::command]
+pub async fn calc_ignite_cmd(
+    fire_hit: f64, fire_dot_multi_pct: f64, increased_burning_pct: f64,
+    increased_duration_pct: f64, _state: State<'_, AppState>,
+) -> Result<IgniteResult, String> {
+    Ok(calc_ignite(fire_hit, fire_dot_multi_pct, increased_burning_pct, increased_duration_pct))
+}
+
+/// Calculate chill effect and duration.
+#[tauri::command]
+pub async fn calc_chill_cmd(
+    cold_hit: f64, target_max_life: f64, increased_effect_pct: f64,
+    increased_duration_pct: f64, _state: State<'_, AppState>,
+) -> Result<ChillResult, String> {
+    Ok(calc_chill(cold_hit, target_max_life, increased_effect_pct, increased_duration_pct))
+}
+
+/// Calculate freeze ability and duration.
+#[tauri::command]
+pub async fn calc_freeze_cmd(
+    cold_hit: f64, target_max_life: f64, _state: State<'_, AppState>,
+) -> Result<FreezeResult, String> {
+    Ok(calc_freeze(cold_hit, target_max_life))
+}
+
+/// Calculate shock effect and duration.
+#[tauri::command]
+pub async fn calc_shock_cmd(
+    lightning_hit: f64, target_max_life: f64, increased_effect_pct: f64,
+    increased_duration_pct: f64, has_always_shocks: bool, _state: State<'_, AppState>,
+) -> Result<ShockResult, String> {
+    Ok(calc_shock(lightning_hit, target_max_life, increased_effect_pct, increased_duration_pct, has_always_shocks))
+}
+
+/// Calculate poison DPS and stack count.
+#[tauri::command]
+pub async fn calc_poison_cmd(
+    phys_chaos_hit: f64, hit_rate: f64, poison_chance_pct: f64,
+    chaos_dot_multi_pct: f64, increased_poison_pct: f64,
+    increased_duration_pct: f64, _state: State<'_, AppState>,
+) -> Result<PoisonResult, String> {
+    Ok(calc_poison(phys_chaos_hit, hit_rate, poison_chance_pct, chaos_dot_multi_pct, increased_poison_pct, increased_duration_pct))
+}
+
+/// Calculate bleed DPS and stack count.
+#[tauri::command]
+pub async fn calc_bleed_cmd(
+    phys_hit: f64, hit_rate: f64, bleed_chance_pct: f64, phys_dot_multi_pct: f64,
+    increased_bleed_pct: f64, increased_duration_pct: f64,
+    has_crimson_dance: bool, target_is_moving: bool, _state: State<'_, AppState>,
+) -> Result<BleedResult, String> {
+    Ok(calc_bleed(phys_hit, hit_rate, bleed_chance_pct, phys_dot_multi_pct,
+        increased_bleed_pct, increased_duration_pct, has_crimson_dance, target_is_moving))
 }

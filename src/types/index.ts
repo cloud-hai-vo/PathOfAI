@@ -324,6 +324,44 @@ export interface SharePayload {
   total_life: number;
 }
 
+// --- Ailment Mechanics ---
+
+export interface IgniteResult {
+  dps_per_second: number;
+  duration_secs: number;
+  total_damage: number;
+}
+
+export interface ChillResult {
+  effect_pct: number;
+  duration_secs: number;
+}
+
+export interface FreezeResult {
+  can_freeze: boolean;
+  duration_secs: number;
+}
+
+export interface ShockResult {
+  effect_pct: number;
+  duration_secs: number;
+}
+
+export interface PoisonResult {
+  dps_per_stack: number;
+  max_stacks: number;
+  total_dps: number;
+  duration_secs: number;
+}
+
+export interface BleedResult {
+  dps_stationary: number;
+  dps_moving: number;
+  active_dps: number;
+  duration_secs: number;
+  active_stacks: number;
+}
+
 // --- Stat Requirement Checker ---
 
 export type AttributeType = 'Strength' | 'Dexterity' | 'Intelligence';

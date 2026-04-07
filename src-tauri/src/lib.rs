@@ -130,11 +130,18 @@ pub fn run() {
             commands::simulation_commands::import_share_code,
             commands::simulation_commands::check_stat_requirements,
             commands::simulation_commands::detect_vendor_recipes,
+            commands::simulation_commands::calc_ignite_cmd,
+            commands::simulation_commands::calc_chill_cmd,
+            commands::simulation_commands::calc_freeze_cmd,
+            commands::simulation_commands::calc_shock_cmd,
+            commands::simulation_commands::calc_poison_cmd,
+            commands::simulation_commands::calc_bleed_cmd,
             // Settings / AI providers
             commands::settings_commands::test_cloud_ai,
             commands::settings_commands::save_ai_key,
             commands::settings_commands::remove_ai_key,
             commands::settings_commands::get_configured_providers,
+            commands::settings_commands::get_pob_watch_dir,
         ])
         .run(tauri::generate_context!())
         .expect("error while running Path of AI");

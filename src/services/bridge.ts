@@ -11,6 +11,7 @@ import type {
   ReservationSkill, PlayerReservationStats, ReservationResult,
   SharePayload, BuildData,
   StatCheckResult, RecipeCandidate, RecipeAnalysis,
+  IgniteResult, ChillResult, FreezeResult, ShockResult, PoisonResult, BleedResult,
 } from '../types/index.js';
 
 // --- Info ---
@@ -226,6 +227,47 @@ export const checkStatRequirements = (
 
 export const detectVendorRecipes = (items: RecipeCandidate[]): Promise<RecipeAnalysis> =>
   invoke('detect_vendor_recipes', { itemsJson: JSON.stringify(items) });
+
+// --- Ailment Mechanics ---
+
+export const calcIgnite = (
+  fireHit: number, fireDotMultiPct: number, increasedBurningPct: number,
+  increasedDurationPct: number,
+): Promise<IgniteResult> =>
+  invoke('calc_ignite_cmd', { fireHit, fireDotMultiPct, increasedBurningPct, increasedDurationPct });
+
+export const calcChill = (
+  coldHit: number, targetMaxLife: number, increasedEffectPct: number,
+  increasedDurationPct: number,
+): Promise<ChillResult> =>
+  invoke('calc_chill_cmd', { coldHit, targetMaxLife, increasedEffectPct, increasedDurationPct });
+
+export const calcFreeze = (
+  coldHit: number, targetMaxLife: number,
+): Promise<FreezeResult> =>
+  invoke('calc_freeze_cmd', { coldHit, targetMaxLife });
+
+export const calcShock = (
+  lightningHit: number, targetMaxLife: number, increasedEffectPct: number,
+  increasedDurationPct: number, hasAlwaysShocks: boolean,
+): Promise<ShockResult> =>
+  invoke('calc_shock_cmd', { lightningHit, targetMaxLife, increasedEffectPct, increasedDurationPct, hasAlwaysShocks });
+
+export const calcPoison = (
+  physChaosHit: number, hitRate: number, poisonChancePct: number,
+  chaosDotMultiPct: number, increasedPoisonPct: number, increasedDurationPct: number,
+): Promise<PoisonResult> =>
+  invoke('calc_poison_cmd', { physChaosHit, hitRate, poisonChancePct, chaosDotMultiPct, increasedPoisonPct, increasedDurationPct });
+
+export const calcBleed = (
+  physHit: number, hitRate: number, bleedChancePct: number, physDotMultiPct: number,
+  increasedBleedPct: number, increasedDurationPct: number,
+  hasCrimsonDance: boolean, targetIsMoving: boolean,
+): Promise<BleedResult> =>
+  invoke('calc_bleed_cmd', { physHit, hitRate, bleedChancePct, physDotMultiPct, increasedBleedPct, increasedDurationPct, hasCrimsonDance, targetIsMoving });
+
+export const getPobWatchDir = (): Promise<string> =>
+  invoke('get_pob_watch_dir');
 
 // --- Settings / Cloud AI ---
 

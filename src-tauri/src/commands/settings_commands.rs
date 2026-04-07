@@ -46,6 +46,17 @@ pub async fn get_configured_providers(
     Ok(keys.configured_providers().iter().map(|p| p.name().to_string()).collect())
 }
 
+/// Return the directory currently being watched for PoB file changes.
+#[tauri::command]
+pub async fn get_pob_watch_dir(
+    state: State<'_, AppState>,
+) -> Result<String, String> {
+    let dir = state.db.data_dir().join("builds");
+    let path = std::env::var("POE_POB_DIR")
+        .unwrap_or_else(|_| dir.to_string_lossy().to_string());
+    Ok(path)
+}
+
 fn parse_provider(s: &str) -> Result<CloudProvider, String> {
     match s.to_lowercase().as_str() {
         "claude"     => Ok(CloudProvider::Claude),

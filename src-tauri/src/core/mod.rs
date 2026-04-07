@@ -23,3 +23,4 @@ pub mod mana_reservation;
 pub mod share_codec;
 pub mod stat_checker;
 pub mod vendor_recipe;
+pub mod ailment_mechanics;
