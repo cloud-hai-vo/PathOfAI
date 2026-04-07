@@ -228,6 +228,36 @@ export interface SeerResponse {
   related_suggestions: string[];
 }
 
+export interface NodeCategory {
+  name: string;
+  count: number;
+  total_value: number;
+}
+
+export interface NodeRecommendation {
+  node_id: number;
+  node_name: string;
+  path_cost: number;
+  value_score: number;
+  efficiency: number;
+  reason: string;
+}
+
+export interface InefficientNode {
+  node_id: number;
+  node_name: string;
+  value_score: number;
+  reason: string;
+}
+
+export interface TreeAnalysis {
+  total_allocated: number;
+  by_category: NodeCategory[];
+  top_recommendations: NodeRecommendation[];
+  inefficient_nodes: InefficientNode[];
+  next_keystone: string | null;
+}
+
 export interface PriceResult {
   item_name: string;
   price_div: number;

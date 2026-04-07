@@ -490,4 +490,27 @@ describe('bridge.ts', () => {
     });
     expect(result.kills).toBe(100);
   });
+
+  // ── getTreeAnalysis ───────────────────────────────────────────────────────────
+
+  it('getTreeAnalysis invokes get_tree_analysis with buildId', async () => {
+    const mockTree = {
+      total_allocated: 95,
+      by_category: [{ name: 'Fire Damage', count: 12, total_value: 240.0 }],
+      top_recommendations: [{
+        node_id: 31628, node_name: 'Elemental Overload', path_cost: 3,
+        value_score: 8.5, efficiency: 2.83, reason: 'High fire damage bonus',
+      }],
+      inefficient_nodes: [],
+      next_keystone: 'Elemental Overload',
+    };
+    mockInvoke.mockResolvedValueOnce(mockTree);
+
+    const result = await bridgeModule.getTreeAnalysis('build-abc');
+
+    expect(mockInvoke).toHaveBeenCalledWith('get_tree_analysis', { buildId: 'build-abc' });
+    expect(result.total_allocated).toBe(95);
+    expect(result.top_recommendations).toHaveLength(1);
+    expect(result.next_keystone).toBe('Elemental Overload');
+  });
 });

@@ -17,6 +17,7 @@ import type {
   AppSettings,
   StashTab, StashUpgradeSuggestion,
   TopBuildComparison,
+  TreeAnalysis,
 } from '../types/index.js';
 
 // --- Info ---
@@ -62,6 +63,9 @@ export const getAuthStatus = (): Promise<boolean> =>
 
 export const askSeer = (question: string, buildId: string): Promise<SeerResponse> =>
   invoke('ask_seer', { question, buildId });
+
+export const getTreeAnalysis = (buildId: string): Promise<TreeAnalysis> =>
+  invoke('get_tree_analysis', { buildId });
 
 export const getCraftSuggestions = (buildId: string, currencyJson: string): Promise<CraftSuggestion[]> =>
   invoke('get_craft_suggestions', { buildId, currencyJson });
