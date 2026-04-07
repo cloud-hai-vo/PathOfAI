@@ -115,11 +115,15 @@ test.describe('Path of AI — smoke tests', () => {
 
   // ── Panel navigation ────────────────────────────────────────────────────────
 
-  test('panel nav renders all 10 panel buttons', async ({ page }) => {
+  test('panel nav renders all 14 panel buttons', async ({ page }) => {
     await page.goto('/');
     await page.waitForTimeout(2500);
 
-    const panels = ['prophecy', 'grimoire', 'combat', 'defenses', 'dps', 'gems', 'blood', 'darkpath', 'forge', 'cursemap'];
+    const panels = [
+      'prophecy', 'grimoire', 'combat', 'defenses', 'dps', 'gems',
+      'blood', 'darkpath', 'forge', 'cursemap',
+      'passive', 'harbinger', 'stash', 'settings',
+    ];
     for (const id of panels) {
       const btn = page.locator(`[data-panel="${id}"]`);
       await expect(btn).toBeAttached({ timeout: 3_000 });
