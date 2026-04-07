@@ -12,6 +12,7 @@ import type {
   SharePayload, BuildData,
   StatCheckResult, RecipeCandidate, RecipeAnalysis,
   IgniteResult, ChillResult, FreezeResult, ShockResult, PoisonResult, BleedResult,
+  ChargeType, ChargeConfig, ChargeState, ChargeBonuses,
 } from '../types/index.js';
 
 // --- Info ---
@@ -268,6 +269,30 @@ export const calcBleed = (
 
 export const getPobWatchDir = (): Promise<string> =>
   invoke('get_pob_watch_dir');
+
+// --- Charge Management ---
+
+export const calcChargeBonuses = (
+  counts: [number, number, number],
+  config?: ChargeConfig,
+): Promise<ChargeBonuses> =>
+  invoke('calc_charge_bonuses_cmd', {
+    countsJson: JSON.stringify(counts),
+    configJson: config ? JSON.stringify(config) : null,
+  });
+
+export const applyChargeGain = (
+  state: ChargeState,
+  chargeType: ChargeType,
+  count: number,
+  config?: ChargeConfig,
+): Promise<ChargeState> =>
+  invoke('apply_charge_gain_cmd', {
+    stateJson:  JSON.stringify(state),
+    chargeType: chargeType.toLowerCase(),
+    count,
+    configJson: config ? JSON.stringify(config) : null,
+  });
 
 // --- Settings / Cloud AI ---
 

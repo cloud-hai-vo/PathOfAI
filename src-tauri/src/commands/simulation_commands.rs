@@ -16,6 +16,7 @@ use crate::core::ailment_mechanics::{
     calc_ignite, calc_chill, calc_freeze, calc_shock, calc_poison, calc_bleed,
     IgniteResult, ChillResult, FreezeResult, ShockResult, PoisonResult, BleedResult,
 };
+use crate::core::charge_manager::{gain_charge, charge_bonuses, ChargeType, ChargeConfig, ChargeState, ChargeBonuses};
 use crate::models::analysis::AnalysisResult;
 use crate::models::build::Item;
 use std::collections::HashMap;
@@ -247,4 +248,44 @@ pub async fn calc_bleed_cmd(
 ) -> Result<BleedResult, String> {
     Ok(calc_bleed(phys_hit, hit_rate, bleed_chance_pct, phys_dot_multi_pct,
         increased_bleed_pct, increased_duration_pct, has_crimson_dance, target_is_moving))
+}
+
+/// Calculate stat bonuses from charge counts (Algorithm 31).
+#[tauri::command]
+pub async fn calc_charge_bonuses_cmd(
+    counts_json: String, config_json: Option<String>, _state: State<'_, AppState>,
+) -> Result<ChargeBonuses, String> {
+    let counts: [u8; 3] = serde_json::from_str(&counts_json)
+        .map_err(|e| e.to_string())?;
+    let config: ChargeConfig = config_json
+        .map(|j| serde_json::from_str(&j).map_err(|e: serde_json::Error| e.to_string()))
+        .transpose()?
+        .unwrap_or_default();
+    let state = ChargeState { counts, expiry_ms: [0u32; 3] };
+    Ok(charge_bonuses(&state))
+}
+
+/// Simulate gaining charges and return updated state (Algorithm 31).
+#[tauri::command]
+pub async fn apply_charge_gain_cmd(
+    state_json: String,
+    config_json: Option<String>,
+    charge_type: String,
+    count: u8,
+    _state: State<'_, AppState>,
+) -> Result<ChargeState, String> {
+    let mut charge_state: ChargeState = serde_json::from_str(&state_json)
+        .map_err(|e| e.to_string())?;
+    let config: ChargeConfig = config_json
+        .map(|j| serde_json::from_str(&j).map_err(|e: serde_json::Error| e.to_string()))
+        .transpose()?
+        .unwrap_or_default();
+    let kind = match charge_type.to_lowercase().as_str() {
+        "endurance" => ChargeType::Endurance,
+        "frenzy"    => ChargeType::Frenzy,
+        "power"     => ChargeType::Power,
+        other       => return Err(format!("Unknown charge type: {other}")),
+    };
+    gain_charge(&mut charge_state, &config, kind, count);
+    Ok(charge_state)
 }

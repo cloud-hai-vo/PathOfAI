@@ -429,6 +429,33 @@ export interface RecipeAnalysis {
   quality_recipes: QualityRecipe[];
 }
 
+// --- Charge Management ---
+
+export type ChargeType = 'Endurance' | 'Frenzy' | 'Power';
+
+export interface ChargeConfig {
+  max_endurance: number;
+  max_frenzy: number;
+  max_power: number;
+  endurance_duration_secs: number;
+  frenzy_duration_secs: number;
+  power_duration_secs: number;
+}
+
+export interface ChargeState {
+  counts: [number, number, number];
+  expiry_ms: [number, number, number];
+}
+
+export interface ChargeBonuses {
+  physical_damage_reduction_pct: number;
+  all_elemental_resistances: number;
+  increased_attack_speed: number;
+  increased_cast_speed: number;
+  increased_damage: number;
+  increased_crit_chance: number;
+}
+
 // --- Map Mod Analysis ---
 
 export type DangerLevel = 'Safe' | 'Minor' | 'Moderate' | 'Major' | 'Critical';
